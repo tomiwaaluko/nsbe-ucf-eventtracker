@@ -1,0 +1,59 @@
+// This is your Prisma schema file
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EventCategory {
+  COMMUNITY_SERVICE
+  GBM
+  SOCIAL_AEX
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  role      String   @default("member") // member | admin | super_admin
+  createdAt DateTime @default(now())
+
+  attendance Attendance[]
+  eventsCreated Event[]
+}
+
+model Event {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  category    EventCategory
+  semester    String
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  qrSecret    String
+  isActive    Boolean        @default(true)
+
+  createdById String?
+  createdBy   Member?        @relation(fields: [createdById], references: [id])
+
+  attendance  Attendance[]
+}
+
+model Attendance {
+  id            String   @id @default(uuid())
+  memberId      String
+  eventId       String
+  checkedInAt   DateTime @default(now())
+  checkInMethod String   @default("qr") // qr | manual | exception
+
+  member Member @relation(fields: [memberId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
+
+  @@unique([memberId, eventId])
+}
