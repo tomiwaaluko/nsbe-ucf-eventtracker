@@ -1,7 +1,7 @@
 {
-  "name": "nsbe-backend",
+  "name": "nsbe-ucf-eventtracker",
   "version": "0.0.1",
-  "description": "",
+  "description": "NSBE UCF Event Tracker - Backend API for managing NSBE events and attendance",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

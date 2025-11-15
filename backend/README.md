@@ -23,7 +23,9 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+NSBE UCF Event Tracker - Backend API for managing NSBE events and attendance tracking.
+
+Built with [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Project setup
 
