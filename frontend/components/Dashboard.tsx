@@ -34,13 +34,20 @@ interface DashboardProps {
   onNavigate: (page: string) => void;
 }
 
-export function Dashboard({ memberData, upcomingEvents, onViewEvent, onNavigate }: DashboardProps) {
+export function Dashboard({
+  memberData,
+  upcomingEvents,
+  onViewEvent,
+  onNavigate,
+}: DashboardProps) {
   // Calculate progress
   const workshopProgress = (memberData.workshopsAttended / 3) * 100;
   const gbmProgress = (memberData.gbmAttended / 3) * 100;
   const communityProgress = (memberData.communityServiceAttended / 3) * 100;
   const overallProgress =
-    ((memberData.workshopsAttended + memberData.gbmAttended + memberData.communityServiceAttended) /
+    ((memberData.workshopsAttended +
+      memberData.gbmAttended +
+      memberData.communityServiceAttended) /
       9) *
     100;
 
@@ -56,24 +63,53 @@ export function Dashboard({ memberData, upcomingEvents, onViewEvent, onNavigate 
 
   // Chart data
   const categoryData = [
-    { name: "Workshops", value: memberData.workshopsAttended, color: "#ffb81c" },
+    {
+      name: "Workshops",
+      value: memberData.workshopsAttended,
+      color: "#ffb81c",
+    },
     { name: "GBMs", value: memberData.gbmAttended, color: "#00a651" },
-    { name: "Community", value: memberData.communityServiceAttended, color: "#ed1c24" },
+    {
+      name: "Community",
+      value: memberData.communityServiceAttended,
+      color: "#ed1c24",
+    },
   ];
 
   const progressData = [
     { category: "Workshops", current: memberData.workshopsAttended, target: 3 },
     { category: "GBMs", current: memberData.gbmAttended, target: 3 },
-    { category: "Community", current: memberData.communityServiceAttended, target: 3 },
+    {
+      category: "Community",
+      current: memberData.communityServiceAttended,
+      target: 3,
+    },
   ];
+
+  // Dynamic encouragement message based on total events
+  const getEncouragementMessage = () => {
+    const total = memberData.totalEvents;
+    if (total <= 2) {
+      return "Let's get you to more events! Every event is a step toward your goals.";
+    } else if (total <= 4) {
+      return "Keep up the great work!";
+    } else if (total <= 7) {
+      return "You're doing amazing! Your dedication is truly impressive.";
+    } else {
+      return "Outstanding commitment! You're a shining example of NSBE excellence. 🌟";
+    }
+  };
 
   return (
     <div className="space-y-8">
       {/* Welcome header */}
       <div className="bg-gradient-to-r from-[#00a651] to-[#008a44] rounded-2xl p-8 text-white">
-        <h1 className="text-white mb-2">Welcome back, {memberData.name?.split(" ")[0] || "Member"}! 👋</h1>
+        <h1 className="text-white mb-2">
+          Welcome back, {memberData.name?.split(" ")[0] || "Member"}! 👋
+        </h1>
         <p className="text-green-100">
-          You've attended {memberData.totalEvents} events this semester. Keep up the great work!
+          You've attended {memberData.totalEvents} events this semester.{" "}
+          {getEncouragementMessage()}
         </p>
       </div>
 

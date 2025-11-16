@@ -3,10 +3,10 @@ import { Login } from "./Login";
 import { SignUp } from "./SignUp";
 import { ForgotPassword } from "./ForgotPassword";
 import { ResetPassword } from "./ResetPassword";
-import { EmailVerification } from "./EmailVerification";
 import { Onboarding } from "./Onboarding";
 import { SuccessPage } from "./SuccessPage";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 interface AuthFlowProps {
   onAuthComplete: (userData: {
@@ -21,11 +21,9 @@ type AuthPage =
   | "signup"
   | "forgot-password"
   | "reset-password"
-  | "email-verification"
   | "onboarding"
   | "success-signup"
-  | "success-password-reset"
-  | "success-email-verified";
+  | "success-password-reset";
 
 export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
   const [currentPage, setCurrentPage] = useState<AuthPage>("login");
@@ -37,25 +35,41 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
   });
   const [resetToken, setResetToken] = useState("");
 
-  // Mock authentication handlers - replace with real API calls
+  // Authentication handlers with real Supabase integration
   const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Mock success
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Store token
+      if (data.session) {
+        localStorage.setItem("token", data.session.access_token);
+      }
+
       toast.success("Welcome back!", {
         description: "You have successfully signed in.",
       });
-      
+
+      // Get user data from backend or use Supabase data
+      const user = data.user;
       onAuthComplete({
-        email,
-        firstName: "John",
-        lastName: "Doe",
+        email: user?.email || email,
+        firstName: user?.user_metadata?.first_name || "User",
+        lastName: user?.user_metadata?.last_name || "",
       });
-    }, 1500);
+    } catch (error: any) {
+      toast.error("Login failed", {
+        description: error.message || "Invalid email or password",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignUp = async (data: {
@@ -65,70 +79,112 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     password: string;
   }) => {
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Store user data
+
+    try {
+      // Create Supabase auth account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            first_name: data.firstName,
+            last_name: data.lastName,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (authError) throw authError;
+
+      // Store user data for onboarding
       setUserData({
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
       });
-      
-      // Show success and move to email verification
-      toast.success("Account created successfully!", {
-        description: "Please check your email to verify your account.",
+
+      // Store token if session created (auto-confirm disabled)
+      if (authData.session) {
+        localStorage.setItem("token", authData.session.access_token);
+
+        toast.success("Account created successfully!", {
+          description: "Welcome to NSBE UCF Event Tracker!",
+        });
+
+        setCurrentPage("success-signup");
+
+        // Auto-navigate to onboarding after 2 seconds
+        setTimeout(() => {
+          setCurrentPage("onboarding");
+        }, 2000);
+      } else {
+        // Email confirmation required
+        toast.success("Account created!", {
+          description:
+            "Please check your email to verify your account before signing in.",
+        });
+
+        // Go back to login after showing message
+        setTimeout(() => {
+          setCurrentPage("login");
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      toast.error("Sign up failed", {
+        description:
+          error.message ||
+          "Unable to create account. Please try a different email.",
       });
-      
-      setCurrentPage("success-signup");
-      
-      // Auto-navigate to email verification after 3 seconds
-      setTimeout(() => {
-        setCurrentPage("email-verification");
-      }, 3000);
-    }, 1500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = async (email: string) => {
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
       toast.success("Email sent!", {
         description: "Check your inbox for password reset instructions.",
       });
-      
-      // Store email for later use
+
+      // Store email for reference
       setUserData({ ...userData, email });
-      
-      // In a real app, the user would click a link in their email
-      // For demo purposes, we'll simulate getting a reset token
-      setResetToken("demo-reset-token-123");
-      
-      // Show reset password form after a delay (simulating user clicking email link)
+
+      // In production, user clicks link in email
+      // For now, show success message
       setTimeout(() => {
-        setCurrentPage("reset-password");
-      }, 2000);
-    }, 1500);
+        setCurrentPage("login");
+      }, 3000);
+    } catch (error: any) {
+      toast.error("Failed to send reset email", {
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetPassword = async (password: string, token: string) => {
     setIsLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      
+
       toast.success("Password reset successful!", {
         description: "You can now sign in with your new password.",
       });
-      
+
       setCurrentPage("success-password-reset");
-      
+
       // Auto-navigate to login after 3 seconds
       setTimeout(() => {
         setCurrentPage("login");
@@ -136,47 +192,19 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     }, 1500);
   };
 
-  const handleResendVerificationEmail = async () => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      toast.success("Verification email sent!", {
-        description: "Please check your inbox.",
-      });
-    }, 1500);
-  };
-
-  const handleEmailVerified = () => {
-    toast.success("Email verified!", {
-      description: "Your account is now fully activated.",
-    });
-    
-    setCurrentPage("success-email-verified");
-    
-    // Auto-navigate to onboarding after 2 seconds
-    setTimeout(() => {
-      setCurrentPage("onboarding");
-    }, 2000);
-  };
-
   const handleOnboardingComplete = () => {
     toast.success("You're all set!", {
       description: "Welcome to NSBE UCF Event Tracker.",
     });
-    
+
     onAuthComplete(userData);
   };
 
   const handleContinueFromSuccess = () => {
     if (currentPage === "success-signup") {
-      setCurrentPage("email-verification");
+      setCurrentPage("onboarding");
     } else if (currentPage === "success-password-reset") {
       setCurrentPage("login");
-    } else if (currentPage === "success-email-verified") {
-      setCurrentPage("onboarding");
     }
   };
 
@@ -218,17 +246,6 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         />
       );
 
-    case "email-verification":
-      return (
-        <EmailVerification
-          email={userData.email}
-          onResendEmail={handleResendVerificationEmail}
-          onVerified={handleEmailVerified}
-          onChangeEmail={() => setCurrentPage("signup")}
-          isLoading={isLoading}
-        />
-      );
-
     case "onboarding":
       return (
         <Onboarding
@@ -251,15 +268,6 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         <SuccessPage
           type="password-reset"
           onContinue={handleContinueFromSuccess}
-        />
-      );
-
-    case "success-email-verified":
-      return (
-        <SuccessPage
-          type="email-verified"
-          onContinue={handleContinueFromSuccess}
-          email={userData.email}
         />
       );
 

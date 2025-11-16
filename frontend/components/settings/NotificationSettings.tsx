@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { Bell, Mail, Smartphone, Calendar, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Bell,
+  Mail,
+  Smartphone,
+  Calendar,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface NotificationPreference {
@@ -44,14 +51,16 @@ export function NotificationSettings() {
     {
       id: "event-cancellations",
       title: "Event Cancellations",
-      description: "Important notifications about cancelled or rescheduled events",
+      description:
+        "Important notifications about cancelled or rescheduled events",
       email: true,
       push: true,
     },
     {
       id: "weekly-digest",
       title: "Weekly Digest",
-      description: "Summary of upcoming events and your activity (every Monday)",
+      description:
+        "Summary of upcoming events and your activity (every Monday)",
       email: true,
       push: false,
     },
@@ -84,9 +93,7 @@ export function NotificationSettings() {
   };
 
   const handleToggleAll = (type: "email" | "push", value: boolean) => {
-    setPreferences((prev) =>
-      prev.map((pref) => ({ ...pref, [type]: value }))
-    );
+    setPreferences((prev) => prev.map((pref) => ({ ...pref, [type]: value })));
     setHasChanges(true);
   };
 
@@ -137,14 +144,16 @@ export function NotificationSettings() {
       {
         id: "event-cancellations",
         title: "Event Cancellations",
-        description: "Important notifications about cancelled or rescheduled events",
+        description:
+          "Important notifications about cancelled or rescheduled events",
         email: true,
         push: true,
       },
       {
         id: "weekly-digest",
         title: "Weekly Digest",
-        description: "Summary of upcoming events and your activity (every Monday)",
+        description:
+          "Summary of upcoming events and your activity (every Monday)",
         email: true,
         push: false,
       },
@@ -186,7 +195,9 @@ export function NotificationSettings() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleToggleAll("email", emailCount !== preferences.length)}
+            onClick={() =>
+              handleToggleAll("email", emailCount !== preferences.length)
+            }
             className="text-xs"
           >
             {emailCount === preferences.length ? "Disable All" : "Enable All"}
@@ -206,7 +217,9 @@ export function NotificationSettings() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleToggleAll("push", pushCount !== preferences.length)}
+            onClick={() =>
+              handleToggleAll("push", pushCount !== preferences.length)
+            }
             className="text-xs"
           >
             {pushCount === preferences.length ? "Disable All" : "Enable All"}
@@ -238,7 +251,10 @@ export function NotificationSettings() {
           </thead>
           <tbody>
             {preferences.map((pref) => (
-              <tr key={pref.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr
+                key={pref.id}
+                className="border-b border-gray-100 hover:bg-gray-50"
+              >
                 <td className="py-4 px-4">
                   <div>
                     <p className="font-medium text-gray-900">{pref.title}</p>
@@ -276,7 +292,10 @@ export function NotificationSettings() {
       {/* Notification Preferences Cards - Mobile */}
       <div className="md:hidden space-y-4">
         {preferences.map((pref) => (
-          <div key={pref.id} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div
+            key={pref.id}
+            className="bg-white border border-gray-200 rounded-lg p-4"
+          >
             <h4 className="font-medium text-gray-900 mb-1">{pref.title}</h4>
             <p className="text-sm text-gray-600 mb-3">{pref.description}</p>
 
@@ -324,7 +343,11 @@ export function NotificationSettings() {
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
-            <Button variant="outline" onClick={handleReset} disabled={isLoading}>
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button
@@ -355,9 +378,12 @@ export function NotificationSettings() {
           About Notifications
         </h4>
         <ul className="text-xs text-gray-600 space-y-1">
-          <li>• Email notifications are sent to your registered UCF email</li>
+          <li>• Email notifications are sent to your registered email</li>
           <li>• Push notifications require browser permission</li>
-          <li>• Critical notifications (like event cancellations) cannot be disabled</li>
+          <li>
+            • Critical notifications (like event cancellations) cannot be
+            disabled
+          </li>
           <li>• You can update these preferences anytime</li>
         </ul>
       </div>

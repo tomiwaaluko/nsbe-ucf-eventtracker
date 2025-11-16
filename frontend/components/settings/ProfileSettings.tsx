@@ -44,7 +44,9 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     major: memberData.major || "",
     graduationYear: memberData.graduationYear || "",
   });
-  const [profilePhoto, setProfilePhoto] = useState(memberData.profilePhoto || "");
+  const [profilePhoto, setProfilePhoto] = useState(
+    memberData.profilePhoto || ""
+  );
   const [previewUrl, setPreviewUrl] = useState(memberData.profilePhoto || "");
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -113,11 +115,6 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Please enter a valid email";
-    } else if (
-      !formData.email.endsWith("@ucf.edu") &&
-      !formData.email.endsWith("@knights.ucf.edu")
-    ) {
-      newErrors.email = "Please use your UCF email address";
     }
 
     setErrors(newErrors);
@@ -218,7 +215,9 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       </div>
 
       <div className="border-t border-gray-200 pt-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Personal Information</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">
+          Personal Information
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* First Name */}
@@ -260,7 +259,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           {/* Email */}
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="email">
-              UCF Email <span className="text-red-500">*</span>
+              Email <span className="text-red-500">*</span>
             </Label>
             <Input
               id="email"
@@ -302,7 +301,9 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
             <select
               id="graduationYear"
               value={formData.graduationYear}
-              onChange={(e) => handleChange("graduationYear", parseInt(e.target.value))}
+              onChange={(e) =>
+                handleChange("graduationYear", parseInt(e.target.value))
+              }
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">Select year</option>
@@ -327,7 +328,11 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
-            <Button variant="outline" onClick={handleReset} disabled={isLoading}>
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button
@@ -357,9 +362,13 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           Why we need this information
         </h4>
         <ul className="text-xs text-gray-600 space-y-1">
-          <li>• Your name appears on event attendance records and certificates</li>
+          <li>
+            • Your name appears on event attendance records and certificates
+          </li>
           <li>• Email is used for event notifications and account recovery</li>
-          <li>• Major and graduation year help us tailor events to your interests</li>
+          <li>
+            • Major and graduation year help us tailor events to your interests
+          </li>
           <li>• Profile photo personalizes your dashboard experience</li>
         </ul>
       </div>

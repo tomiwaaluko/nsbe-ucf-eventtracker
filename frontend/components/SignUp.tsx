@@ -2,7 +2,15 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Eye, EyeOff, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 
 interface SignUpProps {
   onSignUp: (data: {
@@ -15,7 +23,11 @@ interface SignUpProps {
   isLoading?: boolean;
 }
 
-export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps) {
+export function SignUp({
+  onSignUp,
+  onNavigate,
+  isLoading = false,
+}: SignUpProps) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -42,15 +54,14 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
         if (!value) return "Email is required";
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return "Please enter a valid email";
-        if (!value.endsWith("@ucf.edu") && !value.endsWith("@knights.ucf.edu")) {
-          return "Please use your UCF email address";
-        }
         return "";
       case "password":
         if (!value) return "Password is required";
         if (value.length < 8) return "Password must be at least 8 characters";
-        if (!/(?=.*[a-z])/.test(value)) return "Password must contain a lowercase letter";
-        if (!/(?=.*[A-Z])/.test(value)) return "Password must contain an uppercase letter";
+        if (!/(?=.*[a-z])/.test(value))
+          return "Password must contain a lowercase letter";
+        if (!/(?=.*[A-Z])/.test(value))
+          return "Password must contain an uppercase letter";
         if (!/(?=.*\d)/.test(value)) return "Password must contain a number";
         return "";
       case "confirmPassword":
@@ -64,7 +75,10 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
 
   const handleBlur = (name: string) => {
     setTouched({ ...touched, [name]: true });
-    setErrors({ ...errors, [name]: validateField(name, formData[name as keyof typeof formData]) });
+    setErrors({
+      ...errors,
+      [name]: validateField(name, formData[name as keyof typeof formData]),
+    });
   };
 
   const handleChange = (name: string, value: string) => {
@@ -86,11 +100,18 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
 
   const passwordStrength = getPasswordStrength(formData.password);
   const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
-  const strengthColors = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-[#00843D]", "bg-[#00843D]"];
+  const strengthColors = [
+    "",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-[#00843D]",
+    "bg-[#00843D]",
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const newErrors: Record<string, string> = {};
     Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key as keyof typeof formData]);
@@ -126,56 +147,64 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
               <p className="text-sm text-white/80">Event Tracker</p>
             </div>
           </div>
-          
+
           <div className="max-w-md">
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
               Join Our Community
             </h2>
             <p className="text-lg text-white/90 mb-8">
-              Start your journey with NSBE UCF and track your path to becoming
-              a well-rounded engineer and leader.
+              Start your journey with NSBE UCF and track your path to becoming a
+              well-rounded engineer and leader.
             </p>
-            
+
             <div className="space-y-6 bg-white/10 rounded-lg p-6 backdrop-blur-sm">
               <h3 className="font-semibold text-lg">What you'll get:</h3>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Track Your 1-1-1 Progress</p>
-                    <p className="text-sm text-white/80">1 Workshop, 1 GBM, 1 Community Service</p>
+                    <p className="text-sm text-white/80">
+                      1 Workshop, 1 GBM, 1 Community Service
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Monitor Your 3-3-3 Goals</p>
-                    <p className="text-sm text-white/80">3 Workshops, 3 GBMs, 3 Community Services</p>
+                    <p className="text-sm text-white/80">
+                      3 Workshops, 3 GBMs, 3 Community Services
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Quick Event Check-In</p>
-                    <p className="text-sm text-white/80">Scan QR codes at events instantly</p>
+                    <p className="text-sm text-white/80">
+                      Scan QR codes at events instantly
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">View Event History</p>
-                    <p className="text-sm text-white/80">Keep track of all events you've attended</p>
+                    <p className="text-sm text-white/80">
+                      Keep track of all events you've attended
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="hidden lg:block">
           <p className="text-sm text-white/60">
             © 2024 NSBE UCF Chapter. All rights reserved.
@@ -187,8 +216,12 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
       <div className="lg:w-3/5 bg-white flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-lg">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p className="text-gray-600">Fill in your information to get started</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Create Account
+            </h2>
+            <p className="text-gray-600">
+              Fill in your information to get started
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -254,14 +287,15 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
             {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-gray-700">
-                UCF Email Address
+                Email Address
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="john.doe@ucf.edu"
+                  placeholder="john.doe@example.com"
+                  className="placeholder:text-gray-500"
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   onBlur={() => handleBlur("email")}
@@ -308,10 +342,14 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
-              
+
               {/* Password Strength Indicator */}
               {formData.password && (
                 <div className="space-y-2">
@@ -320,17 +358,22 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
                       <div
                         key={level}
                         className={`h-1 flex-1 rounded-full transition-colors ${
-                          passwordStrength >= level ? strengthColors[passwordStrength] : "bg-gray-200"
+                          passwordStrength >= level
+                            ? strengthColors[passwordStrength]
+                            : "bg-gray-200"
                         }`}
                       />
                     ))}
                   </div>
                   <p className="text-xs text-gray-600">
-                    Strength: <span className="font-medium">{strengthLabels[passwordStrength]}</span>
+                    Strength:{" "}
+                    <span className="font-medium">
+                      {strengthLabels[passwordStrength]}
+                    </span>
                   </p>
                 </div>
               )}
-              
+
               {touched.password && errors.password && (
                 <p className="text-sm text-red-600">⚠ {errors.password}</p>
               )}
@@ -348,28 +391,40 @@ export function SignUp({ onSignUp, onNavigate, isLoading = false }: SignUpProps)
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Re-enter your password"
                   value={formData.confirmPassword}
-                  onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("confirmPassword", e.target.value)
+                  }
                   onBlur={() => handleBlur("confirmPassword")}
                   className={`pl-10 pr-10 ${
                     touched.confirmPassword && errors.confirmPassword
                       ? "border-red-500 focus-visible:ring-red-500/20"
                       : ""
                   }`}
-                  aria-invalid={touched.confirmPassword && !!errors.confirmPassword}
+                  aria-invalid={
+                    touched.confirmPassword && !!errors.confirmPassword
+                  }
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
                   disabled={isLoading}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
               {touched.confirmPassword && errors.confirmPassword && (
-                <p className="text-sm text-red-600">⚠ {errors.confirmPassword}</p>
+                <p className="text-sm text-red-600">
+                  ⚠ {errors.confirmPassword}
+                </p>
               )}
             </div>
 

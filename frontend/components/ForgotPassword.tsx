@@ -10,7 +10,11 @@ interface ForgotPasswordProps {
   isLoading?: boolean;
 }
 
-export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: ForgotPasswordProps) {
+export function ForgotPassword({
+  onSubmit,
+  onNavigate,
+  isLoading = false,
+}: ForgotPasswordProps) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
@@ -19,9 +23,6 @@ export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: Forg
     if (!email) return "Email is required";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return "Please enter a valid email";
-    if (!email.endsWith("@ucf.edu") && !email.endsWith("@knights.ucf.edu")) {
-      return "Please use your UCF email address";
-    }
     return "";
   };
 
@@ -32,7 +33,7 @@ export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: Forg
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const emailError = validateEmail(email);
     setError(emailError);
     setTouched(true);
@@ -69,9 +70,12 @@ export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: Forg
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Forgot Password?
+            </h2>
             <p className="text-gray-600">
-              No worries! Enter your email address and we'll send you instructions to reset your password.
+              No worries! Enter your email address and we'll send you
+              instructions to reset your password.
             </p>
           </div>
 
@@ -82,25 +86,33 @@ export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: Forg
                 Email Address
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="john.doe@ucf.edu"
+                  placeholder="john.doe@example.com"
+                  className="placeholder:text-gray-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={handleBlur}
                   className={`pl-10 ${
-                    touched && error ? "border-red-500 focus-visible:ring-red-500/20" : ""
+                    touched && error
+                      ? "border-red-500 focus-visible:ring-red-500/20"
+                      : ""
                   }`}
                   aria-invalid={touched && !!error}
-                  aria-describedby={touched && error ? "email-error" : undefined}
+                  aria-describedby={
+                    touched && error ? "email-error" : undefined
+                  }
                   disabled={isLoading}
                   autoFocus
                 />
               </div>
               {touched && error && (
-                <p id="email-error" className="text-sm text-red-600 flex items-center gap-1">
+                <p
+                  id="email-error"
+                  className="text-sm text-red-600 flex items-center gap-1"
+                >
                   <span>⚠</span> {error}
                 </p>
               )}
@@ -139,7 +151,10 @@ export function ForgotPassword({ onSubmit, onNavigate, isLoading = false }: Forg
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Need help?{" "}
-            <a href="mailto:support@nsbeucf.org" className="text-[#00843D] hover:underline">
+            <a
+              href="mailto:support@nsbeucf.org"
+              className="text-[#00843D] hover:underline"
+            >
               Contact Support
             </a>
           </p>

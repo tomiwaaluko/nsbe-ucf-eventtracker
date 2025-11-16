@@ -15,9 +15,19 @@ export default function Home() {
     }
   }, [router]);
 
+  const handleAuthComplete = (userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  }) => {
+    // Store user data and redirect to dashboard
+    localStorage.setItem("user", JSON.stringify(userData));
+    router.push("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <AuthFlow />
+      <AuthFlow onAuthComplete={handleAuthComplete} />
     </div>
   );
 }
