@@ -4,7 +4,7 @@ nixPkgs = ['nodejs_20', 'openssl']
 [phases.install]
 cmds = [
   'cd backend',
-  'npm ci --include=dev'
+  'npm install'
 ]
 
 [phases.build]

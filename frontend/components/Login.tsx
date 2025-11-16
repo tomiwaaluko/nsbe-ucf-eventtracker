@@ -152,11 +152,10 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   id="email"
                   type="email"
                   placeholder="john.doe@example.com"
-                  className="placeholder:text-gray-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={handleEmailBlur}
-                  className={`pl-10 ${
+                  className={`pl-10 placeholder:text-gray-500 ${
                     touched.email && errors.email
                       ? "border-red-500 focus-visible:ring-red-500/20"
                       : ""
