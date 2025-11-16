@@ -4,7 +4,6 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { jwtVerify } from 'jose';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -22,6 +21,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
+      const { jwtVerify } = await import('jose');
       const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
 

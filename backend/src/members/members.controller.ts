@@ -36,7 +36,7 @@ export class MembersController {
   @Get()
   async search(@Req() req, @Query('query') query: string) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.membersService.search(query);
@@ -49,7 +49,7 @@ export class MembersController {
     @Body() body: { role: 'member' | 'admin' | 'super_admin' },
   ) {
     const currentMember = await this.membersService.findMe(req.user.id);
-    if (!isSuperAdmin(currentMember.role)) {
+    if (!currentMember || !isSuperAdmin(currentMember.role)) {
       throw new ForbiddenException('Super admin access required');
     }
 

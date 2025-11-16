@@ -32,7 +32,7 @@ export class AttendanceController {
   @Post('manual')
   async manualCheckIn(@Req() req, @Body() dto: ManualCheckInDto) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.attendanceService.manualCheckIn(req.user.id, dto);
@@ -46,7 +46,7 @@ export class AttendanceController {
   @Get('events/:id')
   async getEventAttendance(@Req() req, @Param('id') eventId: string) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.attendanceService.getEventAttendance(eventId);

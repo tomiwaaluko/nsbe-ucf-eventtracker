@@ -30,7 +30,7 @@ export class EventsController {
   @Post()
   async create(@Req() req, @Body() dto: CreateEventDto) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.eventsService.create(dto, req.user.id);
@@ -56,7 +56,7 @@ export class EventsController {
     @Body() dto: UpdateEventDto,
   ) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.eventsService.update(id, dto);
@@ -65,7 +65,7 @@ export class EventsController {
   @Delete(':id')
   async remove(@Req() req, @Param('id') id: string) {
     const member = await this.membersService.findMe(req.user.id);
-    if (!isAdmin(member.role)) {
+    if (!member || !isAdmin(member.role)) {
       throw new ForbiddenException('Admin access required');
     }
     return this.eventsService.remove(id);

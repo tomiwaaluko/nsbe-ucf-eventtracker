@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventCategory } from '@prisma/client';
 
-interface MemberProgress {
+export interface MemberProgress {
   communityService: number;
   gbm: number;
   socialAex: number;
