@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -52,18 +53,22 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Dashboard
-      memberData={memberData}
-      upcomingEvents={upcomingEvents}
-      onViewEvent={handleViewEvent}
-      onNavigate={handleNavigate}
-    />
+    <DashboardLayout>
+      <Dashboard
+        memberData={memberData}
+        upcomingEvents={upcomingEvents}
+        onViewEvent={handleViewEvent}
+        onNavigate={handleNavigate}
+      />
+    </DashboardLayout>
   );
 }
