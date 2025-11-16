@@ -68,6 +68,8 @@ export const AnimatedButton = forwardRef<
       },
     };
 
+    const { onClick, type, ...restProps } = props;
+
     return (
       <motion.button
         ref={ref}
@@ -75,9 +77,10 @@ export const AnimatedButton = forwardRef<
           sizeClasses[size]
         } ${disabled || isLoading ? disabledClasses : ""} ${className}`}
         disabled={disabled || isLoading}
+        onClick={onClick as any}
+        type={type}
         {...animations[animationType]}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        {...props}
       >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
         {!isLoading && icon && iconPosition === "left" && icon}
