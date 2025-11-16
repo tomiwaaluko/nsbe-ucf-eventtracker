@@ -91,11 +91,10 @@ export function ForgotPassword({
                   id="email"
                   type="email"
                   placeholder="john.doe@example.com"
-                  className="placeholder:text-gray-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={handleBlur}
-                  className={`pl-10 ${
+                  className={`pl-10 placeholder:text-gray-500 ${
                     touched && error
                       ? "border-red-500 focus-visible:ring-red-500/20"
                       : ""

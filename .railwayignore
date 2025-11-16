@@ -1,0 +1,6 @@
+frontend/
+frontendvite/
+*.md
+.git/
+.github/
+node_modules/
