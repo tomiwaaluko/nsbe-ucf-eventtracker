@@ -98,14 +98,20 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
       label: "1-1-1 Achievement",
       value: stats.membersWithOneOneOne,
       total: stats.activeMembers,
-      percentage: ((stats.membersWithOneOneOne / stats.activeMembers) * 100).toFixed(1),
+      percentage: (
+        (stats.membersWithOneOneOne / stats.activeMembers) *
+        100
+      ).toFixed(1),
       color: "#00a651",
     },
     {
       label: "3-3-3 Achievement",
       value: stats.membersWithThreeThreeThree,
       total: stats.activeMembers,
-      percentage: ((stats.membersWithThreeThreeThree / stats.activeMembers) * 100).toFixed(1),
+      percentage: (
+        (stats.membersWithThreeThreeThree / stats.activeMembers) *
+        100
+      ).toFixed(1),
       color: "#ffb81c",
     },
   ];
@@ -243,8 +249,8 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) =>
-                  `${name}: ${(percent * 100).toFixed(0)}%`
+                label={({ name, percent }: any) =>
+                  `${name}: ${((percent || 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill="#8884d8"
