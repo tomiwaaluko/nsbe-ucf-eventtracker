@@ -83,3 +83,7 @@ backend/*.tsbuildinfo
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Markdown files except README
+*.md
+!README.md
