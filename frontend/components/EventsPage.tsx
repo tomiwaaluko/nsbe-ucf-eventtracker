@@ -40,7 +40,7 @@ export function EventsPage({
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "all" || event.category === categoryFilter;
-    
+
     let matchesTime = true;
     const now = new Date();
     const eventStart = new Date(event.startTime);
@@ -164,9 +164,7 @@ export function EventsPage({
         <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
           <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h4 className="text-gray-900 mb-2">No events found</h4>
-          <p className="text-gray-500">
-            Try adjusting your search or filters
-          </p>
+          <p className="text-gray-500">Try adjusting your search or filters</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -233,7 +231,7 @@ export function EventsPage({
                       key={event.id}
                       event={event}
                       onViewDetails={onViewDetails}
-                      showCheckIn={onCheckIn}
+                      onCheckIn={onCheckIn}
                       showCheckIn={false}
                     />
                   ))}
