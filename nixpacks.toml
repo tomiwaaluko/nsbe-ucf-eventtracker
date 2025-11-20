@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs_20', 'openssl']
+nixPkgs = ['nodejs-20_x', 'openssl']
+
+[nixpacks.node]
+version = '20.11.1'
 
 [phases.install]
 cmds = ['cd backend && npm install']
