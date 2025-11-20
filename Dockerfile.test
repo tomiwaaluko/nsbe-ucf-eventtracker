@@ -1,6 +1,9 @@
-FROM node:20-alpine
+FROM node:20.11.1-alpine
 
 WORKDIR /app
+
+# Set a placeholder DATABASE_URL for build time
+ENV DATABASE_URL="postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public"
 
 # Copy the entire project
 COPY . .

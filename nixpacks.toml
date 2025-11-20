@@ -12,3 +12,4 @@ cmd = 'cd backend && npm run start:prod'
 
 [variables]
 NODE_ENV = 'production'
+DATABASE_URL = 'postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public'
