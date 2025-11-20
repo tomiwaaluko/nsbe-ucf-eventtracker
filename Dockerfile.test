@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy the entire project
+COPY . .
+
+# Install dependencies (mimics Railway's nixpacks behavior)
+RUN cd backend && npm install
+
+# Generate Prisma client
+RUN cd backend && npx prisma generate
+
+# Build the application
+RUN cd backend && npm run build
+
+# Start command
+CMD ["sh", "-c", "cd backend && npm run start:prod"]
