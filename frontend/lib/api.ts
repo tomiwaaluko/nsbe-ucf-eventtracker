@@ -16,6 +16,9 @@ export const api = {
     const response = await fetch(`${API_URL}/members/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user data: ${response.statusText}`);
+    }
     return response.json();
   },
 

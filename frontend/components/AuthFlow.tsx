@@ -7,12 +7,14 @@ import { Onboarding } from "./Onboarding";
 import { SuccessPage } from "./SuccessPage";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 
 interface AuthFlowProps {
   onAuthComplete: (userData: {
     email: string;
     firstName: string;
     lastName: string;
+    role: string;
   }) => void;
 }
 
@@ -32,6 +34,7 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     email: "",
     firstName: "",
     lastName: "",
+    role: "member",
   });
   const [resetToken, setResetToken] = useState("");
 
@@ -50,19 +53,43 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
       // Store token
       if (data.session) {
         localStorage.setItem("token", data.session.access_token);
+
+        // Fetch member data from backend to get role
+        try {
+          const memberData = await api.getMe(data.session.access_token);
+
+          toast.success("Welcome back!", {
+            description: "You have successfully signed in.",
+          });
+
+          // Pass complete user data including role
+          onAuthComplete({
+            email: memberData.email || email,
+            firstName:
+              memberData.firstName ||
+              data.user?.user_metadata?.first_name ||
+              "User",
+            lastName:
+              memberData.lastName || data.user?.user_metadata?.last_name || "",
+            role: memberData.role || "member",
+          });
+        } catch (memberError) {
+          console.error("Failed to fetch member data:", memberError);
+
+          // Fallback: use basic user data
+          toast.success("Welcome back!", {
+            description: "You have successfully signed in.",
+          });
+
+          const user = data.user;
+          onAuthComplete({
+            email: user?.email || email,
+            firstName: user?.user_metadata?.first_name || "User",
+            lastName: user?.user_metadata?.last_name || "",
+            role: "member",
+          });
+        }
       }
-
-      toast.success("Welcome back!", {
-        description: "You have successfully signed in.",
-      });
-
-      // Get user data from backend or use Supabase data
-      const user = data.user;
-      onAuthComplete({
-        email: user?.email || email,
-        firstName: user?.user_metadata?.first_name || "User",
-        lastName: user?.user_metadata?.last_name || "",
-      });
     } catch (error: any) {
       toast.error("Login failed", {
         description: error.message || "Invalid email or password",
@@ -101,6 +128,7 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
+        role: "member",
       });
 
       // Store token if session created (auto-confirm disabled)

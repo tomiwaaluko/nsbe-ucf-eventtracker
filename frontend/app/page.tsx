@@ -19,6 +19,7 @@ export default function Home() {
     email: string;
     firstName: string;
     lastName: string;
+    role: string;
   }) => {
     // Store user data and redirect to dashboard
     localStorage.setItem("user", JSON.stringify(userData));
