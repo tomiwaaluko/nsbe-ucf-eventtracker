@@ -6,7 +6,7 @@ nixpkgsArchive = 'a343533bccc62400e8a9560423486a3b6c11a23b'
 cmds = ['cd backend && npm install']
 
 [phases.build]
-cmds = ['cd backend && npx prisma generate && npm run build']
+cmds = ['cd backend && npx prisma generate && npx @nestjs/cli build']
 
 [start]
 cmd = 'cd backend && npm run start:prod'
