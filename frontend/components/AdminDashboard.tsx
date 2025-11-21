@@ -1,14 +1,4 @@
-import { useState } from "react";
-import {
-  Users,
-  Calendar,
-  TrendingUp,
-  Award,
-  UserCheck,
-  Activity,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+import { Users, Calendar, UserCheck, Activity } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { Button } from "./ui/button";
 import {
@@ -24,9 +14,7 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
-import { Card } from "./ui/card";
 
 interface AdminDashboardProps {
   stats: {
@@ -249,8 +237,8 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name}: ${((percent || 0) * 100).toFixed(0)}%`
+                label={(entry) =>
+                  `${entry.name}: ${((entry.percent || 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill="#8884d8"
@@ -269,7 +257,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-gray-900">Recent Events</h4>
-            <Button variant="ghost" onClick={() => onNavigate("events")}>
+            <Button variant="ghost" onClick={() => onNavigate("admin-events")}>
               View All
             </Button>
           </div>
@@ -325,7 +313,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
         <h4 className="text-gray-900 mb-4">Quick Actions</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
-            onClick={() => onNavigate("create-event")}
+            onClick={() => onNavigate("admin-events")}
             className="bg-[#00a651] hover:bg-[#008a44] text-white h-auto py-6"
           >
             <div className="flex flex-col items-center gap-2">
@@ -334,7 +322,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
             </div>
           </Button>
           <Button
-            onClick={() => onNavigate("manual-checkin")}
+            onClick={() => onNavigate("admin-checkin")}
             className="bg-[#ffb81c] hover:bg-[#e5a619] text-white h-auto py-6"
           >
             <div className="flex flex-col items-center gap-2">
@@ -343,7 +331,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
             </div>
           </Button>
           <Button
-            onClick={() => onNavigate("member-management")}
+            onClick={() => onNavigate("admin-members")}
             className="bg-[#ed1c24] hover:bg-[#d41920] text-white h-auto py-6"
           >
             <div className="flex flex-col items-center gap-2">
@@ -352,7 +340,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
             </div>
           </Button>
           <Button
-            onClick={() => onNavigate("attendance-logs")}
+            onClick={() => onNavigate("admin-attendance")}
             className="bg-black hover:bg-gray-800 text-white h-auto py-6"
           >
             <div className="flex flex-col items-center gap-2">

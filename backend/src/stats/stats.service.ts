@@ -206,4 +206,116 @@ export class StatsService {
       rank: index + 1,
     }));
   }
+
+  async getAdminStats(semester: string) {
+    // Get all members
+    const totalMembers = await this.prisma.member.count();
+
+    // Get active members (those with at least one attendance record)
+    const activeMemberIds = await this.prisma.attendance.findMany({
+      where: {
+        event: {
+          semester,
+        },
+      },
+      select: {
+        memberId: true,
+      },
+      distinct: ['memberId'],
+    });
+    const activeMembers = activeMemberIds.length;
+
+    // Get total events
+    const totalEvents = await this.prisma.event.count();
+
+    // Get upcoming events
+    const upcomingEvents = await this.prisma.event.count({
+      where: {
+        startTime: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    // Get total attendance for the semester
+    const totalAttendance = await this.prisma.attendance.count({
+      where: {
+        event: {
+          semester,
+        },
+      },
+    });
+
+    // Calculate average attendance per event
+    const eventsInSemester = await this.prisma.event.count({
+      where: {
+        semester,
+      },
+    });
+    const averageAttendance =
+      eventsInSemester > 0 ? Math.round(totalAttendance / eventsInSemester) : 0;
+
+    // Get members with achievements
+    const members = await this.prisma.member.findMany({
+      include: {
+        attendance: {
+          where: {
+            event: {
+              semester,
+            },
+          },
+          include: {
+            event: true,
+          },
+          orderBy: {
+            checkedInAt: 'asc',
+          },
+        },
+      },
+    });
+
+    let membersWithOneOneOne = 0;
+    let membersWithThreeThreeThree = 0;
+
+    for (const member of members) {
+      const counts = {
+        [EventCategory.COMMUNITY_SERVICE]: 0,
+        [EventCategory.GBM]: 0,
+        [EventCategory.SOCIAL_AEX]: 0,
+      };
+
+      for (const record of member.attendance) {
+        counts[record.event.category]++;
+      }
+
+      // Check 111 achievement
+      if (
+        counts.COMMUNITY_SERVICE >= 1 &&
+        counts.GBM >= 1 &&
+        counts.SOCIAL_AEX >= 1
+      ) {
+        membersWithOneOneOne++;
+      }
+
+      // Check 333 achievement
+      if (
+        counts.COMMUNITY_SERVICE >= 3 &&
+        counts.GBM >= 3 &&
+        counts.SOCIAL_AEX >= 3
+      ) {
+        membersWithThreeThreeThree++;
+      }
+    }
+
+    return {
+      totalMembers,
+      activeMembers,
+      totalEvents,
+      upcomingEvents,
+      totalAttendance,
+      averageAttendance,
+      membersWithOneOneOne,
+      membersWithThreeThreeThree,
+    };
+  }
 }

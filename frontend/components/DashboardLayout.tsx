@@ -44,7 +44,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const getCurrentPage = () => {
     // Map pathname to sidebar menu item IDs
-    const path = pathname.split("/")[1] || "dashboard";
+    const pathParts = pathname.split("/").filter(Boolean);
+    const firstPath = pathParts[0] || "dashboard";
+    const secondPath = pathParts[1];
+
+    // Handle admin routes
+    if (firstPath === "admin") {
+      if (!secondPath) return "admin-dashboard";
+      return `admin-${secondPath}`;
+    }
 
     // Map routes to menu IDs
     const routeMap: Record<string, string> = {
@@ -54,25 +62,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       checkin: "attendance",
       achievements: "achievements",
       settings: "settings",
-      admin: "admin-dashboard",
-      members: "member-management",
     };
 
-    return routeMap[path] || "dashboard";
+    return routeMap[firstPath] || "dashboard";
   };
 
   const handleNavigate = (page: string) => {
+    // Handle admin routes
+    if (page.startsWith("admin-")) {
+      if (page === "admin-dashboard") {
+        router.push("/admin");
+      } else {
+        const adminPage = page.replace("admin-", "");
+        router.push(`/admin/${adminPage}`);
+      }
+      return;
+    }
+
     const navigationMap: Record<string, string> = {
       dashboard: "/dashboard",
       events: "/events",
       attendance: "/attendance",
       achievements: "/achievements",
       settings: "/settings",
-      "admin-dashboard": "/admin",
-      "event-management": "/admin/events",
-      "member-management": "/admin/members",
-      "manual-checkin": "/admin/checkin",
-      "attendance-logs": "/admin/attendance",
     };
 
     const route = navigationMap[page] || `/${page}`;

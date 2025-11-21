@@ -44,6 +44,25 @@ export const api = {
     return response.json();
   },
 
+  getAllMembers: async (token: string) => {
+    const response = await fetch(`${API_URL}/members`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  updateMemberRole: async (token: string, memberId: string, role: string) => {
+    const response = await fetch(`${API_URL}/members/${memberId}/role`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role }),
+    });
+    return response.json();
+  },
+
   // Events
   getEvents: async (token: string) => {
     const response = await fetch(`${API_URL}/events`, {
@@ -133,6 +152,13 @@ export const api = {
     return response.json();
   },
 
+  getAllAttendance: async (token: string) => {
+    const response = await fetch(`${API_URL}/attendance`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
   // Stats
   getMyStats: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/me`, {
@@ -150,6 +176,13 @@ export const api = {
 
   get333Leaderboard: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/leaderboard/333`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  getAdminStats: async (token: string) => {
+    const response = await fetch(`${API_URL}/stats/admin`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.json();

@@ -63,28 +63,28 @@ const menuItems = [
     section: "admin",
   },
   {
-    id: "event-management",
+    id: "admin-events",
     label: "Manage Events",
     icon: Calendar,
     roles: ["admin", "super_admin"],
     section: "admin",
   },
   {
-    id: "member-management",
+    id: "admin-members",
     label: "Manage Members",
     icon: Users,
     roles: ["admin", "super_admin"],
     section: "admin",
   },
   {
-    id: "manual-checkin",
+    id: "admin-checkin",
     label: "Manual Check-In",
     icon: UserCheck,
     roles: ["admin", "super_admin", "officer"],
     section: "admin",
   },
   {
-    id: "attendance-logs",
+    id: "admin-attendance",
     label: "Attendance Logs",
     icon: ClipboardList,
     roles: ["admin", "super_admin"],
@@ -129,18 +129,28 @@ export function Sidebar({
       </div>
 
       {/* User info */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200" suppressHydrationWarning>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#00a651] flex items-center justify-center">
-            <span className="text-white">
+            <span className="text-white" suppressHydrationWarning>
               {userName && userName.length > 0
                 ? userName.charAt(0).toUpperCase()
                 : "M"}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-900 truncate">{userName}</p>
-            <p className="text-xs text-gray-500 capitalize">{userRole}</p>
+            <p
+              className="text-sm text-gray-900 truncate"
+              suppressHydrationWarning
+            >
+              {userName}
+            </p>
+            <p
+              className="text-xs text-gray-500 capitalize"
+              suppressHydrationWarning
+            >
+              {userRole}
+            </p>
           </div>
         </div>
       </div>

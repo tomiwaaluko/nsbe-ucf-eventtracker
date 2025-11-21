@@ -30,4 +30,12 @@ export class StatsController {
     }
     return this.statsService.get333Leaderboard(semester);
   }
+
+  @Get('admin')
+  async getAdminStats(@Query('semester') semester: string) {
+    if (!semester) {
+      semester = 'Fall 2024'; // default
+    }
+    return this.statsService.getAdminStats(semester);
+  }
 }
