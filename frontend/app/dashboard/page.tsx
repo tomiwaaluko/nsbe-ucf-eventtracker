@@ -17,8 +17,8 @@ export default function DashboardPage() {
     gbmAttended: 0,
     communityServiceAttended: 0,
   });
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

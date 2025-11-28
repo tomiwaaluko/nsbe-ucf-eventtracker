@@ -121,8 +121,8 @@ export class AttendanceService {
         event: {
           select: {
             id: true,
-            title: true,
-            type: true,
+            name: true,
+            category: true,
           },
         },
       },
@@ -135,8 +135,8 @@ export class AttendanceService {
       memberName: `${record.member.firstName} ${record.member.lastName}`,
       memberEmail: record.member.email,
       eventId: record.eventId,
-      eventName: record.event.title,
-      eventType: record.event.type,
+      eventName: record.event.name,
+      eventType: record.event.category,
       checkInTime: record.checkedInAt.toISOString(),
       checkInMethod: record.checkInMethod.toUpperCase(),
       checkedInBy: undefined, // We don't track who did manual check-ins yet
