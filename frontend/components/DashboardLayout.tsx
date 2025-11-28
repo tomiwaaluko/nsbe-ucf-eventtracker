@@ -98,7 +98,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen">
       <Sidebar
         currentPage={getCurrentPage()}
         onNavigate={handleNavigate}
@@ -107,8 +107,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onLogout={handleLogout}
       />
 
-      {/* Main content */}
-      <main className="flex-1 lg:ml-72">
+      {/* Main content with gradient background */}
+      <main className="flex-1 bg-gradient-to-br from-[#006830] via-[#008a44] to-[#00a651] overflow-y-auto">
         <div className="p-4 lg:p-8 pt-16 lg:pt-8">{children}</div>
       </main>
     </div>

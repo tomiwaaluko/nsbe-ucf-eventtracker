@@ -1,3 +1,11 @@
+// GitHub Copilot: Restyle the Achievements page to showcase badges and milestones.
+// Requirements:
+// - Use the same NSBE gradient background and glass cards as Login.
+// - Show achievements in a responsive grid of cards with icons/emoji, title, and short description.
+// - Locked vs unlocked should be visually distinct (opacity, grayscale, or overlay).
+// - Add a subtle "pop" animation on hover for unlocked achievements.
+// - Keep achievement data and logic intact; only update Tailwind classes and layout.
+
 import { motion } from "framer-motion";
 import {
   Award,
@@ -8,10 +16,8 @@ import {
   Calendar,
   Users,
   Heart,
+  Sparkles,
 } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Progress } from "./ui/progress";
 
 interface AchievementsPageProps {
   memberData: {
@@ -158,183 +164,278 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
   const lockedAchievements = achievements.filter((a) => !a.unlocked);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#00843D] to-[#006830] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <Trophy className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-white">Achievements</h1>
-                <p className="text-white/90 mt-1">
-                  Track your progress and unlock rewards
-                </p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <p className="text-white/80 text-sm mb-1">Total Events</p>
-                <p className="text-3xl font-bold text-white">
-                  {memberData.totalEvents}
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <p className="text-white/80 text-sm mb-1">Unlocked</p>
-                <p className="text-3xl font-bold text-white">
-                  {unlockedAchievements.length}/{achievements.length}
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <p className="text-white/80 text-sm mb-1">1-1-1</p>
-                <p className="text-3xl font-bold text-white">
-                  {has111 ? "✓" : "—"}
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <p className="text-white/80 text-sm mb-1">3-3-3</p>
-                <p className="text-3xl font-bold text-white">
-                  {has333 ? "✓" : "—"}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
+        {/* Animated orbs */}
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
+        />
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Unlocked Achievements */}
-        {unlockedAchievements.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Unlocked ({unlockedAchievements.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {unlockedAchievements.map((achievement, index) => {
-                const Icon = achievement.icon;
-                return (
-                  <motion.div
-                    key={achievement.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card className="p-6 border-2 border-green-200 bg-gradient-to-br from-white to-green-50 hover:shadow-lg transition-shadow">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`w-14 h-14 bg-gradient-to-br ${achievement.gradient} rounded-xl flex items-center justify-center flex-shrink-0`}
-                        >
-                          <Icon className="w-8 h-8 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900">
-                              {achievement.title}
-                            </h3>
-                            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 ml-2" />
-                          </div>
-                          <p className="text-sm text-gray-600 mb-3">
-                            {achievement.description}
-                          </p>
-                          {achievement.unlockedDate && (
-                            <p className="text-xs text-gray-500">
-                              Unlocked on {achievement.unlockedDate}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+      <div className="relative z-10 p-4 lg:p-8 space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center lg:text-left max-w-7xl mx-auto"
+        >
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 mb-6">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
+              <Trophy className="w-10 h-10 text-white" />
             </div>
-          </div>
-        )}
-
-        {/* Locked Achievements */}
-        {lockedAchievements.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              In Progress ({lockedAchievements.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lockedAchievements.map((achievement, index) => {
-                const Icon = achievement.icon;
-                const hasProgress =
-                  achievement.progress !== undefined &&
-                  achievement.maxProgress !== undefined;
-                const progressPercentage = hasProgress
-                  ? (achievement.progress! / achievement.maxProgress!) * 100
-                  : 0;
-
-                return (
-                  <motion.div
-                    key={achievement.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card className="p-6 border border-gray-200 bg-white hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 relative">
-                          <Icon className="w-8 h-8 text-gray-400" />
-                          <div className="absolute inset-0 bg-white/60 rounded-xl flex items-center justify-center">
-                            <Lock className="w-5 h-5 text-gray-500" />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-700 mb-2">
-                            {achievement.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 mb-3">
-                            {achievement.description}
-                          </p>
-                          {hasProgress && (
-                            <div>
-                              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                                <span>Progress</span>
-                                <span>
-                                  {achievement.progress}/
-                                  {achievement.maxProgress}
-                                </span>
-                              </div>
-                              <Progress
-                                value={progressPercentage}
-                                className="h-2"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* No achievements yet */}
-        {unlockedAchievements.length === 0 &&
-          lockedAchievements.length === 0 && (
-            <div className="text-center py-16">
-              <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No achievements yet
-              </h3>
-              <p className="text-gray-600">
-                Start attending events to unlock achievements!
+            <div className="flex-1">
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
+                <h1 className="text-4xl font-bold text-white">Achievements</h1>
+                <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                  <Sparkles className="w-4 h-4 text-[#ffb81c]" />
+                  <span className="text-sm font-medium text-white">
+                    Track Progress
+                  </span>
+                </div>
+              </div>
+              <p className="text-white/90">
+                Unlock rewards and track your NSBE journey
               </p>
             </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+            >
+              <p className="text-white/80 text-sm mb-1">Total Events</p>
+              <p className="text-3xl font-bold text-white">
+                {memberData.totalEvents}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+            >
+              <p className="text-white/80 text-sm mb-1">Unlocked</p>
+              <p className="text-3xl font-bold text-white">
+                {unlockedAchievements.length}/{achievements.length}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+            >
+              <p className="text-white/80 text-sm mb-1">1-1-1</p>
+              <p className="text-3xl font-bold text-white">
+                {has111 ? "✓" : "—"}
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+            >
+              <p className="text-white/80 text-sm mb-1">3-3-3</p>
+              <p className="text-3xl font-bold text-white">
+                {has333 ? "✓" : "—"}
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Unlocked Achievements */}
+        <div className="max-w-7xl mx-auto space-y-8">
+          {unlockedAchievements.length > 0 && (
+            <div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+                className="flex items-center gap-3 mb-6"
+              >
+                <h2 className="text-2xl font-bold text-white">
+                  Unlocked ({unlockedAchievements.length})
+                </h2>
+                <div className="px-3 py-1 bg-green-500/20 backdrop-blur-sm rounded-full text-green-100 text-sm font-medium border border-green-400/30">
+                  {unlockedAchievements.length}
+                </div>
+              </motion.div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {unlockedAchievements.map((achievement, index) => {
+                  const Icon = achievement.icon;
+                  return (
+                    <motion.div
+                      key={achievement.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border-2 border-green-400/40 shadow-2xl hover:bg-white/20 transition-all duration-300">
+                        <div className="flex items-start gap-4">
+                          <motion.div
+                            whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                            transition={{ duration: 0.5 }}
+                            className={`w-14 h-14 bg-gradient-to-br ${achievement.gradient} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg`}
+                          >
+                            <Icon className="w-8 h-8 text-white" />
+                          </motion.div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="font-semibold text-white">
+                                {achievement.title}
+                              </h3>
+                              <CheckCircle2 className="w-5 h-5 text-green-300 flex-shrink-0 ml-2" />
+                            </div>
+                            <p className="text-sm text-white/80 mb-3">
+                              {achievement.description}
+                            </p>
+                            {achievement.unlockedDate && (
+                              <p className="text-xs text-white/60">
+                                Unlocked on {achievement.unlockedDate}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
           )}
+
+          {/* Locked Achievements */}
+          {lockedAchievements.length > 0 && (
+            <div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.8, duration: 0.5 }}
+                className="flex items-center gap-3 mb-6"
+              >
+                <h2 className="text-2xl font-bold text-white">
+                  In Progress ({lockedAchievements.length})
+                </h2>
+                <div className="px-3 py-1 bg-gray-500/20 backdrop-blur-sm rounded-full text-gray-100 text-sm font-medium border border-gray-400/30">
+                  {lockedAchievements.length}
+                </div>
+              </motion.div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {lockedAchievements.map((achievement, index) => {
+                  const Icon = achievement.icon;
+                  const hasProgress =
+                    achievement.progress !== undefined &&
+                    achievement.maxProgress !== undefined;
+                  const progressPercentage = hasProgress
+                    ? (achievement.progress! / achievement.maxProgress!) * 100
+                    : 0;
+
+                  return (
+                    <motion.div
+                      key={achievement.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
+                    >
+                      <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300 opacity-80">
+                        <div className="flex items-start gap-4">
+                          <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 relative">
+                            <Icon className="w-8 h-8 text-white/40" />
+                            <div className="absolute inset-0 bg-white/20 rounded-xl flex items-center justify-center">
+                              <Lock className="w-5 h-5 text-white/60" />
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-white/90 mb-2">
+                              {achievement.title}
+                            </h3>
+                            <p className="text-sm text-white/70 mb-3">
+                              {achievement.description}
+                            </p>
+                            {hasProgress && (
+                              <div>
+                                <div className="flex items-center justify-between text-xs text-white/60 mb-2">
+                                  <span>Progress</span>
+                                  <span>
+                                    {achievement.progress}/
+                                    {achievement.maxProgress}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{
+                                      width: `${progressPercentage}%`,
+                                    }}
+                                    transition={{
+                                      delay: 1 + index * 0.1,
+                                      duration: 0.8,
+                                      ease: "easeOut",
+                                    }}
+                                    className="h-full bg-gradient-to-r from-[#00a651] to-[#ffb81c] rounded-full"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* No achievements yet */}
+          {unlockedAchievements.length === 0 &&
+            lockedAchievements.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="bg-white/10 backdrop-blur-xl rounded-2xl p-16 border border-white/20 shadow-2xl text-center"
+              >
+                <Trophy className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  No achievements yet
+                </h3>
+                <p className="text-white/80">
+                  Start attending events to unlock achievements!
+                </p>
+              </motion.div>
+            )}
+        </div>
       </div>
     </div>
   );

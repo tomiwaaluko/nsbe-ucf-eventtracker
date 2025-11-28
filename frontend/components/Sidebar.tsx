@@ -114,92 +114,81 @@ export function Sidebar({
     item.roles.includes(userRole)
   );
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-            <Image
-              src="/nsbe-logo.png"
-              alt="NSBE Logo"
-              width={40}
-              height={40}
-              className="object-contain"
-            />
-          </div>
-          <div>
-            <h3 className="text-gray-900">NSBE UCF</h3>
-            <p className="text-xs text-gray-500">Event Tracker</p>
-          </div>
-        </div>
-      </div>
+  return (
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-[#00a651] to-[#008a44] rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105"
+        aria-label="Toggle menu"
+      >
+        {isOpen ? (
+          <X className="w-6 h-6 text-white" />
+        ) : (
+          <Menu className="w-6 h-6 text-white" />
+        )}
+      </button>
 
-      {/* User info */}
-      <div className="p-4 border-b border-gray-200" suppressHydrationWarning>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#00a651] flex items-center justify-center">
-            <span className="text-white" suppressHydrationWarning>
-              {userName && userName.length > 0
-                ? userName.charAt(0).toUpperCase()
-                : "M"}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-sm text-gray-900 truncate"
-              suppressHydrationWarning
-            >
-              {userName}
-            </p>
-            <p
-              className="text-xs text-gray-500 capitalize"
-              suppressHydrationWarning
-            >
-              {userRole}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {/* Main Section */}
-        {filteredMenuItems
-          .filter((item) => item.section === "main")
-          .map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onNavigate(item.id);
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-[#00a651] text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-
-        {/* Admin Section */}
-        {filteredMenuItems.some((item) => item.section === "admin") && (
-          <>
-            <div className="pt-4 pb-2 px-2">
-              <p className="text-xs uppercase tracking-wider text-gray-500">
-                Administration
-              </p>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-80 bg-white border-r border-gray-200 flex-col h-screen sticky top-0">
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/nsbe-logo.png"
+                  alt="NSBE Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
+              </div>
+              <div>
+                <h3 className="text-gray-900 font-semibold">NSBE UCF</h3>
+                <p className="text-xs text-gray-500">Event Tracker</p>
+              </div>
             </div>
+          </div>
+
+          {/* User info */}
+          <div
+            className="p-4 border-b border-gray-200"
+            suppressHydrationWarning
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00a651] to-[#008a44] flex items-center justify-center">
+                <span
+                  className="text-white font-semibold text-sm"
+                  suppressHydrationWarning
+                >
+                  {userName && userName.length > 0
+                    ? userName.charAt(0).toUpperCase()
+                    : "M"}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-sm font-medium text-gray-900 truncate"
+                  suppressHydrationWarning
+                >
+                  {userName}
+                </p>
+                <p
+                  className="text-xs text-gray-500 capitalize"
+                  suppressHydrationWarning
+                >
+                  {userRole}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            {/* Main Section */}
             {filteredMenuItems
-              .filter((item) => item.section === "admin")
+              .filter((item) => item.section === "main")
               .map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -211,54 +200,71 @@ export function Sidebar({
                       onNavigate(item.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? "bg-[#00a651] text-white"
+                        ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span>{item.label}</span>
+                    <span className="font-medium">{item.label}</span>
                   </button>
                 );
               })}
-          </>
-        )}
-      </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <button
-          onClick={() => {
-            if (onLogout) {
-              onLogout();
-            } else {
-              console.log("Logout");
-            }
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
-        </button>
-      </div>
-    </div>
-  );
+            {/* Admin Section */}
+            {filteredMenuItems.some((item) => item.section === "admin") && (
+              <>
+                <div className="pt-4 pb-2 px-2">
+                  <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                    Administration
+                  </p>
+                </div>
+                {filteredMenuItems
+                  .filter((item) => item.section === "admin")
+                  .map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.id;
 
-  return (
-    <>
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-        aria-label="Toggle menu"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onNavigate(item.id);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                          isActive
+                            ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+              </>
+            )}
+          </nav>
 
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-72 bg-white border-r border-gray-200 flex-col fixed left-0 top-0 h-screen z-40">
-        <SidebarContent />
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                if (onLogout) {
+                  onLogout();
+                } else {
+                  console.log("Logout");
+                }
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Mobile sidebar */}
@@ -280,9 +286,144 @@ export function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="lg:hidden fixed left-0 top-0 h-screen w-72 bg-white z-50 shadow-xl"
+              className="lg:hidden fixed left-0 top-0 h-screen w-80 bg-white z-50 shadow-xl"
             >
-              <SidebarContent />
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                      <Image
+                        src="/nsbe-logo.png"
+                        alt="NSBE Logo"
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 font-semibold">NSBE UCF</h3>
+                      <p className="text-xs text-gray-500">Event Tracker</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User info */}
+                <div
+                  className="p-4 border-b border-gray-200"
+                  suppressHydrationWarning
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00a651] to-[#008a44] flex items-center justify-center">
+                      <span
+                        className="text-white font-semibold text-sm"
+                        suppressHydrationWarning
+                      >
+                        {userName && userName.length > 0
+                          ? userName.charAt(0).toUpperCase()
+                          : "M"}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-sm font-medium text-gray-900 truncate"
+                        suppressHydrationWarning
+                      >
+                        {userName}
+                      </p>
+                      <p
+                        className="text-xs text-gray-500 capitalize"
+                        suppressHydrationWarning
+                      >
+                        {userRole}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                  {/* Main Section */}
+                  {filteredMenuItems
+                    .filter((item) => item.section === "main")
+                    .map((item) => {
+                      const Icon = item.icon;
+                      const isActive = currentPage === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            onNavigate(item.id);
+                            setIsOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                            isActive
+                              ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <span className="font-medium">{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                  {/* Admin Section */}
+                  {filteredMenuItems.some(
+                    (item) => item.section === "admin"
+                  ) && (
+                    <>
+                      <div className="pt-4 pb-2 px-2">
+                        <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                          Administration
+                        </p>
+                      </div>
+                      {filteredMenuItems
+                        .filter((item) => item.section === "admin")
+                        .map((item) => {
+                          const Icon = item.icon;
+                          const isActive = currentPage === item.id;
+
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                onNavigate(item.id);
+                                setIsOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                                isActive
+                                  ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
+                                  : "text-gray-700 hover:bg-gray-100"
+                              }`}
+                            >
+                              <Icon className="w-5 h-5 flex-shrink-0" />
+                              <span className="font-medium">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                    </>
+                  )}
+                </nav>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      if (onLogout) {
+                        onLogout();
+                      } else {
+                        console.log("Logout");
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-medium">Logout</span>
+                  </button>
+                </div>
+              </div>
             </motion.aside>
           </>
         )}

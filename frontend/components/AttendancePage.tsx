@@ -1,8 +1,16 @@
+// GitHub Copilot: Redesign this Check-In page to feel like a focused, modern CTA.
+// Requirements:
+// - Match the Login page style (gradient + glass card).
+// - Feature one primary card with a bold "Check In" title and description.
+// - If using QR scanning, highlight the scan area with a subtle glow/border animation.
+// - If using code entry, make a large input + prominent "Check In" button.
+// - Add a small "Recent check-ins" list below in a secondary glass card.
+// - Do not change the check-in logic, just the layout and Tailwind classes.
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   QrCode,
-  Calendar,
   MapPin,
   Clock,
   CheckCircle2,
@@ -10,10 +18,6 @@ import {
   Camera,
   X,
 } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Html5Qrcode } from "html5-qrcode";
 
 interface AttendancePageProps {
@@ -208,53 +212,96 @@ export function AttendancePage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#00a651] to-[#008a44]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
+        {/* Animated orbs */}
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 p-4 lg:p-8 space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-4xl mx-auto"
+        >
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-lg rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
+              <QrCode className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl lg:text-5xl font-bold text-white">
+              Check In
+            </h1>
+          </div>
+          <p className="text-white/90 text-lg">
+            Scan the event QR code to check in and track your progress
+          </p>
+        </motion.div>
+
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* QR Code Scanner */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center"
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 lg:p-12 border border-white/20 shadow-2xl"
           >
-            <div className="w-20 h-20 bg-white/10 backdrop-blur-lg rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/20">
-              <QrCode className="w-12 h-12 text-white" />
-            </div>
-            <h1 className="text-5xl font-bold text-white mb-3">Check In</h1>
-            <p className="text-white/90 text-lg">
-              Scan the event QR code to check in
-            </p>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-        {/* QR Code Scanner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="bg-white shadow-2xl border-0 overflow-hidden">
-            <div className="p-8 lg:p-12">
+            <div>
               {!isCameraActive ? (
                 <div className="max-w-lg mx-auto text-center">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
+                    transition={{ delay: 0.3 }}
                     className="relative mb-8"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] to-[#008a44] rounded-3xl blur-2xl opacity-20"></div>
-                    <div className="relative w-40 h-40 bg-gradient-to-br from-[#00a651] to-[#008a44] rounded-3xl mx-auto flex items-center justify-center shadow-lg">
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.3, 0.5, 0.3],
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-0 bg-[#ffb81c] rounded-3xl blur-2xl"
+                    />
+                    <div className="relative w-40 h-40 bg-white/20 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center shadow-2xl border border-white/30">
                       <QrCode className="w-24 h-24 text-white" />
                     </div>
                   </motion.div>
 
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                  <h2 className="text-3xl font-bold text-white mb-3">
                     Ready to Scan
                   </h2>
-                  <p className="text-gray-600 text-lg mb-8">
+                  <p className="text-white/90 text-lg mb-8">
                     Click below to open your camera and scan the event QR code
                   </p>
 
@@ -262,42 +309,46 @@ export function AttendancePage({
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg"
+                      className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 rounded-xl"
                     >
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                        <p className="text-red-700 text-sm font-medium">
+                        <AlertCircle className="w-5 h-5 text-red-200 mt-0.5" />
+                        <p className="text-red-100 text-sm font-medium">
                           {scanError}
                         </p>
                       </div>
                     </motion.div>
                   )}
 
-                  <Button
+                  <motion.button
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+                    }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={startCamera}
-                    size="lg"
-                    className="w-full bg-gradient-to-r from-[#00a651] to-[#008a44] hover:from-[#008a44] hover:to-[#00a651] text-white shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg"
+                    className="w-full bg-white text-[#00a651] py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2"
                   >
-                    <Camera className="w-5 h-5 mr-2" />
+                    <Camera className="w-5 h-5" />
                     Open Camera to Scan
-                  </Button>
+                  </motion.button>
 
                   {activeEvents.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="mt-8 p-5 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl"
+                      transition={{ delay: 0.4 }}
+                      className="mt-8 p-5 bg-green-500/20 backdrop-blur-sm border-2 border-green-400/40 rounded-2xl shadow-lg"
                     >
                       <div className="flex items-center gap-3 justify-center">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
                           <CheckCircle2 className="w-6 h-6 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="text-sm text-green-700 font-medium">
+                          <p className="text-sm text-green-100 font-medium">
                             Event Active Now
                           </p>
-                          <p className="text-base font-semibold text-green-900">
+                          <p className="text-base font-semibold text-white">
                             {activeEvents[0].name}
                           </p>
                         </div>
@@ -309,107 +360,123 @@ export function AttendancePage({
                 <div className="max-w-lg mx-auto">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#00a651] to-[#008a44] rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30">
                         <Camera className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900">
+                        <h2 className="text-xl font-bold text-white">
                           Scanning Active
                         </h2>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-white/80">
                           Position QR code in frame
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={stopCamera}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="px-4 py-2 text-red-100 hover:text-white bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-400/30 transition-all flex items-center gap-1"
                     >
-                      <X className="w-4 h-4 mr-1" />
+                      <X className="w-4 h-4" />
                       Close
-                    </Button>
+                    </motion.button>
                   </div>
 
                   <div className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-br from-[#00a651]/20 to-[#008a44]/20 rounded-3xl blur-xl"></div>
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.05, 1],
+                        opacity: [0.3, 0.5, 0.3],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute -inset-4 bg-[#ffb81c] rounded-3xl blur-xl"
+                    />
                     <div
                       id="qr-reader"
                       ref={scannerElementRef}
-                      className="relative rounded-2xl overflow-hidden border-4 border-[#00a651] shadow-2xl min-h-[350px]"
+                      className="relative rounded-2xl overflow-hidden border-4 border-white/40 shadow-2xl min-h-[350px]"
                     ></div>
                   </div>
 
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-sm text-blue-900 font-medium text-center">
+                  <div className="mt-6 p-4 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl">
+                    <p className="text-sm text-white font-medium text-center">
                       💡 Hold your device steady and ensure good lighting
                     </p>
                   </div>
                 </div>
               )}
             </div>
-          </Card>
-        </motion.div>
+          </motion.div>
 
-        {/* Today's Events */}
-        {todayEvents.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-8"
-          >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-              Today's Events
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {todayEvents.map((event, index) => {
-                const config = categoryConfig[event.category];
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
-                    <Card className="p-6 bg-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                      <div className="mb-4">
-                        <Badge className={`${config.color} text-sm px-3 py-1`}>
-                          {config.icon} {config.label}
-                        </Badge>
-                      </div>
-                      <h3 className="font-bold text-lg text-gray-900 mb-4">
-                        {event.name}
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Clock className="w-4 h-4 text-blue-600" />
+          {/* Today's Events */}
+          {todayEvents.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="space-y-6"
+            >
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Today&apos;s Events
+                </h2>
+                <p className="text-white/80">Events happening today</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {todayEvents.map((event, index) => {
+                  const config = categoryConfig[event.category];
+                  return (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
+                      whileHover={{ y: -5 }}
+                    >
+                      <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300">
+                        <div className="mb-4">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 text-sm text-white font-medium">
+                            <span>{config.icon}</span>
+                            <span>{config.label}</span>
                           </div>
-                          <span className="font-medium">
-                            {formatTime(event.startTime)} -{" "}
-                            {formatTime(event.endTime)}
-                          </span>
                         </div>
-                        {event.location && (
-                          <div className="flex items-center gap-3 text-sm text-gray-600">
-                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                              <MapPin className="w-4 h-4 text-purple-600" />
+                        <h3 className="font-bold text-lg text-white mb-4">
+                          {event.name}
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 text-sm text-white/90">
+                            <div className="w-8 h-8 bg-blue-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center border border-blue-400/30">
+                              <Clock className="w-4 h-4 text-blue-200" />
                             </div>
                             <span className="font-medium">
-                              {event.location}
+                              {formatTime(event.startTime)} -{" "}
+                              {formatTime(event.endTime)}
                             </span>
                           </div>
-                        )}
+                          {event.location && (
+                            <div className="flex items-center gap-3 text-sm text-white/90">
+                              <div className="w-8 h-8 bg-purple-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center border border-purple-400/30">
+                                <MapPin className="w-4 h-4 text-purple-200" />
+                              </div>
+                              <span className="font-medium">
+                                {event.location}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );
