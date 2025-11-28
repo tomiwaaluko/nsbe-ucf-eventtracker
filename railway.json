@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd backend && npm install && npx prisma generate && node node_modules/@nestjs/cli/bin/nest.js build"
+    "buildCommand": "cd backend && npm install && npx prisma generate && npm run build"
   },
   "deploy": {
     "startCommand": "cd backend && npm run start:prod",
