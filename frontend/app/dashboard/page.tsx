@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { api } from "@/lib/api";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function DashboardPage() {
     gbmAttended: 0,
     communityServiceAttended: 0,
   });
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,9 +40,20 @@ export default function DashboardPage() {
       }));
     }
 
-    // TODO: Fetch real data from API
-    // For now, using mock data
-    setIsLoading(false);
+    // Fetch attendance records
+    const fetchData = async () => {
+      try {
+        const records = await api.getMyAttendance(token);
+        setAttendanceRecords(Array.isArray(records) ? records : []);
+      } catch (error) {
+        console.error("Failed to fetch attendance:", error);
+        setAttendanceRecords([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, [router]);
 
   const handleViewEvent = (eventId: string) => {
@@ -65,6 +78,7 @@ export default function DashboardPage() {
     <DashboardLayout>
       <Dashboard
         memberData={memberData}
+        attendanceRecords={attendanceRecords}
         upcomingEvents={upcomingEvents}
         onViewEvent={handleViewEvent}
         onNavigate={handleNavigate}

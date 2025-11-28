@@ -18,6 +18,7 @@ export default function AdminPage() {
     membersWithOneOneOne: 0,
     membersWithThreeThreeThree: 0,
   });
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,11 +30,16 @@ export default function AdminPage() {
           return;
         }
 
-        const adminStats = await api.getAdminStats(token);
+        const [adminStats, allAttendance] = await Promise.all([
+          api.getAdminStats(token),
+          api.getAllAttendance(token),
+        ]);
+
         setStats(adminStats);
+        setAttendanceRecords(Array.isArray(allAttendance) ? allAttendance : []);
       } catch (error) {
-        console.error("Failed to fetch admin stats:", error);
-        // Fallback to mock data if API fails
+        console.error("Failed to fetch admin data:", error);
+        // Fallback to empty data if API fails
         setStats({
           totalMembers: 0,
           activeMembers: 0,
@@ -44,6 +50,7 @@ export default function AdminPage() {
           membersWithOneOneOne: 0,
           membersWithThreeThreeThree: 0,
         });
+        setAttendanceRecords([]);
       } finally {
         setLoading(false);
       }
@@ -67,7 +74,11 @@ export default function AdminPage() {
 
   return (
     <DashboardLayout>
-      <AdminDashboard stats={stats} onNavigate={handleNavigate} />
+      <AdminDashboard
+        stats={stats}
+        attendanceRecords={attendanceRecords}
+        onNavigate={handleNavigate}
+      />
     </DashboardLayout>
   );
 }

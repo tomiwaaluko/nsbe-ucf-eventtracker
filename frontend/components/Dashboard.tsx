@@ -1,10 +1,18 @@
-import { Calendar, Users, Award, TrendingUp } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Award,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { ProgressCard } from "./ProgressCard";
 import { ProgressRing } from "./ProgressRing";
 import { AchievementBadge } from "./AchievementBadge";
 import { EventCard } from "./EventCard";
 import { Button } from "./ui/button";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -13,10 +21,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from "recharts";
 
 interface DashboardProps {
@@ -29,6 +33,7 @@ interface DashboardProps {
     gbmAttended: number;
     communityServiceAttended: number;
   };
+  attendanceRecords: any[];
   upcomingEvents: any[];
   onViewEvent: (eventId: string) => void;
   onNavigate: (page: string) => void;
@@ -36,10 +41,13 @@ interface DashboardProps {
 
 export function Dashboard({
   memberData,
+  attendanceRecords,
   upcomingEvents,
   onViewEvent,
   onNavigate,
 }: DashboardProps) {
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+
   // Calculate progress
   const workshopProgress = (memberData.workshopsAttended / 3) * 100;
   const gbmProgress = (memberData.gbmAttended / 3) * 100;
@@ -62,20 +70,6 @@ export function Dashboard({
     memberData.communityServiceAttended >= 3;
 
   // Chart data
-  const categoryData = [
-    {
-      name: "Workshops",
-      value: memberData.workshopsAttended,
-      color: "#ffb81c",
-    },
-    { name: "GBMs", value: memberData.gbmAttended, color: "#00a651" },
-    {
-      name: "Community",
-      value: memberData.communityServiceAttended,
-      color: "#ed1c24",
-    },
-  ];
-
   const progressData = [
     { category: "Workshops", current: memberData.workshopsAttended, target: 3 },
     { category: "GBMs", current: memberData.gbmAttended, target: 3 },
@@ -85,6 +79,55 @@ export function Dashboard({
       target: 3,
     },
   ];
+
+  // Activity heatmap data - generate from actual attendance records
+  const months = [
+    "August 2024",
+    "September 2024",
+    "October 2024",
+    "November 2024",
+    "December 2024",
+  ];
+
+  const allHeatmapData = useMemo(() => {
+    const daysInMonth = [31, 30, 31, 30, 31];
+    const monthNames = [
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Create a Set of dates when user attended events
+    const attendedDates = new Set(
+      attendanceRecords.map((record) => {
+        const date = new Date(record.checkedInAt);
+        return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      })
+    );
+
+    return months.map((month, monthIndex) => {
+      const data = [];
+      const numDays = daysInMonth[monthIndex];
+      const monthNumber = 8 + monthIndex; // August = 8, September = 9, etc.
+
+      for (let day = 1; day <= numDays; day++) {
+        const dateKey = `2024-${monthNumber}-${day}`;
+        const hasEvent = attendedDates.has(dateKey) ? 1 : 0;
+        data.push({
+          day,
+          hasEvent,
+          date: `${monthNames[monthIndex]} ${day}`,
+        });
+      }
+      return data;
+    });
+  }, [attendanceRecords]);
+
+  const getHeatmapColor = (hasEvent: number) => {
+    return hasEvent === 1 ? "#00a651" : "#e5e7eb";
+  };
 
   // Dynamic encouragement message based on total events
   const getEncouragementMessage = () => {
@@ -209,30 +252,74 @@ export function Dashboard({
           </ResponsiveContainer>
         </div>
 
-        {/* Pie chart */}
+        {/* Activity Heatmap */}
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <h4 className="text-gray-900 mb-4">Event Distribution</h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name}: ${((percent || 0) * 100).toFixed(0)}%`
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-gray-900">My Event Activity</h4>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
                 }
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
+                disabled={currentMonthIndex === 0}
+                className="h-8 w-8 p-0"
               >
-                {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-gray-600 min-w-[120px] text-center">
+                {months[currentMonthIndex]}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setCurrentMonthIndex(
+                    Math.min(months.length - 1, currentMonthIndex + 1)
+                  )
+                }
+                disabled={currentMonthIndex === months.length - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-7 gap-x-0.5 gap-y-2">
+              {allHeatmapData[currentMonthIndex].map((item) => (
+                <div
+                  key={item.day}
+                  className="w-20 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#00a651]"
+                  style={{
+                    backgroundColor: getHeatmapColor(item.hasEvent),
+                  }}
+                  title={`${item.date}: ${
+                    item.hasEvent ? "Event attended" : "No event"
+                  }`}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-gray-600">
+                      {item.day}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-[#e5e7eb]" />
+                <span className="text-xs text-gray-600">No event</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-[#00a651]" />
+                <span className="text-xs text-gray-600">Event attended</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

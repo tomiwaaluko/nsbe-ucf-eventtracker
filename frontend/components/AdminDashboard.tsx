@@ -1,6 +1,14 @@
-import { Users, Calendar, UserCheck, Activity } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  UserCheck,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { Button } from "./ui/button";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -27,10 +35,17 @@ interface AdminDashboardProps {
     membersWithOneOneOne: number;
     membersWithThreeThreeThree: number;
   };
+  attendanceRecords: any[];
   onNavigate: (page: string) => void;
 }
 
-export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
+export function AdminDashboard({
+  stats,
+  attendanceRecords,
+  onNavigate,
+}: AdminDashboardProps) {
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+
   // Growth data (mock - would come from real data)
   const memberGrowthData = [
     { month: "Aug", members: 45 },
@@ -53,6 +68,56 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
     { name: "GBMs", value: 38, color: "#00a651" },
     { name: "Community Service", value: 32, color: "#ed1c24" },
   ];
+
+  // Activity heatmap data - generate from actual attendance records across all members
+  const months = [
+    "August 2024",
+    "September 2024",
+    "October 2024",
+    "November 2024",
+    "December 2024",
+  ];
+
+  // Generate all heatmap data once using useMemo
+  const allHeatmapData = useMemo(() => {
+    const daysInMonth = [31, 30, 31, 30, 31];
+    const monthNames = [
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Create a Set of dates when any member attended events
+    const attendedDates = new Set(
+      attendanceRecords.map((record) => {
+        const date = new Date(record.checkedInAt);
+        return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      })
+    );
+
+    return months.map((month, monthIndex) => {
+      const data = [];
+      const numDays = daysInMonth[monthIndex];
+      const monthNumber = 8 + monthIndex; // August = 8, September = 9, etc.
+
+      for (let day = 1; day <= numDays; day++) {
+        const dateKey = `2024-${monthNumber}-${day}`;
+        const hasEvent = attendedDates.has(dateKey) ? 1 : 0;
+        data.push({
+          day,
+          hasEvent,
+          date: `${monthNames[monthIndex]} ${day}`,
+        });
+      }
+      return data;
+    });
+  }, [attendanceRecords]);
+
+  const getHeatmapColor = (hasEvent: number) => {
+    return hasEvent === 1 ? "#00a651" : "#e5e7eb";
+  };
 
   const recentActivityData = [
     {
@@ -225,7 +290,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
         </div>
       </div>
 
-      {/* Event Type Distribution & Recent Activity */}
+      {/* Event Distribution & Activity Heatmap */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Event Type Distribution */}
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
@@ -237,7 +302,7 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={(entry) =>
+                label={(entry: { name: string; percent?: number }) =>
                   `${entry.name}: ${((entry.percent || 0) * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
@@ -253,58 +318,128 @@ export function AdminDashboard({ stats, onNavigate }: AdminDashboardProps) {
           </ResponsiveContainer>
         </div>
 
-        {/* Recent Activity */}
+        {/* Activity Heatmap */}
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-gray-900">Recent Events</h4>
-            <Button variant="ghost" onClick={() => onNavigate("admin-events")}>
-              View All
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {recentActivityData.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border border-gray-200"
+            <h4 className="text-gray-900">Event Activity</h4>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
+                }
+                disabled={currentMonthIndex === 0}
+                className="h-8 w-8 p-0"
               >
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{activity.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className="text-xs px-2 py-1 rounded"
-                      style={{
-                        backgroundColor:
-                          activity.type === "Workshop"
-                            ? "#ffb81c20"
-                            : activity.type === "GBM"
-                            ? "#00a65120"
-                            : "#ed1c2420",
-                        color:
-                          activity.type === "Workshop"
-                            ? "#ffb81c"
-                            : activity.type === "GBM"
-                            ? "#00a651"
-                            : "#ed1c24",
-                      }}
-                    >
-                      {activity.type}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {activity.date}
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-gray-600 min-w-[120px] text-center">
+                {months[currentMonthIndex]}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setCurrentMonthIndex(
+                    Math.min(months.length - 1, currentMonthIndex + 1)
+                  )
+                }
+                disabled={currentMonthIndex === months.length - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* Heatmap Grid */}
+            <div className="grid grid-cols-7 gap-x-0.5 gap-y-1">
+              {allHeatmapData[currentMonthIndex].map((item) => (
+                <div
+                  key={item.day}
+                  className="w-10 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#00a651]"
+                  style={{
+                    backgroundColor: getHeatmapColor(item.hasEvent),
+                  }}
+                  title={`${item.date}: ${
+                    item.hasEvent ? "Event attended" : "No event"
+                  }`}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-gray-600">
+                      {item.day}
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1">
-                    <UserCheck className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {activity.attendees}
-                    </span>
-                  </div>
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-[#e5e7eb]" />
+                <span className="text-xs text-gray-600">No event</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-[#00a651]" />
+                <span className="text-xs text-gray-600">Event attended</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-gray-900">Recent Events</h4>
+          <Button variant="ghost" onClick={() => onNavigate("admin-events")}>
+            View All
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {recentActivityData.map((activity, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border border-gray-200"
+            >
+              <div className="flex-1">
+                <p className="text-sm text-gray-900">{activity.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className="text-xs px-2 py-1 rounded"
+                    style={{
+                      backgroundColor:
+                        activity.type === "Workshop"
+                          ? "#ffb81c20"
+                          : activity.type === "GBM"
+                          ? "#00a65120"
+                          : "#ed1c2420",
+                      color:
+                        activity.type === "Workshop"
+                          ? "#ffb81c"
+                          : activity.type === "GBM"
+                          ? "#00a651"
+                          : "#ed1c24",
+                    }}
+                  >
+                    {activity.type}
+                  </span>
+                  <span className="text-xs text-gray-500">{activity.date}</span>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="text-right">
+                <div className="flex items-center gap-1">
+                  <UserCheck className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    {activity.attendees}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
