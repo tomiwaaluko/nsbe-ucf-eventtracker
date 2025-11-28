@@ -51,4 +51,13 @@ export class AttendanceController {
     }
     return this.attendanceService.getEventAttendance(eventId);
   }
+
+  @Get()
+  async getAllAttendance(@Req() req, @Query('semester') semester?: string) {
+    const member = await this.membersService.findMe(req.user.id);
+    if (!member || !isAdmin(member.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
+    return this.attendanceService.getAllAttendance(semester);
+  }
 }

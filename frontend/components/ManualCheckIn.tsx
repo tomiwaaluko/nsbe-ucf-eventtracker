@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Search, UserCheck, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Search,
+  UserCheck,
+  Calendar,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -31,10 +37,18 @@ interface Event {
 interface ManualCheckInProps {
   members: Member[];
   events: Event[];
-  onCheckIn: (memberId: string, eventId: string, officerName: string) => Promise<{ success: boolean; message: string }>;
+  onCheckIn: (
+    memberId: string,
+    eventId: string,
+    officerName: string
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
-export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps) {
+export function ManualCheckIn({
+  members,
+  events,
+  onCheckIn,
+}: ManualCheckInProps) {
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<string>("");
@@ -93,7 +107,7 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedEvent || !selectedMember || !officerName.trim()) {
       setResult({
         success: false,
@@ -106,9 +120,13 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
     setResult(null);
 
     try {
-      const response = await onCheckIn(selectedMember, selectedEvent, officerName);
+      const response = await onCheckIn(
+        selectedMember,
+        selectedEvent,
+        officerName
+      );
       setResult(response);
-      
+
       if (response.success) {
         // Reset form on success
         setSelectedMember("");
@@ -149,7 +167,7 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Select Event */}
-                <Card className="p-6">
+                <Card className="p-6 bg-white">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-[#00a651] bg-opacity-10 rounded-lg">
                       <Calendar className="w-5 h-5 text-[#00a651]" />
@@ -166,7 +184,10 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                     <Label htmlFor="event">
                       Event <span className="text-red-500">*</span>
                     </Label>
-                    <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                    <Select
+                      value={selectedEvent}
+                      onValueChange={setSelectedEvent}
+                    >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select an event" />
                       </SelectTrigger>
@@ -177,10 +198,14 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                               <div
                                 className="w-2 h-2 rounded-full"
                                 style={{
-                                  backgroundColor: getEventTypeColor(event.eventType),
+                                  backgroundColor: getEventTypeColor(
+                                    event.eventType
+                                  ),
                                 }}
                               />
-                              <span>{event.name}</span>
+                              <span className="text-gray-900">
+                                {event.name}
+                              </span>
                               <span className="text-xs text-gray-500">
                                 • {formatDate(event.date)}
                               </span>
@@ -198,13 +223,15 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                               backgroundColor: `${getEventTypeColor(
                                 selectedEventData.eventType
                               )}20`,
-                              color: getEventTypeColor(selectedEventData.eventType),
+                              color: getEventTypeColor(
+                                selectedEventData.eventType
+                              ),
                             }}
                           >
                             {getEventTypeLabel(selectedEventData.eventType)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-900">
                           {selectedEventData.location}
                         </p>
                       </div>
@@ -213,7 +240,7 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                 </Card>
 
                 {/* Select Member */}
-                <Card className="p-6">
+                <Card className="p-6 bg-white">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-[#ffb81c] bg-opacity-10 rounded-lg">
                       <Search className="w-5 h-5 text-[#ffb81c]" />
@@ -256,7 +283,9 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                                 type="button"
                                 onClick={() => handleMemberSelect(member.id)}
                                 className={`w-full p-3 text-left hover:bg-gray-50 transition-colors ${
-                                  selectedMember === member.id ? "bg-[#00a651] bg-opacity-10" : ""
+                                  selectedMember === member.id
+                                    ? "bg-[#00a651] bg-opacity-10"
+                                    : ""
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
@@ -286,7 +315,7 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                 </Card>
 
                 {/* Officer Information */}
-                <Card className="p-6">
+                <Card className="p-6 bg-white">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-[#ed1c24] bg-opacity-10 rounded-lg">
                       <UserCheck className="w-5 h-5 text-[#ed1c24]" />
@@ -317,7 +346,12 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                 {/* Submit Button */}
                 <Button
                   type="submit"
-                  disabled={!selectedEvent || !selectedMember || !officerName || isSubmitting}
+                  disabled={
+                    !selectedEvent ||
+                    !selectedMember ||
+                    !officerName ||
+                    isSubmitting
+                  }
                   className="w-full bg-[#00a651] hover:bg-[#008a44] text-white h-12"
                 >
                   {isSubmitting ? (
@@ -339,8 +373,8 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                 <Card
                   className={`p-6 border-2 ${
                     result.success
-                      ? "bg-green-50 border-green-200"
-                      : "bg-red-50 border-red-200"
+                      ? "bg-green-50 border-green-200 dark:bg-green-50"
+                      : "bg-red-50 border-red-200 dark:bg-red-50"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -355,9 +389,13 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
                     )}
                     <div>
                       <h4
-                        className={result.success ? "text-green-900" : "text-red-900"}
+                        className={
+                          result.success ? "text-green-900" : "text-red-900"
+                        }
                       >
-                        {result.success ? "Check-In Successful!" : "Check-In Failed"}
+                        {result.success
+                          ? "Check-In Successful!"
+                          : "Check-In Failed"}
                       </h4>
                       <p
                         className={`text-sm mt-1 ${
@@ -372,7 +410,7 @@ export function ManualCheckIn({ members, events, onCheckIn }: ManualCheckInProps
               )}
 
               {/* Instructions */}
-              <Card className="p-6">
+              <Card className="p-6 bg-white">
                 <h4 className="text-gray-900 mb-4">Instructions</h4>
                 <ol className="space-y-3">
                   <li className="flex gap-3">

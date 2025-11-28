@@ -99,4 +99,47 @@ export class AttendanceService {
       orderBy: { checkedInAt: 'desc' },
     });
   }
+
+  async getAllAttendance(semester?: string) {
+    const records = await this.prisma.attendance.findMany({
+      where: semester
+        ? {
+            event: {
+              semester,
+            },
+          }
+        : {},
+      include: {
+        member: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+          },
+        },
+      },
+      orderBy: { checkedInAt: 'desc' },
+    });
+
+    return records.map((record) => ({
+      id: record.id,
+      memberId: record.memberId,
+      memberName: `${record.member.firstName} ${record.member.lastName}`,
+      memberEmail: record.member.email,
+      eventId: record.eventId,
+      eventName: record.event.title,
+      eventType: record.event.type,
+      checkInTime: record.checkedInAt.toISOString(),
+      checkInMethod: record.checkInMethod.toUpperCase(),
+      checkedInBy: undefined, // We don't track who did manual check-ins yet
+    }));
+  }
 }

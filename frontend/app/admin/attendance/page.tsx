@@ -36,7 +36,8 @@ export default function AttendanceLogsPage() {
         }
 
         const records = await api.getAllAttendance(token);
-        setAttendanceRecords(records);
+        // Ensure we always set an array
+        setAttendanceRecords(Array.isArray(records) ? records : []);
       } catch (error) {
         console.error("Failed to fetch attendance records:", error);
         setAttendanceRecords([]);
