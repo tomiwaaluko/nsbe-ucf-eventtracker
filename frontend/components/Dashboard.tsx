@@ -292,7 +292,7 @@ export function Dashboard({
               {allHeatmapData[currentMonthIndex].map((item) => (
                 <div
                   key={item.day}
-                  className="w-20 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#00a651]"
+                  className="w-16 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#00a651]"
                   style={{
                     backgroundColor: getHeatmapColor(item.hasEvent),
                   }}

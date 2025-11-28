@@ -15,6 +15,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 interface SidebarProps {
   currentPage: string;
@@ -118,8 +119,14 @@ export function Sidebar({
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#00a651] to-[#008a44] flex items-center justify-center">
-            <span className="text-white">N</span>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+            <Image
+              src="/nsbe-logo.png"
+              alt="NSBE Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <div>
             <h3 className="text-gray-900">NSBE UCF</h3>
