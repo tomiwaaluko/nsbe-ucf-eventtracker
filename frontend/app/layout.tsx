@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "NSBE Event Tracker",
   description: "Track events, attendance, and member progress for NSBE chapter",
+  icons: {
+    icon: "/nsbelogo32x32.png",
+  },
 };
 
 export default function RootLayout({
