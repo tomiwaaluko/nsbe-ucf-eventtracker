@@ -9,6 +9,7 @@ import {
 import { StatsCard } from "./StatsCard";
 import { Button } from "./ui/button";
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -170,322 +171,418 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#00a651] to-[#008a44] rounded-2xl p-8 text-white">
-        <h1 className="text-white mb-2">Admin Dashboard</h1>
-        <p className="text-green-100">
-          Monitor member engagement and event analytics
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830] p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl"
+        >
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-white/80">
+            Monitor member engagement and event analytics
+          </p>
+        </motion.div>
 
-      {/* Key Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total Members"
-          value={stats.totalMembers}
-          icon={<Users className="w-6 h-6" />}
-          color="#00a651"
-          subtitle={`${stats.activeMembers} active`}
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatsCard
-          title="Total Events"
-          value={stats.totalEvents}
-          icon={<Calendar className="w-6 h-6" />}
-          color="#ffb81c"
-          subtitle={`${stats.upcomingEvents} upcoming`}
-          trend={{ value: 8, isPositive: true }}
-        />
-        <StatsCard
-          title="Total Attendance"
-          value={stats.totalAttendance}
-          icon={<UserCheck className="w-6 h-6" />}
-          color="#ed1c24"
-          subtitle="This semester"
-          trend={{ value: 15, isPositive: true }}
-        />
-        <StatsCard
-          title="Avg. Attendance"
-          value={stats.averageAttendance}
-          icon={<Activity className="w-6 h-6" />}
-          color="#00a651"
-          subtitle="Per event"
-          trend={{ value: 3, isPositive: false }}
-        />
-      </div>
+        {/* Key Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          <StatsCard
+            title="Total Members"
+            value={stats.totalMembers}
+            icon={<Users className="w-6 h-6" />}
+            color="#00a651"
+            subtitle={`${stats.activeMembers} active`}
+            trend={{ value: 12, isPositive: true }}
+          />
+          <StatsCard
+            title="Total Events"
+            value={stats.totalEvents}
+            icon={<Calendar className="w-6 h-6" />}
+            color="#ffb81c"
+            subtitle={`${stats.upcomingEvents} upcoming`}
+            trend={{ value: 8, isPositive: true }}
+          />
+          <StatsCard
+            title="Total Attendance"
+            value={stats.totalAttendance}
+            icon={<UserCheck className="w-6 h-6" />}
+            color="#ed1c24"
+            subtitle="This semester"
+            trend={{ value: 15, isPositive: true }}
+          />
+          <StatsCard
+            title="Avg. Attendance"
+            value={stats.averageAttendance}
+            icon={<Activity className="w-6 h-6" />}
+            color="#00a651"
+            subtitle="Per event"
+            trend={{ value: 3, isPositive: false }}
+          />
+        </motion.div>
 
-      {/* Achievement Progress */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <h3 className="text-gray-900 mb-6">Member Achievement Progress</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {progressStats.map((stat, index) => (
-            <div key={index} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">{stat.label}</span>
-                <span className="text-sm" style={{ color: stat.color }}>
-                  {stat.value} / {stat.total} ({stat.percentage}%)
-                </span>
+        {/* Achievement Progress */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+        >
+          <h3 className="text-xl font-semibold text-white mb-6">
+            Member Achievement Progress
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {progressStats.map((stat, index) => (
+              <div key={index} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white/90">{stat.label}</span>
+                  <span className="text-sm text-white font-semibold">
+                    {stat.value} / {stat.total} ({stat.percentage}%)
+                  </span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-3">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${stat.percentage}%` }}
+                    transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
+                    className="h-3 rounded-full"
+                    style={{ backgroundColor: stat.color }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="h-3 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${stat.percentage}%`,
-                    backgroundColor: stat.color,
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Member Growth Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+          >
+            <h4 className="text-lg font-semibold text-white mb-4">
+              Member Growth
+            </h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={memberGrowthData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(255,255,255,0.1)"
+                />
+                <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
+                <YAxis stroke="rgba(255,255,255,0.7)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255,255,255,0.95)",
+                    border: "none",
+                    borderRadius: "1rem",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                   }}
                 />
+                <Line
+                  type="monotone"
+                  dataKey="members"
+                  stroke="#ffb81c"
+                  strokeWidth={3}
+                  dot={{ fill: "#ffb81c", r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Event Attendance Trend */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+          >
+            <h4 className="text-lg font-semibold text-white mb-4">
+              Event Attendance Trend
+            </h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={eventAttendanceData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(255,255,255,0.1)"
+                />
+                <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
+                <YAxis stroke="rgba(255,255,255,0.7)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255,255,255,0.95)",
+                    border: "none",
+                    borderRadius: "1rem",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Bar
+                  dataKey="attendance"
+                  fill="#ffb81c"
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
+        </div>
+
+        {/* Event Distribution & Activity Heatmap */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Event Type Distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+          >
+            <h4 className="text-lg font-semibold text-white mb-4">
+              Event Distribution
+            </h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={eventTypeData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry: any) =>
+                    `${entry.name || ""}: ${(
+                      (entry.percent || 0) * 100
+                    ).toFixed(0)}%`
+                  }
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {eventTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255,255,255,0.95)",
+                    border: "none",
+                    borderRadius: "1rem",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Activity Heatmap */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-white">
+                Event Activity
+              </h4>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
+                  }
+                  disabled={currentMonthIndex === 0}
+                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-white/90 min-w-[120px] text-center">
+                  {months[currentMonthIndex]}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentMonthIndex(
+                      Math.min(months.length - 1, currentMonthIndex + 1)
+                    )
+                  }
+                  disabled={currentMonthIndex === months.length - 1}
+                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Member Growth Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <h4 className="text-gray-900 mb-4">Member Growth</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={memberGrowthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="members"
-                stroke="#00a651"
-                strokeWidth={3}
-                dot={{ fill: "#00a651", r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Event Attendance Trend */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <h4 className="text-gray-900 mb-4">Event Attendance Trend</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={eventAttendanceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
-                }}
-              />
-              <Bar dataKey="attendance" fill="#00a651" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Event Distribution & Activity Heatmap */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Event Type Distribution */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <h4 className="text-gray-900 mb-4">Event Distribution</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={eventTypeData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry: any) =>
-                  `${entry.name || ""}: ${((entry.percent || 0) * 100).toFixed(
-                    0
-                  )}%`
-                }
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {eventTypeData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+            <div className="space-y-3">
+              {/* Heatmap Grid */}
+              <div className="grid grid-cols-7 gap-x-0.5 gap-y-1">
+                {allHeatmapData[currentMonthIndex].map((item) => (
+                  <motion.div
+                    key={item.day}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5 + item.day * 0.005 }}
+                    className="w-10 h-10 rounded-lg relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#ffb81c] hover:scale-110"
+                    style={{
+                      backgroundColor: getHeatmapColor(item.hasEvent),
+                    }}
+                    title={`${item.date}: ${
+                      item.hasEvent ? "Event attended" : "No event"
+                    }`}
+                  >
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-700">
+                        {item.day}
+                      </span>
+                    </div>
+                  </motion.div>
                 ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center gap-4 pt-3 border-t border-white/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-sm bg-gray-300" />
+                  <span className="text-xs text-white/80">No event</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-sm bg-[#00a651]" />
+                  <span className="text-xs text-white/80">Event attended</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Activity Heatmap */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        {/* Recent Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+        >
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-gray-900">Event Activity</h4>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
-                }
-                disabled={currentMonthIndex === 0}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm text-gray-600 min-w-[120px] text-center">
-                {months[currentMonthIndex]}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setCurrentMonthIndex(
-                    Math.min(months.length - 1, currentMonthIndex + 1)
-                  )
-                }
-                disabled={currentMonthIndex === months.length - 1}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+            <h4 className="text-lg font-semibold text-white">Recent Events</h4>
+            <Button
+              variant="ghost"
+              onClick={() => onNavigate("admin-events")}
+              className="text-white hover:bg-white/20"
+            >
+              View All
+            </Button>
           </div>
-
           <div className="space-y-3">
-            {/* Heatmap Grid */}
-            <div className="grid grid-cols-7 gap-x-0.5 gap-y-1">
-              {allHeatmapData[currentMonthIndex].map((item) => (
-                <div
-                  key={item.day}
-                  className="w-10 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-[#00a651]"
-                  style={{
-                    backgroundColor: getHeatmapColor(item.hasEvent),
-                  }}
-                  title={`${item.date}: ${
-                    item.hasEvent ? "Event attended" : "No event"
-                  }`}
-                >
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-600">
-                      {item.day}
+            {recentActivityData.map((activity, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 + index * 0.1 }}
+                className="flex items-center justify-between p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all"
+              >
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">
+                    {activity.name}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className="text-xs px-2 py-1 rounded-lg font-medium"
+                      style={{
+                        backgroundColor:
+                          activity.type === "Workshop"
+                            ? "#ffb81c40"
+                            : activity.type === "GBM"
+                            ? "#00a65140"
+                            : "#ed1c2440",
+                        color: "white",
+                      }}
+                    >
+                      {activity.type}
+                    </span>
+                    <span className="text-xs text-white/70">
+                      {activity.date}
                     </span>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm bg-[#e5e7eb]" />
-                <span className="text-xs text-gray-600">No event</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-sm bg-[#00a651]" />
-                <span className="text-xs text-gray-600">Event attended</span>
-              </div>
-            </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1">
+                    <UserCheck className="w-4 h-4 text-white/70" />
+                    <span className="text-sm text-white font-semibold">
+                      {activity.attendees}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-gray-900">Recent Events</h4>
-          <Button variant="ghost" onClick={() => onNavigate("admin-events")}>
-            View All
-          </Button>
-        </div>
-        <div className="space-y-4">
-          {recentActivityData.map((activity, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 rounded-lg bg-gray-50 border border-gray-200"
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+        >
+          <h4 className="text-lg font-semibold text-white mb-4">
+            Quick Actions
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate("admin-events")}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 text-white rounded-xl h-auto py-6 transition-all shadow-lg"
             >
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">{activity.name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className="text-xs px-2 py-1 rounded"
-                    style={{
-                      backgroundColor:
-                        activity.type === "Workshop"
-                          ? "#ffb81c20"
-                          : activity.type === "GBM"
-                          ? "#00a65120"
-                          : "#ed1c2420",
-                      color:
-                        activity.type === "Workshop"
-                          ? "#ffb81c"
-                          : activity.type === "GBM"
-                          ? "#00a651"
-                          : "#ed1c24",
-                    }}
-                  >
-                    {activity.type}
-                  </span>
-                  <span className="text-xs text-gray-500">{activity.date}</span>
-                </div>
+              <div className="flex flex-col items-center gap-2">
+                <Calendar className="w-6 h-6" />
+                <span className="font-medium">Create Event</span>
               </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1">
-                  <UserCheck className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    {activity.attendees}
-                  </span>
-                </div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate("admin-checkin")}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 text-white rounded-xl h-auto py-6 transition-all shadow-lg"
+            >
+              <div className="flex flex-col items-center gap-2">
+                <UserCheck className="w-6 h-6" />
+                <span className="font-medium">Manual Check-In</span>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <h4 className="text-gray-900 mb-4">Quick Actions</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button
-            onClick={() => onNavigate("admin-events")}
-            className="bg-[#00a651] hover:bg-[#008a44] text-white h-auto py-6"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Calendar className="w-6 h-6" />
-              <span>Create Event</span>
-            </div>
-          </Button>
-          <Button
-            onClick={() => onNavigate("admin-checkin")}
-            className="bg-[#ffb81c] hover:bg-[#e5a619] text-white h-auto py-6"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <UserCheck className="w-6 h-6" />
-              <span>Manual Check-In</span>
-            </div>
-          </Button>
-          <Button
-            onClick={() => onNavigate("admin-members")}
-            className="bg-[#ed1c24] hover:bg-[#d41920] text-white h-auto py-6"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Users className="w-6 h-6" />
-              <span>Manage Members</span>
-            </div>
-          </Button>
-          <Button
-            onClick={() => onNavigate("admin-attendance")}
-            className="bg-black hover:bg-gray-800 text-white h-auto py-6"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Activity className="w-6 h-6" />
-              <span>Attendance Logs</span>
-            </div>
-          </Button>
-        </div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate("admin-members")}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 text-white rounded-xl h-auto py-6 transition-all shadow-lg"
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Users className="w-6 h-6" />
+                <span className="font-medium">Manage Members</span>
+              </div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate("admin-attendance")}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 text-white rounded-xl h-auto py-6 transition-all shadow-lg"
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Activity className="w-6 h-6" />
+                <span className="font-medium">Attendance Logs</span>
+              </div>
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

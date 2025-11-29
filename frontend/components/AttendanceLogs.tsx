@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Search,
   Download,
@@ -68,8 +69,7 @@ export function AttendanceLogs({ attendanceRecords }: AttendanceLogsProps) {
     let matchesDateRange = true;
 
     if (filterDateRange === "today") {
-      matchesDateRange =
-        checkInDate.toDateString() === now.toDateString();
+      matchesDateRange = checkInDate.toDateString() === now.toDateString();
     } else if (filterDateRange === "week") {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       matchesDateRange = checkInDate >= weekAgo;
@@ -78,7 +78,12 @@ export function AttendanceLogs({ attendanceRecords }: AttendanceLogsProps) {
       matchesDateRange = checkInDate >= monthAgo;
     }
 
-    return matchesSearch && matchesEventType && matchesCheckInMethod && matchesDateRange;
+    return (
+      matchesSearch &&
+      matchesEventType &&
+      matchesCheckInMethod &&
+      matchesDateRange
+    );
   });
 
   // Sort records
@@ -186,304 +191,371 @@ export function AttendanceLogs({ attendanceRecords }: AttendanceLogsProps) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `attendance-logs-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `attendance-logs-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     a.click();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-gray-900">Attendance Logs</h2>
-          <p className="text-gray-600 mt-1">
-            View and export all check-in records
-          </p>
-        </div>
-        <Button
-          onClick={exportToCSV}
-          variant="outline"
-          className="border-[#00a651] text-[#00a651] hover:bg-[#00a651] hover:text-white"
+    <div className="min-h-screen bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830] p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
-      </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white">Attendance Logs</h2>
+            <p className="text-white/80 mt-1">
+              View and export all check-in records
+            </p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={exportToCSV}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 text-white rounded-xl px-6 py-3 flex items-center gap-2 transition-all shadow-lg font-medium"
+          >
+            <Download className="w-5 h-5" />
+            Export CSV
+          </motion.button>
+        </motion.div>
 
-      {/* Filters and Search */}
-      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search by member name, email, or event..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+        {/* Filters and Search */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search */}
+            <div className="lg:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+                <Input
+                  type="text"
+                  placeholder="Search by member name, email, or event..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
+                />
+              </div>
             </div>
+
+            {/* Event Type Filter */}
+            <Select value={filterEventType} onValueChange={setFilterEventType}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Event Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="WORKSHOP">Workshop</SelectItem>
+                <SelectItem value="GBM">GBM</SelectItem>
+                <SelectItem value="COMMUNITY_SERVICE">
+                  Community Service
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Check-In Method Filter */}
+            <Select
+              value={filterCheckInMethod}
+              onValueChange={setFilterCheckInMethod}
+            >
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Check-In Method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Methods</SelectItem>
+                <SelectItem value="QR_CODE">QR Code</SelectItem>
+                <SelectItem value="MANUAL">Manual</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Date Range Filter */}
+            <Select value={filterDateRange} onValueChange={setFilterDateRange}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">Last 7 Days</SelectItem>
+                <SelectItem value="month">Last 30 Days</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Event Type Filter */}
-          <Select value={filterEventType} onValueChange={setFilterEventType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Event Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="WORKSHOP">Workshop</SelectItem>
-              <SelectItem value="GBM">GBM</SelectItem>
-              <SelectItem value="COMMUNITY_SERVICE">Community Service</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Results Count */}
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <p className="text-sm text-white/80">
+              Showing {sortedRecords.length} of {attendanceRecords.length}{" "}
+              records
+            </p>
+          </div>
+        </motion.div>
 
-          {/* Check-In Method Filter */}
-          <Select
-            value={filterCheckInMethod}
-            onValueChange={setFilterCheckInMethod}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Check-In Method" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Methods</SelectItem>
-              <SelectItem value="QR_CODE">QR Code</SelectItem>
-              <SelectItem value="MANUAL">Manual</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Date Range Filter */}
-          <Select value={filterDateRange} onValueChange={setFilterDateRange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Date Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="week">Last 7 Days</SelectItem>
-              <SelectItem value="month">Last 30 Days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Results Count */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Showing {sortedRecords.length} of {attendanceRecords.length} records
-          </p>
-        </div>
-      </div>
-
-      {/* Attendance Table */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        {/* Desktop Table */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th
-                  className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort("memberName")}
-                >
-                  <div className="flex items-center gap-2">
-                    Member
-                    <ArrowUpDown className="w-4 h-4" />
-                  </div>
-                </th>
-                <th
-                  className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort("eventName")}
-                >
-                  <div className="flex items-center gap-2">
-                    Event
-                    <ArrowUpDown className="w-4 h-4" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider">
-                  Type
-                </th>
-                <th
-                  className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort("checkInTime")}
-                >
-                  <div className="flex items-center gap-2">
-                    Check-In Time
-                    <ArrowUpDown className="w-4 h-4" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider">
-                  Method
-                </th>
-                <th className="px-6 py-4 text-left text-xs text-gray-600 uppercase tracking-wider">
-                  Officer
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="text-sm text-gray-900">{record.memberName}</p>
-                      <p className="text-xs text-gray-500">{record.memberEmail}</p>
+        {/* Attendance Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden"
+        >
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-white/10 border-b border-white/20">
+                <tr>
+                  <th
+                    className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold cursor-pointer hover:bg-white/10"
+                    onClick={() => handleSort("memberName")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Member
+                      <ArrowUpDown className="w-4 h-4" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900">{record.eventName}</p>
-                  </td>
-                  <td className="px-6 py-4">
+                  </th>
+                  <th
+                    className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold cursor-pointer hover:bg-white/10"
+                    onClick={() => handleSort("eventName")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Event
+                      <ArrowUpDown className="w-4 h-4" />
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
+                    Type
+                  </th>
+                  <th
+                    className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold cursor-pointer hover:bg-white/10"
+                    onClick={() => handleSort("checkInTime")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Check-In Time
+                      <ArrowUpDown className="w-4 h-4" />
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
+                    Method
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
+                    Officer
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {paginatedRecords.map((record, index) => (
+                  <motion.tr
+                    key={record.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.05 }}
+                    className="hover:bg-white/10 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {record.memberName}
+                        </p>
+                        <p className="text-xs text-white/60">
+                          {record.memberEmail}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-white/90">
+                        {record.eventName}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge
+                        style={{
+                          backgroundColor: `${getEventTypeColor(
+                            record.eventType
+                          )}40`,
+                          color: "white",
+                        }}
+                        className="font-medium"
+                      >
+                        {getEventTypeLabel(record.eventType)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-white/60" />
+                        <span className="text-sm text-white/90">
+                          {formatDateTime(record.checkInTime)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge
+                        className={
+                          record.checkInMethod === "QR_CODE"
+                            ? "bg-blue-500/30 text-white border-blue-500/50"
+                            : "bg-white/20 text-white/70"
+                        }
+                      >
+                        {record.checkInMethod === "QR_CODE"
+                          ? "QR Code"
+                          : "Manual"}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-white/90">
+                        {record.checkedInBy || "-"}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden divide-y divide-white/10">
+            {paginatedRecords.map((record, index) => (
+              <motion.div
+                key={record.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                className="p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-white font-medium">
+                      {record.memberName}
+                    </p>
+                    <p className="text-xs text-white/60">
+                      {record.memberEmail}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-white/60" />
+                    <span className="text-sm text-white/90">
+                      {record.eventName}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <Badge
                       style={{
-                        backgroundColor: `${getEventTypeColor(record.eventType)}20`,
-                        color: getEventTypeColor(record.eventType),
+                        backgroundColor: `${getEventTypeColor(
+                          record.eventType
+                        )}40`,
+                        color: "white",
                       }}
                     >
                       {getEventTypeLabel(record.eventType)}
                     </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        {formatDateTime(record.checkInTime)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
                     <Badge
-                      variant={
-                        record.checkInMethod === "QR_CODE" ? "default" : "secondary"
+                      className={
+                        record.checkInMethod === "QR_CODE"
+                          ? "bg-blue-500/30 text-white border-blue-500/50"
+                          : "bg-white/20 text-white/70"
                       }
                     >
-                      {record.checkInMethod === "QR_CODE" ? "QR Code" : "Manual"}
+                      {record.checkInMethod === "QR_CODE"
+                        ? "QR Code"
+                        : "Manual"}
                     </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600">
-                      {record.checkedInBy || "-"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="lg:hidden divide-y divide-gray-200">
-          {paginatedRecords.map((record) => (
-            <div key={record.id} className="p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-900">{record.memberName}</p>
-                  <p className="text-xs text-gray-500">{record.memberEmail}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{record.eventName}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge
-                    style={{
-                      backgroundColor: `${getEventTypeColor(record.eventType)}20`,
-                      color: getEventTypeColor(record.eventType),
-                    }}
-                  >
-                    {getEventTypeLabel(record.eventType)}
-                  </Badge>
-                  <Badge
-                    variant={
-                      record.checkInMethod === "QR_CODE" ? "default" : "secondary"
-                    }
-                  >
-                    {record.checkInMethod === "QR_CODE" ? "QR Code" : "Manual"}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-500">
-                    {formatDateTime(record.checkInTime)}
-                  </span>
-                </div>
-                {record.checkedInBy && (
+                  </div>
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-xs text-gray-500">
-                      Officer: {record.checkedInBy}
+                    <Clock className="w-4 h-4 text-white/60" />
+                    <span className="text-xs text-white/80">
+                      {formatDateTime(record.checkInTime)}
                     </span>
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {sortedRecords.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No attendance records found</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Try adjusting your search or filters
-            </p>
+                  {record.checkedInBy && (
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-white/60" />
+                      <span className="text-xs text-white/80">
+                        Officer: {record.checkedInBy}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
           </div>
+
+          {/* Empty State */}
+          {sortedRecords.length === 0 && (
+            <div className="text-center py-12">
+              <Calendar className="w-12 h-12 text-white/30 mx-auto mb-3" />
+              <p className="text-white/80">No attendance records found</p>
+              <p className="text-sm text-white/60 mt-1">
+                Try adjusting your search or filters
+              </p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Pagination */}
+        {sortedRecords.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center justify-between"
+          >
+            <p className="text-sm text-white/80">
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, sortedRecords.length)} of{" "}
+              {sortedRecords.length} records
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={
+                        currentPage === page
+                          ? "bg-white/30 hover:bg-white/40 text-white border-white/20"
+                          : "bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+                      }
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+                {totalPages > 5 && <span className="text-white/60">...</span>}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </motion.div>
         )}
       </div>
-
-      {/* Pagination */}
-      {sortedRecords.length > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, sortedRecords.length)}{" "}
-            of {sortedRecords.length} records
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={
-                      currentPage === page
-                        ? "bg-[#00a651] hover:bg-[#008a44] text-white"
-                        : ""
-                    }
-                  >
-                    {page}
-                  </Button>
-                );
-              })}
-              {totalPages > 5 && <span className="text-gray-500">...</span>}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
