@@ -32,15 +32,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return { name: "Member", role: "member" as const };
   };
 
-  const [userData] = useState(getUserData);
+  const [userData, setUserData] = useState(getUserData);
 
   useEffect(() => {
     // Check authentication
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/");
+      return;
     }
-  }, [router]);
+
+    // Update user data from localStorage whenever the component mounts or pathname changes
+    const updatedUserData = getUserData();
+    setUserData(updatedUserData);
+  }, [router, pathname]);
 
   const getCurrentPage = () => {
     // Map pathname to sidebar menu item IDs
