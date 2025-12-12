@@ -21,7 +21,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:5173',
-      // Add your frontend URLs here
+      'https://nsbe-ucf-eventtracker-production.vercel.app',
+      /\.vercel\.app$/, // Allow all Vercel preview deployments
     ],
     credentials: true,
   });
