@@ -5,6 +5,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
+import * as jwt from 'jsonwebtoken';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  [key: string]: any;
+}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -24,24 +31,27 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const { jwtVerify } = await import('jose');
-      const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
+      const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+
+      if (!jwtSecret) {
+        console.error('SUPABASE_JWT_SECRET not configured');
+        throw new UnauthorizedException('Server configuration error');
+      }
+
+      const payload = jwt.verify(token, jwtSecret) as JwtPayload;
 
       // Sync user with database - this ensures the Supabase user exists in Prisma
-      await this.authService.findOrCreateMember(
-        payload.sub as string,
-        payload.email as string,
-      );
+      await this.authService.findOrCreateMember(payload.sub, payload.email);
 
       request.user = {
+        ...payload,
         id: payload.sub,
         email: payload.email,
-        ...payload,
       };
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('JWT verification failed:', error.message);
       throw new UnauthorizedException('Invalid token');
     }
   }

@@ -22,8 +22,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -31,22 +29,58 @@ export default function DashboardPage() {
       return;
     }
 
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setMemberData((prev) => ({
-        ...prev,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-      }));
-    }
-
-    // Fetch attendance records
+    // Fetch fresh user data from backend and update localStorage
     const fetchData = async () => {
       try {
+        // Fetch fresh user data from API
+        const userData = await api.getMe(token);
+        console.log("Fetched fresh user data from API:", userData);
+
+        // Update localStorage with fresh data
+        const updatedUser = {
+          email: userData.email,
+          firstName: userData.firstName || "User",
+          lastName: userData.lastName || "",
+          role: userData.role || "member",
+        };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        console.log("Updated localStorage with:", updatedUser);
+
+        // Update component state
+        setMemberData((prev) => ({
+          ...prev,
+          name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+          email: updatedUser.email,
+          role: updatedUser.role,
+        }));
+
+        // Fetch attendance records
         const records = await api.getMyAttendance(token);
         setAttendanceRecords(Array.isArray(records) ? records : []);
-      } catch (error) {
-        console.error("Failed to fetch attendance:", error);
+      } catch (error: any) {
+        console.error("Failed to fetch data:", error);
+
+        // If token is invalid (401), redirect to login
+        if (error.message && error.message.includes("401")) {
+          console.log("Token expired or invalid, redirecting to login");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          router.push("/");
+          return;
+        }
+
+        // For other errors, try to load from localStorage
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setMemberData((prev) => ({
+            ...prev,
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            role: user.role || "member",
+          }));
+        }
+
         setAttendanceRecords([]);
       } finally {
         setIsLoading(false);

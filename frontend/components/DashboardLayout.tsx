@@ -22,11 +22,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       const user = JSON.parse(userStr);
       return {
         name: `${user.firstName} ${user.lastName}`,
-        role: (user.role || "member") as
-          | "member"
-          | "admin"
-          | "super_admin"
-          | "officer",
+        role: (user.role || "member") as "member" | "admin" | "super_admin",
       };
     }
     return { name: "Member", role: "member" as const };
@@ -44,8 +40,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // Update user data from localStorage whenever the component mounts or pathname changes
     const updatedUserData = getUserData();
+    console.log("DashboardLayout - Loading user data:", updatedUserData);
     setUserData(updatedUserData);
   }, [router, pathname]);
+
+  // Add a storage event listener to update when localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updatedUserData = getUserData();
+      console.log("Storage changed, updating user data:", updatedUserData);
+      setUserData(updatedUserData);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const getCurrentPage = () => {
     // Map pathname to sidebar menu item IDs

@@ -22,6 +22,7 @@ export default function Home() {
     role: string;
   }) => {
     // Store user data and redirect to dashboard
+    console.log("Storing user data in localStorage:", userData);
     localStorage.setItem("user", JSON.stringify(userData));
     router.push("/dashboard");
   };

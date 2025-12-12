@@ -5,16 +5,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create admin member with Supabase UID
+  // Create super admin member with Supabase UID
   const admin = await prisma.member.upsert({
     where: { email: 'admin@test.com' },
-    update: {},
+    update: { role: 'super_admin' },
     create: {
       id: '348d130d-1674-4be1-97d1-807656f216d5', // Supabase UID
       email: 'admin@test.com',
       firstName: 'Admin',
       lastName: 'User',
-      role: 'admin',
+      role: 'super_admin',
     },
   });
   console.log('✅ Created admin:', admin.email);

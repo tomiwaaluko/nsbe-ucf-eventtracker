@@ -58,12 +58,14 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         try {
           const memberData = await api.getMe(data.session.access_token);
 
+          console.log("Member data from backend:", memberData);
+
           toast.success("Welcome back!", {
             description: "You have successfully signed in.",
           });
 
           // Pass complete user data including role
-          onAuthComplete({
+          const userData = {
             email: memberData.email || email,
             firstName:
               memberData.firstName ||
@@ -72,7 +74,10 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
             lastName:
               memberData.lastName || data.user?.user_metadata?.last_name || "",
             role: memberData.role || "member",
-          });
+          };
+
+          console.log("Passing user data to onAuthComplete:", userData);
+          onAuthComplete(userData);
         } catch (memberError) {
           console.error("Failed to fetch member data:", memberError);
 

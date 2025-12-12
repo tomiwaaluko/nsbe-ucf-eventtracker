@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+console.log("API_URL configured as:", API_URL);
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
@@ -17,6 +19,8 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("getMe API error:", response.status, errorText);
       throw new Error(`Failed to fetch user data: ${response.statusText}`);
     }
     return response.json();

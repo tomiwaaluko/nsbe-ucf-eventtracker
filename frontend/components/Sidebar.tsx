@@ -20,7 +20,7 @@ import Image from "next/image";
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
-  userRole?: "member" | "admin" | "super_admin" | "officer";
+  userRole?: "member" | "admin" | "super_admin";
   userName?: string;
   onLogout?: () => void;
 }
@@ -30,28 +30,28 @@ const menuItems = [
     id: "dashboard",
     label: "Dashboard",
     icon: Home,
-    roles: ["member", "officer", "admin", "super_admin"],
+    roles: ["member", "admin", "super_admin"],
     section: "main",
   },
   {
     id: "events",
     label: "Events",
     icon: Calendar,
-    roles: ["member", "officer", "admin", "super_admin"],
+    roles: ["member", "admin", "super_admin"],
     section: "main",
   },
   {
     id: "attendance",
     label: "Check In",
     icon: QrCode,
-    roles: ["member", "officer", "admin", "super_admin"],
+    roles: ["member", "admin", "super_admin"],
     section: "main",
   },
   {
     id: "achievements",
     label: "Achievements",
     icon: Award,
-    roles: ["member", "officer", "admin", "super_admin"],
+    roles: ["member", "admin", "super_admin"],
     section: "main",
   },
 
@@ -81,7 +81,7 @@ const menuItems = [
     id: "admin-checkin",
     label: "Manual Check-In",
     icon: UserCheck,
-    roles: ["admin", "super_admin", "officer"],
+    roles: ["admin", "super_admin"],
     section: "admin",
   },
   {
@@ -96,7 +96,7 @@ const menuItems = [
     id: "settings",
     label: "Settings",
     icon: Settings,
-    roles: ["member", "officer", "admin", "super_admin"],
+    roles: ["member", "admin", "super_admin"],
     section: "main",
   },
 ];
@@ -110,8 +110,16 @@ export function Sidebar({
 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Debug logging
+  console.log("Sidebar received:", { userRole, userName });
+
   const filteredMenuItems = menuItems.filter((item) =>
     item.roles.includes(userRole)
+  );
+
+  console.log(
+    "Filtered menu items:",
+    filteredMenuItems.map((i) => i.label)
   );
 
   return (
