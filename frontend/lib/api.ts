@@ -1,4 +1,22 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+// Determine API URL:
+// 1. Use NEXT_PUBLIC_API_URL if explicitly set
+// 2. Use relative path '/api' in production (Vercel)
+// 3. Fall back to localhost for development
+const getApiUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // In production on Vercel, use relative path
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+  
+  // In development, use localhost backend
+  return 'http://localhost:4000/api';
+};
+
+const API_URL = getApiUrl();
 
 console.log("API_URL configured as:", API_URL);
 

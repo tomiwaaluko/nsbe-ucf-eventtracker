@@ -1,0 +1,28 @@
+{
+  "name": "nsbe-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm ci && npx prisma generate && npm run build",
+    "build:frontend": "cd frontend && npm ci && npm run build",
+    "dev": "npm run dev:frontend",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "vercel-build": "npm run build"
+  },
+  "engines": {
+    "node": ">=20.11.1",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.0.0",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  }
+}
+

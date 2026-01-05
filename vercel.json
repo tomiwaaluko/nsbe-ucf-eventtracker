@@ -1,10 +1,22 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "outputDirectory": ".next",
+  "framework": null,
+  "outputDirectory": "frontend/.next",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
 }
