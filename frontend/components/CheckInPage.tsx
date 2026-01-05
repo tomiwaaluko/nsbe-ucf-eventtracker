@@ -1,3 +1,4 @@
+// Brutalist/Geometric Design System for NSBE UCF Check-In
 import { useState } from "react";
 import {
   QrCode,
@@ -5,10 +6,25 @@ import {
   X,
   Camera,
   Loader2,
-  Sparkles,
+  Zap,
   CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface CheckInPageProps {
   onCheckIn: (
@@ -52,33 +68,43 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
-        {/* Animated orbs */}
+    <div
+      className={`${bricolage.variable} ${sora.variable} min-h-screen relative overflow-hidden font-sans`}
+    >
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none z-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Brutalist background */}
+      <div className="absolute inset-0 bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 2, -2, 0],
+            scale: [1, 1.05, 1],
           }}
           transition={{
-            duration: 8,
+            duration: 20,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+          className="absolute top-0 -right-24 w-[600px] h-[600px] bg-[#ffb81c] opacity-15"
+          style={{
+            clipPath: "polygon(40% 0%, 100% 0%, 60% 100%, 0% 100%)",
+            transform: "rotate(-15deg)",
+          }}
         />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
           }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
         />
       </div>
 
@@ -86,19 +112,29 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
       <div className="relative z-10 p-4 lg:p-8 space-y-6">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: -30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="text-center lg:text-left"
         >
           <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
-            <h2 className="text-3xl font-bold text-white">Event Check-In</h2>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <Sparkles className="w-4 h-4 text-[#ffb81c]" />
-              <span className="text-sm font-medium text-white">Quick Scan</span>
+            <h2
+              className={`text-4xl lg:text-5xl font-extrabold text-white ${bricolage.className} tracking-tight`}
+            >
+              Event Check-In
+            </h2>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+              <Zap className="w-4 h-4 text-black" />
+              <span
+                className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
+              >
+                Quick Scan
+              </span>
             </div>
           </div>
-          <p className="text-white/80">
+          <p
+            className={`text-white/90 ${sora.className} text-lg`}
+          >
             Scan the QR code at the event to check in and track your progress
           </p>
         </motion.div>
@@ -106,11 +142,13 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Main Check-In Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl"
+            initial={{ opacity: 0, y: 30, rotate: -1 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
+            className="relative"
           >
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8">
             <div className="flex flex-col items-center">
               <div className="w-full max-w-md space-y-6">
                 {/* QR Scanner Area with Glow Animation */}
@@ -127,14 +165,18 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
-                  className="aspect-square bg-white/5 rounded-2xl flex items-center justify-center border-4 border-dashed border-white/30"
+                  className="aspect-square bg-black/5 flex items-center justify-center border-4 border-dashed border-black"
                 >
                   <div className="text-center">
-                    <Camera className="w-16 h-16 text-white/60 mx-auto mb-4" />
-                    <p className="text-white/80 font-medium mb-2">
+                    <Camera className="w-16 h-16 text-black/60 mx-auto mb-4" />
+                    <p
+                      className={`text-black/80 font-bold mb-2 ${bricolage.className} uppercase`}
+                    >
                       QR Code Scanner
                     </p>
-                    <p className="text-sm text-white/60">
+                    <p
+                      className={`text-sm ${sora.className} text-black/60 font-medium`}
+                    >
                       Position QR code within frame
                     </p>
                   </div>
@@ -151,11 +193,13 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-white">
+                    <label
+                      className={`block text-sm font-bold uppercase tracking-wide ${bricolage.className} text-black`}
+                    >
                       Event Code
                     </label>
                     <div className="relative group">
-                      <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/50 transition-colors group-hover:text-white/70" />
+                      <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-black/50 transition-colors group-hover:text-black/70" />
                       <input
                         type="text"
                         placeholder="Enter event code..."
@@ -167,7 +211,8 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                           }
                         }}
                         disabled={loading}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/10 border border-white/20 focus:border-white/40 focus:ring-white/20 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:ring-4 transition-all duration-300 hover:bg-white/15 hover:shadow-lg hover:scale-[1.02]"
+                        style={{ fontFamily: "var(--font-sora)" }}
+                        className="w-full pl-12 pr-4 py-3.5 bg-black/5 border-2 border-black focus:border-[#00a651] focus:ring-0 text-black placeholder:text-black/40 focus:outline-none transition-all duration-300 hover:bg-black/10 font-medium"
                       />
                     </div>
                   </div>
@@ -175,12 +220,15 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                   <motion.button
                     whileHover={{
                       scale: 1.02,
-                      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+                      boxShadow: "8px 8px 0 0 rgba(0,0,0,1)",
+                      x: 4,
+                      y: 4,
                     }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCheckIn}
                     disabled={!qrCode.trim() || loading}
-                    className="w-full bg-white text-[#00a651] py-3.5 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    style={{ fontFamily: "var(--font-bricolage)" }}
+                    className="w-full bg-[#00a651] text-white py-3.5 border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:bg-[#008a44]"
                   >
                     {loading ? (
                       <>
@@ -197,6 +245,7 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                 </div>
               </div>
             </div>
+            </div>
           </motion.div>
 
           {/* Right Column - Result and Info */}
@@ -207,12 +256,12 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className={`bg-white/10 backdrop-blur-xl rounded-2xl p-6 border-2 shadow-2xl ${
-                  result.success
-                    ? "border-green-400/50 bg-green-500/10"
-                    : "border-red-400/50 bg-red-500/10"
+                className={`relative ${
+                  result.success ? "bg-[#00a651]" : "bg-[#ed1c24]"
                 }`}
               >
+                <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+                <div className="relative border-4 border-black p-6 shadow-[6px_6px_0_0_rgba(0,0,0,1)]">
                 <div className="flex items-start gap-4">
                   {result.success ? (
                     <motion.div
@@ -260,19 +309,24 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                     )}
                   </div>
                 </div>
+                </div>
               </motion.div>
             )}
 
             {/* Instructions Card */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl"
+              transition={{ delay: 0.3, duration: 0.7 }}
+              className="relative"
             >
-              <h4 className="text-white text-lg font-bold mb-4">
-                How to Check In
-              </h4>
+              <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+              <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+                <h4
+                  className={`text-black text-lg font-extrabold mb-4 uppercase ${bricolage.className} tracking-wide`}
+                >
+                  How to Check In
+                </h4>
               <ol className="space-y-4">
                 {[
                   "Attend an NSBE event and locate the check-in station",
@@ -287,25 +341,34 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                     transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
                     className="flex gap-3"
                   >
-                    <div className="w-6 h-6 rounded-full bg-[#00a651] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    <div className="w-6 h-6 border-2 border-black bg-[#00a651] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                       {i + 1}
                     </div>
-                    <p className="text-sm text-white/80 pt-0.5">{step}</p>
+                    <p
+                      className={`text-sm ${sora.className} text-black/80 pt-0.5 font-medium`}
+                    >
+                      {step}
+                    </p>
                   </motion.li>
                 ))}
               </ol>
+              </div>
             </motion.div>
 
             {/* Tips Card */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="bg-blue-500/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-400/30 shadow-2xl"
+              transition={{ delay: 0.4, duration: 0.7 }}
+              className="relative"
             >
-              <h5 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                <span>💡</span> Tips
-              </h5>
+              <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+              <div className="relative bg-[#ffb81c] border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+                <h5
+                  className={`text-black text-lg font-extrabold mb-3 flex items-center gap-2 uppercase ${bricolage.className} tracking-wide`}
+                >
+                  <span>💡</span> Tips
+                </h5>
               <ul className="space-y-2 text-sm text-white/80">
                 {[
                   "Make sure you're at the event location before checking in",
@@ -320,11 +383,16 @@ export function CheckInPage({ onCheckIn }: CheckInPageProps) {
                     transition={{ delay: 0.5 + i * 0.05, duration: 0.4 }}
                     className="flex items-start gap-2"
                   >
-                    <span className="text-blue-300 mt-0.5">•</span>
-                    <span>{tip}</span>
+                    <span className="text-black/70 mt-0.5 font-bold">•</span>
+                    <span
+                      className={`${sora.className} text-black/80 font-medium`}
+                    >
+                      {tip}
+                    </span>
                   </motion.li>
                 ))}
               </ul>
+              </div>
             </motion.div>
           </div>
         </div>

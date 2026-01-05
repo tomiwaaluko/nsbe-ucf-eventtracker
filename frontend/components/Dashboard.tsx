@@ -1,3 +1,4 @@
+// Brutalist/Geometric Design System for NSBE UCF Dashboard
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -6,7 +7,7 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
+  Zap,
 } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { ProgressCard } from "./ProgressCard";
@@ -15,6 +16,21 @@ import { AchievementBadge } from "./AchievementBadge";
 import { EventCard } from "./EventCard";
 import { Button } from "./ui/button";
 import { useState, useMemo } from "react";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 import {
   BarChart,
   Bar,
@@ -146,63 +162,108 @@ export function Dashboard({
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
-        {/* Animated orbs */}
+    <div
+      className={`${bricolage.variable} ${sora.variable} min-h-screen relative overflow-hidden font-sans`}
+    >
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none z-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Brutalist background with geometric shapes */}
+      <div className="absolute inset-0 bg-[#0a0a0a]">
+        {/* Base green gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+
+        {/* Diagonal geometric shapes */}
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 2, -2, 0],
+            scale: [1, 1.05, 1],
           }}
           transition={{
-            duration: 8,
+            duration: 20,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+          className="absolute top-0 -right-24 w-[600px] h-[600px] bg-[#ffb81c] opacity-15"
+          style={{
+            clipPath: "polygon(40% 0%, 100% 0%, 60% 100%, 0% 100%)",
+            transform: "rotate(-15deg)",
+          }}
         />
         <motion.div
           animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -3, 3, 0],
+            scale: [1, 0.95, 1],
           }}
           transition={{
-            duration: 10,
+            duration: 25,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
+          className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-[#ed1c24] opacity-12"
+          style={{
+            clipPath: "polygon(0% 0%, 60% 0%, 100% 100%, 40% 100%)",
+            transform: "rotate(12deg)",
+          }}
+        />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
         />
       </div>
 
       {/* Content */}
       <div className="relative z-10 p-4 lg:p-8 space-y-6">
-        {/* Welcome header */}
+        {/* Welcome header - Brutalist style */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 text-white border border-white/20 shadow-2xl"
+          initial={{ opacity: 0, y: -30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative"
         >
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-3xl lg:text-4xl font-bold mb-2">
-                Welcome back, {memberData.name?.split(" ")[0] || "Member"}! 👋
-              </h1>
-              <p className="text-white/90 text-lg">
-                You&apos;ve attended {memberData.totalEvents} events this
-                semester. {getEncouragementMessage()}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <Sparkles className="w-4 h-4 text-[#ffb81c]" />
-              <span className="text-sm font-medium">Keep Growing!</span>
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <h1
+                  className={`text-4xl lg:text-5xl font-extrabold mb-3 text-black ${bricolage.className} tracking-tight`}
+                >
+                  Welcome back, {memberData.name?.split(" ")[0] || "Member"}!
+                </h1>
+                <p
+                  className={`text-lg ${sora.className} text-black/70 max-w-2xl`}
+                >
+                  You&apos;ve attended{" "}
+                  <span className="font-bold text-[#00a651]">
+                    {memberData.totalEvents}
+                  </span>{" "}
+                  events this semester. {getEncouragementMessage()}
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                <Zap className="w-4 h-4 text-black" />
+                <span
+                  className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
+                >
+                  Keep Growing!
+                </span>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Stats overview */}
+        {/* Stats overview - Brutalist cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
@@ -211,7 +272,7 @@ export function Dashboard({
               icon: <Calendar className="w-6 h-6" />,
               color: "#00a651",
               subtitle: "This semester",
-              delay: 0.1,
+              delay: 0.2,
             },
             {
               title: "Workshops",
@@ -219,7 +280,7 @@ export function Dashboard({
               icon: <Award className="w-6 h-6" />,
               color: "#ffb81c",
               subtitle: "3 required for 3-3-3",
-              delay: 0.2,
+              delay: 0.3,
             },
             {
               title: "GBMs",
@@ -227,7 +288,7 @@ export function Dashboard({
               icon: <Users className="w-6 h-6" />,
               color: "#00a651",
               subtitle: "3 required for 3-3-3",
-              delay: 0.3,
+              delay: 0.4,
             },
             {
               title: "Community Service",
@@ -235,75 +296,166 @@ export function Dashboard({
               icon: <TrendingUp className="w-6 h-6" />,
               color: "#ed1c24",
               subtitle: "3 required for 3-3-3",
-              delay: 0.4,
+              delay: 0.5,
             },
           ].map((stat, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: stat.delay, duration: 0.5 }}
-              whileHover={{ scale: 1.05, y: -5 }}
+              initial={{ opacity: 0, y: 30, rotate: -1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: stat.delay, duration: 0.6, ease: "easeOut" }}
+              whileHover={{
+                rotate: 1,
+                scale: 1.02,
+                x: 4,
+                y: -4,
+                transition: { duration: 0.2 },
+              }}
+              className="relative"
             >
-              <StatsCard {...stat} />
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div
+                className="relative border-4 border-black p-6 shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
+                style={{ backgroundColor: stat.color }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-black/20 flex items-center justify-center border-2 border-black">
+                    <div className="text-white">{stat.icon}</div>
+                  </div>
+                </div>
+                <div>
+                  <p
+                    className={`text-sm font-bold uppercase tracking-wider mb-2 ${bricolage.className} text-black/80`}
+                  >
+                    {stat.title}
+                  </p>
+                  <p
+                    className={`text-4xl font-extrabold mb-1 ${bricolage.className} text-black`}
+                  >
+                    {stat.value}
+                  </p>
+                  <p
+                    className={`text-xs ${sora.className} text-black/60 font-medium`}
+                  >
+                    {stat.subtitle}
+                  </p>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Progress overview with ring */}
+        {/* Progress overview with ring - Brutalist style */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="lg:col-span-2 bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300"
+            initial={{ opacity: 0, x: -30, rotate: -1 }}
+            animate={{ opacity: 1, x: 0, rotate: 0 }}
+            transition={{ delay: 0.6, duration: 0.7, ease: "easeOut" }}
+            className="lg:col-span-2 relative"
           >
-            <h3 className="text-white text-xl font-bold mb-6">
-              3-3-3 Progress
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ProgressCard
-                title="Workshops"
-                current={memberData.workshopsAttended}
-                target={3}
-                category="workshops"
-                color="#ffb81c"
-                icon={<Award className="w-6 h-6" />}
-              />
-              <ProgressCard
-                title="GBMs"
-                current={memberData.gbmAttended}
-                target={3}
-                category="gbm"
-                color="#00a651"
-                icon={<Users className="w-6 h-6" />}
-              />
-              <ProgressCard
-                title="Community"
-                current={memberData.communityServiceAttended}
-                target={3}
-                category="community"
-                color="#ed1c24"
-                icon={<TrendingUp className="w-6 h-6" />}
-              />
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+              <h3
+                className={`text-black text-2xl font-extrabold mb-6 ${bricolage.className} uppercase tracking-wide`}
+              >
+                3-3-3 Progress
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  {
+                    title: "Workshops",
+                    current: memberData.workshopsAttended,
+                    target: 3,
+                    color: "#ffb81c",
+                    icon: <Award className="w-5 h-5" />,
+                  },
+                  {
+                    title: "GBMs",
+                    current: memberData.gbmAttended,
+                    target: 3,
+                    color: "#00a651",
+                    icon: <Users className="w-5 h-5" />,
+                  },
+                  {
+                    title: "Community",
+                    current: memberData.communityServiceAttended,
+                    target: 3,
+                    color: "#ed1c24",
+                    icon: <TrendingUp className="w-5 h-5" />,
+                  },
+                ].map((progress, i) => (
+                  <div
+                    key={i}
+                    className="border-2 border-black p-4 bg-black/5"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div
+                        className="w-8 h-8 border-2 border-black flex items-center justify-center"
+                        style={{ backgroundColor: progress.color }}
+                      >
+                        <div className="text-black">{progress.icon}</div>
+                      </div>
+                      <p
+                        className={`text-sm font-bold uppercase ${bricolage.className} text-black`}
+                      >
+                        {progress.title}
+                      </p>
+                    </div>
+                    <div className="mb-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <span
+                          className={`text-2xl font-extrabold ${bricolage.className} text-black`}
+                        >
+                          {progress.current}
+                        </span>
+                        <span
+                          className={`text-sm ${sora.className} text-black/50`}
+                        >
+                          /{progress.target}
+                        </span>
+                      </div>
+                      <div className="w-full h-4 bg-black/10 border-2 border-black">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${Math.min((progress.current / progress.target) * 100, 100)}%`,
+                          }}
+                          transition={{ delay: 0.8 + i * 0.1, duration: 0.8 }}
+                          className="h-full border-r-2 border-black"
+                          style={{ backgroundColor: progress.color }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl flex flex-col items-center justify-center hover:bg-white/15 transition-all duration-300"
+            initial={{ opacity: 0, x: 30, rotate: 1 }}
+            animate={{ opacity: 1, x: 0, rotate: 0 }}
+            transition={{ delay: 0.7, duration: 0.7, ease: "easeOut" }}
+            className="relative"
           >
-            <h4 className="text-white font-semibold mb-4">Overall Progress</h4>
-            <ProgressRing
-              progress={overallProgress}
-              size={160}
-              color="#00a651"
-            />
-            <p className="text-sm text-white/70 mt-4 text-center">
-              {Math.round(overallProgress)}% towards 3-3-3 goal
-            </p>
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6 flex flex-col items-center justify-center">
+              <h4
+                className={`text-black font-bold mb-4 uppercase ${bricolage.className}`}
+              >
+                Overall Progress
+              </h4>
+              <ProgressRing
+                progress={overallProgress}
+                size={160}
+                color="#00a651"
+              />
+              <p
+                className={`text-sm ${sora.className} text-black/70 mt-4 text-center font-medium`}
+              >
+                {Math.round(overallProgress)}% towards 3-3-3 goal
+              </p>
+            </div>
           </motion.div>
         </div>
 
@@ -311,14 +463,18 @@ export function Dashboard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Bar chart */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300"
+            initial={{ opacity: 0, y: 30, rotate: -1 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.8, duration: 0.7, ease: "easeOut" }}
+            className="relative"
           >
-            <h4 className="text-white font-semibold mb-4">
-              Attendance by Category
-            </h4>
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+              <h4
+                className={`text-black font-extrabold mb-4 uppercase ${bricolage.className}`}
+              >
+                Attendance by Category
+              </h4>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={progressData}>
                 <CartesianGrid
@@ -344,28 +500,37 @@ export function Dashboard({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </motion.div>
 
           {/* Activity Heatmap */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300"
+            initial={{ opacity: 0, y: 30, rotate: 1 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
+            className="relative"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-white font-semibold">My Event Activity</h4>
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4
+                  className={`text-black font-extrabold uppercase ${bricolage.className}`}
+                >
+                  My Event Activity
+                </h4>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() =>
                     setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
                   }
                   disabled={currentMonthIndex === 0}
-                  className="h-8 w-8 p-0 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-30 flex items-center justify-center"
+                  className="h-8 w-8 p-0 bg-black hover:bg-black/80 border-2 border-black transition-colors disabled:opacity-30 flex items-center justify-center"
                 >
                   <ChevronLeft className="w-4 h-4 text-white" />
                 </button>
-                <span className="text-sm text-white/80 min-w-[120px] text-center">
+                <span
+                  className={`text-sm font-bold min-w-[120px] text-center ${bricolage.className} text-black`}
+                >
                   {months[currentMonthIndex]}
                 </span>
                 <button
@@ -375,7 +540,7 @@ export function Dashboard({
                     )
                   }
                   disabled={currentMonthIndex === months.length - 1}
-                  className="h-8 w-8 p-0 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-30 flex items-center justify-center"
+                  className="h-8 w-8 p-0 bg-black hover:bg-black/80 border-2 border-black transition-colors disabled:opacity-30 flex items-center justify-center"
                 >
                   <ChevronRight className="w-4 h-4 text-white" />
                 </button>
@@ -387,7 +552,7 @@ export function Dashboard({
                 {allHeatmapData[currentMonthIndex].map((item) => (
                   <div
                     key={item.day}
-                    className="w-10 h-10 rounded-sm relative group cursor-pointer transition-all hover:ring-2 hover:ring-white/50 hover:scale-110"
+                    className="w-10 h-10 border-2 border-black relative group cursor-pointer transition-all hover:scale-110"
                     style={{
                       backgroundColor: getHeatmapColor(item.hasEvent),
                     }}
@@ -396,7 +561,11 @@ export function Dashboard({
                     }`}
                   >
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600">
+                      <span
+                        className={`text-xs font-bold ${bricolage.className} ${
+                          item.hasEvent ? "text-white" : "text-black/60"
+                        }`}
+                      >
                         {item.day}
                       </span>
                     </div>
@@ -404,36 +573,51 @@ export function Dashboard({
                 ))}
               </div>
 
-              <div className="flex items-center gap-4 pt-3 border-t border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-sm bg-[#e5e7eb]" />
-                  <span className="text-xs text-white/70">No event</span>
+                <div className="flex items-center gap-4 pt-3 border-t-2 border-black">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black bg-white" />
+                    <span
+                      className={`text-xs font-medium ${sora.className} text-black/70`}
+                    >
+                      No event
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black bg-[#00a651]" />
+                    <span
+                      className={`text-xs font-medium ${sora.className} text-black/70`}
+                    >
+                      Event attended
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-sm bg-[#00a651]" />
-                  <span className="text-xs text-white/70">Event attended</span>
-                </div>
-              </div>
+            </div>
             </div>
           </motion.div>
         </div>
 
         {/* Achievements */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300"
+          initial={{ opacity: 0, y: 30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ delay: 1.0, duration: 0.7, ease: "easeOut" }}
+          className="relative"
         >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-white text-xl font-bold">Achievements</h3>
-            <button
-              onClick={() => onNavigate("achievements")}
-              className="text-white/80 hover:text-white font-medium transition-colors text-sm"
-            >
-              View All →
-            </button>
-          </div>
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3
+                className={`text-black text-2xl font-extrabold uppercase ${bricolage.className} tracking-wide`}
+              >
+                Achievements
+              </h3>
+              <button
+                onClick={() => onNavigate("achievements")}
+                className={`text-black/70 hover:text-black font-bold transition-colors text-sm ${bricolage.className} uppercase tracking-wider`}
+              >
+                View All →
+              </button>
+            </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <AchievementBadge
               title="1-1-1 Complete"
@@ -464,41 +648,53 @@ export function Dashboard({
               color="#00a651"
             />
           </div>
+          </div>
         </motion.div>
 
         {/* Upcoming events */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300"
+          initial={{ opacity: 0, y: 30, rotate: 1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ delay: 1.1, duration: 0.7, ease: "easeOut" }}
+          className="relative"
         >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-white text-xl font-bold">Upcoming Events</h3>
-            <button
-              onClick={() => onNavigate("events")}
-              className="text-white/80 hover:text-white font-medium transition-colors text-sm"
-            >
-              View All →
-            </button>
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3
+                className={`text-black text-2xl font-extrabold uppercase ${bricolage.className} tracking-wide`}
+              >
+                Upcoming Events
+              </h3>
+              <button
+                onClick={() => onNavigate("events")}
+                className={`text-black/70 hover:text-black font-bold transition-colors text-sm ${bricolage.className} uppercase tracking-wider`}
+              >
+                View All →
+              </button>
+            </div>
+            {upcomingEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcomingEvents.slice(0, 3).map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onViewDetails={onViewEvent}
+                    showCheckIn={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-black/30 mx-auto mb-3" />
+                <p
+                  className={`${sora.className} text-black/70 font-medium`}
+                >
+                  No upcoming events
+                </p>
+              </div>
+            )}
           </div>
-          {upcomingEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {upcomingEvents.slice(0, 3).map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onViewDetails={onViewEvent}
-                  showCheckIn={true}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-white/30 mx-auto mb-3" />
-              <p className="text-white/70">No upcoming events</p>
-            </div>
-          )}
         </motion.div>
       </div>
     </div>

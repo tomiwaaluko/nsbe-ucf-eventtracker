@@ -1,11 +1,4 @@
-// GitHub Copilot: Restyle the Achievements page to showcase badges and milestones.
-// Requirements:
-// - Use the same NSBE gradient background and glass cards as Login.
-// - Show achievements in a responsive grid of cards with icons/emoji, title, and short description.
-// - Locked vs unlocked should be visually distinct (opacity, grayscale, or overlay).
-// - Add a subtle "pop" animation on hover for unlocked achievements.
-// - Keep achievement data and logic intact; only update Tailwind classes and layout.
-
+// Brutalist/Geometric Design System for NSBE UCF Achievements
 import { motion } from "framer-motion";
 import {
   Award,
@@ -16,8 +9,23 @@ import {
   Calendar,
   Users,
   Heart,
-  Sparkles,
+  Zap,
 } from "lucide-react";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface AchievementsPageProps {
   memberData: {
@@ -164,33 +172,43 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
   const lockedAchievements = achievements.filter((a) => !a.unlocked);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
-        {/* Animated orbs */}
+    <div
+      className={`${bricolage.variable} ${sora.variable} min-h-screen relative overflow-hidden font-sans`}
+    >
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none z-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Brutalist background */}
+      <div className="absolute inset-0 bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 2, -2, 0],
+            scale: [1, 1.05, 1],
           }}
           transition={{
-            duration: 8,
+            duration: 20,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+          className="absolute top-0 -right-24 w-[600px] h-[600px] bg-[#ffb81c] opacity-15"
+          style={{
+            clipPath: "polygon(40% 0%, 100% 0%, 60% 100%, 0% 100%)",
+            transform: "rotate(-15deg)",
+          }}
         />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
           }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
         />
       </div>
 
@@ -198,26 +216,37 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
       <div className="relative z-10 p-4 lg:p-8 space-y-6">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: -30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="text-center lg:text-left max-w-7xl mx-auto"
         >
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 mb-6">
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
-              <Trophy className="w-10 h-10 text-white" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div className="relative w-16 h-16 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] flex items-center justify-center">
+                <Trophy className="w-10 h-10 text-black" />
+              </div>
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
-                <h1 className="text-4xl font-bold text-white">Achievements</h1>
-                <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                  <Sparkles className="w-4 h-4 text-[#ffb81c]" />
-                  <span className="text-sm font-medium text-white">
+                <h1
+                  className={`text-5xl lg:text-6xl font-extrabold text-white ${bricolage.className} tracking-tight`}
+                >
+                  Achievements
+                </h1>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ed1c24] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                  <Zap className="w-4 h-4 text-black" />
+                  <span
+                    className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
+                  >
                     Track Progress
                   </span>
                 </div>
               </div>
-              <p className="text-white/90">
+              <p
+                className={`text-white/90 ${sora.className} text-lg`}
+              >
                 Unlock rewards and track your NSBE journey
               </p>
             </div>
@@ -226,48 +255,84 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+              initial={{ opacity: 0, y: 30, rotate: -1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="relative"
             >
-              <p className="text-white/80 text-sm mb-1">Total Events</p>
-              <p className="text-3xl font-bold text-white">
-                {memberData.totalEvents}
-              </p>
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div className="relative bg-white border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-4">
+                <p
+                  className={`text-black/70 text-sm mb-1 ${sora.className} font-medium`}
+                >
+                  Total Events
+                </p>
+                <p
+                  className={`text-3xl font-extrabold text-black ${bricolage.className}`}
+                >
+                  {memberData.totalEvents}
+                </p>
+              </div>
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+              initial={{ opacity: 0, y: 30, rotate: 1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="relative"
             >
-              <p className="text-white/80 text-sm mb-1">Unlocked</p>
-              <p className="text-3xl font-bold text-white">
-                {unlockedAchievements.length}/{achievements.length}
-              </p>
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div className="relative bg-white border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-4">
+                <p
+                  className={`text-black/70 text-sm mb-1 ${sora.className} font-medium`}
+                >
+                  Unlocked
+                </p>
+                <p
+                  className={`text-3xl font-extrabold text-black ${bricolage.className}`}
+                >
+                  {unlockedAchievements.length}/{achievements.length}
+                </p>
+              </div>
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+              initial={{ opacity: 0, y: 30, rotate: -1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="relative"
             >
-              <p className="text-white/80 text-sm mb-1">1-1-1</p>
-              <p className="text-3xl font-bold text-white">
-                {has111 ? "✓" : "—"}
-              </p>
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div className="relative bg-white border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-4">
+                <p
+                  className={`text-black/70 text-sm mb-1 ${sora.className} font-medium`}
+                >
+                  1-1-1
+                </p>
+                <p
+                  className={`text-3xl font-extrabold text-black ${bricolage.className}`}
+                >
+                  {has111 ? "✓" : "—"}
+                </p>
+              </div>
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-2xl"
+              initial={{ opacity: 0, y: 30, rotate: 1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="relative"
             >
-              <p className="text-white/80 text-sm mb-1">3-3-3</p>
-              <p className="text-3xl font-bold text-white">
-                {has333 ? "✓" : "—"}
-              </p>
+              <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+              <div className="relative bg-white border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-4">
+                <p
+                  className={`text-black/70 text-sm mb-1 ${sora.className} font-medium`}
+                >
+                  3-3-3
+                </p>
+                <p
+                  className={`text-3xl font-extrabold text-black ${bricolage.className}`}
+                >
+                  {has333 ? "✓" : "—"}
+                </p>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -295,12 +360,20 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
                   return (
                     <motion.div
                       key={achievement.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ y: -5, scale: 1.02 }}
+                      initial={{ opacity: 0, y: 30, rotate: -1 }}
+                      animate={{ opacity: 1, y: 0, rotate: 0 }}
+                      transition={{ delay: 0.7 + index * 0.1, duration: 0.6 }}
+                      whileHover={{
+                        rotate: 1,
+                        scale: 1.02,
+                        x: 4,
+                        y: -4,
+                        transition: { duration: 0.2 },
+                      }}
+                      className="relative"
                     >
-                      <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border-2 border-green-400/40 shadow-2xl hover:bg-white/20 transition-all duration-300">
+                      <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+                      <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
                         <div className="flex items-start gap-4">
                           <motion.div
                             whileHover={{ rotate: [0, -10, 10, -10, 0] }}
@@ -363,11 +436,13 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
                   return (
                     <motion.div
                       key={achievement.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
+                      initial={{ opacity: 0, y: 30, rotate: 1 }}
+                      animate={{ opacity: 1, y: 0, rotate: 0 }}
+                      transition={{ delay: 0.9 + index * 0.1, duration: 0.6 }}
+                      className="relative opacity-90"
                     >
-                      <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300 opacity-80">
+                      <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+                      <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
                         <div className="flex items-start gap-4">
                           <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0 relative">
                             <Icon className="w-8 h-8 text-white/40" />
@@ -421,18 +496,25 @@ export function AchievementsPage({ memberData }: AchievementsPageProps) {
           {unlockedAchievements.length === 0 &&
             lockedAchievements.length === 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="bg-white/10 backdrop-blur-xl rounded-2xl p-16 border border-white/20 shadow-2xl text-center"
+                transition={{ delay: 0.6, duration: 0.7 }}
+                className="relative"
               >
-                <Trophy className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  No achievements yet
-                </h3>
-                <p className="text-white/80">
-                  Start attending events to unlock achievements!
-                </p>
+                <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+                <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-16 text-center">
+                  <Trophy className="w-16 h-16 text-black/30 mx-auto mb-4" />
+                  <h3
+                    className={`text-xl font-extrabold text-black mb-2 ${bricolage.className} uppercase`}
+                  >
+                    No achievements yet
+                  </h3>
+                  <p
+                    className={`${sora.className} text-black/80 font-medium`}
+                  >
+                    Start attending events to unlock achievements!
+                  </p>
+                </div>
               </motion.div>
             )}
         </div>
