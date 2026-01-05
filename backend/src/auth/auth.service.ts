@@ -13,10 +13,15 @@ export class AuthService {
 
     if (existingMember) {
       // If member exists but has different ID, update it to match Supabase user ID
+      // IMPORTANT: Explicitly preserve the existing role to prevent role loss
       if (existingMember.id !== userId) {
         return this.prisma.member.update({
           where: { email },
-          data: { id: userId },
+          data: { 
+            id: userId,
+            // Explicitly preserve role - don't let it default or get overwritten
+            role: existingMember.role,
+          },
         });
       }
       return existingMember;

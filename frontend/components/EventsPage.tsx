@@ -1,3 +1,4 @@
+// Brutalist/Geometric Design System for NSBE UCF Events
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { EventCard } from "./EventCard";
@@ -9,7 +10,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Search, Plus, Calendar, Sparkles } from "lucide-react";
+import { Search, Plus, Calendar, Zap } from "lucide-react";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface EventsPageProps {
   events: any[];
@@ -68,33 +84,59 @@ export function EventsPage({
   );
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
-        {/* Animated orbs */}
+    <div
+      className={`${bricolage.variable} ${sora.variable} min-h-screen relative overflow-hidden font-sans`}
+    >
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none z-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Brutalist background with geometric shapes */}
+      <div className="absolute inset-0 bg-[#0a0a0a]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 2, -2, 0],
+            scale: [1, 1.05, 1],
           }}
           transition={{
-            duration: 8,
+            duration: 20,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+          className="absolute top-0 -right-24 w-[600px] h-[600px] bg-[#ffb81c] opacity-15"
+          style={{
+            clipPath: "polygon(40% 0%, 100% 0%, 60% 100%, 0% 100%)",
+            transform: "rotate(-15deg)",
+          }}
         />
         <motion.div
           animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -3, 3, 0],
+            scale: [1, 0.95, 1],
           }}
           transition={{
-            duration: 10,
+            duration: 25,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
+          className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-[#ed1c24] opacity-12"
+          style={{
+            clipPath: "polygon(0% 0%, 60% 0%, 100% 100%, 40% 100%)",
+            transform: "rotate(12deg)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
         />
       </div>
 
@@ -102,30 +144,48 @@ export function EventsPage({
       <div className="relative z-10 p-4 lg:p-8 space-y-6">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: -30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-3xl font-bold text-white">Events</h2>
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                <Sparkles className="w-4 h-4 text-[#ffb81c]" />
-                <span className="text-sm font-medium text-white">Discover</span>
+              <h2
+                className={`text-4xl lg:text-5xl font-extrabold text-white ${bricolage.className} tracking-tight`}
+              >
+                Events
+              </h2>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ed1c24] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                <Zap className="w-4 h-4 text-black" />
+                <span
+                  className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
+                >
+                  Discover
+                </span>
               </div>
             </div>
-            <p className="text-white/80">Browse and check in to NSBE events</p>
+            <p
+              className={`text-white/90 ${sora.className} text-lg`}
+            >
+              Browse and check in to NSBE events
+            </p>
           </div>
           {canCreateEvents && onCreateEvent && (
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "8px 8px 0 0 rgba(0,0,0,1)",
+                x: 4,
+                y: 4,
+              }}
+              whileTap={{ scale: 0.98 }}
               onClick={onCreateEvent}
-              className="bg-white text-[#00a651] px-6 py-3 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-2"
+              className="bg-[#00a651] text-white px-6 py-3 border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider transition-all duration-200 flex items-center gap-2"
+              style={{ fontFamily: "var(--font-bricolage)" }}
             >
               <Plus className="w-5 h-5" />
               Create Event
@@ -135,11 +195,13 @@ export function EventsPage({
 
         {/* Search and filters */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl"
+          initial={{ opacity: 0, y: 30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ delay: 0.3, duration: 0.7, ease: "easeOut" }}
+          className="relative"
         >
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1">
               <div className="relative">
@@ -149,14 +211,15 @@ export function EventsPage({
                   placeholder="Search events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-11 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-white/40 focus:ring-white/20 rounded-xl h-12 hover:bg-white/15 transition-all"
+                  style={{ fontFamily: "var(--font-sora)" }}
+                  className="pl-11 bg-black/5 border-2 border-black text-black placeholder:text-black/40 focus:border-[#00a651] focus:ring-0 h-12 hover:bg-black/10 transition-all font-medium"
                 />
               </div>
             </div>
 
             <div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white h-12 rounded-xl hover:bg-white/15 transition-all">
+                <SelectTrigger className="bg-black/5 border-2 border-black text-black h-12 hover:bg-black/10 transition-all font-medium" style={{ fontFamily: "var(--font-sora)" }}>
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,7 +235,7 @@ export function EventsPage({
 
             <div>
               <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white h-12 rounded-xl hover:bg-white/15 transition-all">
+                <SelectTrigger className="bg-black/5 border-2 border-black text-black h-12 hover:bg-black/10 transition-all font-medium" style={{ fontFamily: "var(--font-sora)" }}>
                   <SelectValue placeholder="All Time" />
                 </SelectTrigger>
                 <SelectContent>
@@ -237,23 +300,31 @@ export function EventsPage({
               )}
             </div>
           )}
+          </div>
         </motion.div>
 
         {/* Events list */}
         {filteredEvents.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-12 text-center border border-white/20 shadow-2xl"
+            transition={{ delay: 0.4, duration: 0.7 }}
+            className="relative"
           >
-            <Calendar className="w-16 h-16 text-white/30 mx-auto mb-4" />
-            <h4 className="text-white text-xl font-semibold mb-2">
-              No events found
-            </h4>
-            <p className="text-white/70">
-              Try adjusting your search or filters
-            </p>
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-12 text-center">
+              <Calendar className="w-16 h-16 text-black/30 mx-auto mb-4" />
+              <h4
+                className={`text-black text-xl font-extrabold mb-2 ${bricolage.className} uppercase`}
+              >
+                No events found
+              </h4>
+              <p
+                className={`${sora.className} text-black/70 font-medium`}
+              >
+                Try adjusting your search or filters
+              </p>
+            </div>
           </motion.div>
         ) : (
           <div className="space-y-8">
