@@ -7,7 +7,15 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight, Zap } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Loader2,
+  ArrowRight,
+  Zap,
+} from "lucide-react";
 import Image from "next/image";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
 
@@ -124,7 +132,7 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-[#ed1c24] opacity-12"
+          className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-[#ed1c24] opacity-[0.12]"
           style={{
             clipPath: "polygon(0% 0%, 60% 0%, 100% 100%, 40% 100%)",
             transform: "rotate(12deg)",
@@ -221,7 +229,10 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
 
               <h2
                 className={`text-5xl lg:text-7xl xl:text-8xl font-extrabold leading-[0.95] tracking-tight`}
-                style={{ fontFamily: "var(--font-bricolage)", lineHeight: "0.95" }}
+                style={{
+                  fontFamily: "var(--font-bricolage)",
+                  lineHeight: "0.95",
+                }}
               >
                 Track Your
                 <br />
@@ -323,7 +334,11 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
         <motion.div
           initial={{ opacity: 0, x: 100, rotate: 2 }}
           animate={{ opacity: 1, x: 0, rotate: 0 }}
-          transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.2 }}
+          transition={{
+            duration: 1,
+            ease: [0.25, 0.46, 0.45, 0.94],
+            delay: 0.2,
+          }}
           className="relative z-30 w-full max-w-lg lg:-ml-12"
         >
           {/* Card shadow effect */}
@@ -501,7 +516,12 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   x: 4,
                   y: 4,
                 }}
-                whileTap={{ scale: 0.98, x: 8, y: 8, boxShadow: "4px 4px 0 0 rgba(0,0,0,1)" }}
+                whileTap={{
+                  scale: 0.98,
+                  x: 8,
+                  y: 8,
+                  boxShadow: "4px 4px 0 0 rgba(0,0,0,1)",
+                }}
                 type="submit"
                 disabled={isLoading}
                 style={{ fontFamily: "var(--font-bricolage)" }}
@@ -528,7 +548,10 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
               transition={{ delay: 1.3, duration: 0.5 }}
               className="mt-8 pt-8 border-t-4 border-black text-center"
             >
-              <p className={`text-sm text-black/60`} style={{ fontFamily: "var(--font-sora)" }}>
+              <p
+                className={`text-sm text-black/60`}
+                style={{ fontFamily: "var(--font-sora)" }}
+              >
                 Don't have an account?{" "}
                 <button
                   onClick={() => onNavigate("signup")}
@@ -551,8 +574,11 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
         transition={{ delay: 1.4, duration: 0.5 }}
         className="absolute bottom-6 left-6 right-6 lg:left-12 lg:right-12 text-center z-10"
       >
-        <p className={`text-xs text-white/40 uppercase tracking-widest`} style={{ fontFamily: "var(--font-sora)" }}>
-          © 2024 NSBE UCF Chapter
+        <p
+          className={`text-xs text-white/40 uppercase tracking-widest`}
+          style={{ fontFamily: "var(--font-sora)" }}
+        >
+          © {new Date().getFullYear()} NSBE UCF Chapter
         </p>
       </motion.div>
     </div>
