@@ -1,11 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "installCommand": "npm install --production=false",
-  "framework": null,
+  "framework": "nextjs",
   "outputDirectory": "frontend/.next",
-  "cleanUrls": true,
-  "trailingSlash": false,
   "functions": {
     "api/index.ts": {
       "memory": 1024,
@@ -14,8 +12,8 @@
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/:path*",
+      "destination": "/api/index"
     }
   ]
 }
