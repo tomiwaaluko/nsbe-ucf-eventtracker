@@ -158,7 +158,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     <div className="space-y-6">
       {/* Profile Photo Section */}
       <div>
-        <h3 className="font-semibold text-gray-900 mb-4">Profile Photo</h3>
+        <h3 className="font-extrabold text-black text-xl mb-4">Profile Photo</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="relative">
             {previewUrl ? (
@@ -207,7 +207,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-black/70 font-medium mt-2">
               JPG, PNG or GIF. Max size 5MB. Recommended 400x400px.
             </p>
           </div>
@@ -215,14 +215,14 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       </div>
 
       <div className="border-t border-gray-200 pt-6">
-        <h3 className="font-semibold text-gray-900 mb-4">
+        <h3 className="font-extrabold text-black text-xl mb-4">
           Personal Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* First Name */}
           <div className="space-y-2">
-            <Label htmlFor="firstName">
+            <Label htmlFor="firstName" className="font-bold text-black">
               First Name <span className="text-red-500">*</span>
             </Label>
             <Input
@@ -240,7 +240,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
           {/* Last Name */}
           <div className="space-y-2">
-            <Label htmlFor="lastName">
+            <Label htmlFor="lastName" className="font-bold text-black">
               Last Name <span className="text-red-500">*</span>
             </Label>
             <Input
@@ -258,7 +258,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
           {/* Email */}
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="email">
+            <Label htmlFor="email" className="font-bold text-black">
               Email <span className="text-red-500">*</span>
             </Label>
             <Input
@@ -270,23 +270,23 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
               aria-invalid={!!errors.email}
             />
             {errors.email && (
-              <p className="text-sm text-red-600">⚠ {errors.email}</p>
+              <p className="text-sm text-red-600 font-semibold">⚠ {errors.email}</p>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-black/70 font-medium">
               This email is used for account recovery and notifications
             </p>
           </div>
 
           {/* Major */}
           <div className="space-y-2">
-            <Label htmlFor="major">Major</Label>
+            <Label htmlFor="major" className="font-bold text-black">Major</Label>
             <select
               id="major"
               value={formData.major}
               onChange={(e) => handleChange("major", e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border-2 border-black bg-white px-3 py-1 text-sm font-medium text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
             >
-              <option value="">Select your major</option>
+              <option value="" className="text-black/60">Select your major</option>
               {MAJORS.map((major) => (
                 <option key={major} value={major}>
                   {major}
@@ -297,16 +297,16 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
           {/* Graduation Year */}
           <div className="space-y-2">
-            <Label htmlFor="graduationYear">Expected Graduation</Label>
+            <Label htmlFor="graduationYear" className="font-bold text-black">Expected Graduation</Label>
             <select
               id="graduationYear"
               value={formData.graduationYear}
               onChange={(e) =>
                 handleChange("graduationYear", parseInt(e.target.value))
               }
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border-2 border-black bg-white px-3 py-1 text-sm font-medium text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
             >
-              <option value="">Select year</option>
+              <option value="" className="text-black/60">Select year</option>
               {GRADUATION_YEARS.map((year) => (
                 <option key={year} value={year}>
                   {year}

@@ -121,9 +121,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onLogout={handleLogout}
       />
 
-      {/* Main content with gradient background */}
-      <main className="flex-1 bg-gradient-to-br from-[#006830] via-[#008a44] to-[#00a651] overflow-y-auto">
-        <div className="p-4 lg:p-8 pt-16 lg:pt-8">{children}</div>
+      {/* Main content - children handle their own backgrounds */}
+      <main className="flex-1 overflow-y-auto">
+        {children}
       </main>
     </div>
   );

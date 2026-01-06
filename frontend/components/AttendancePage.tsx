@@ -1,12 +1,4 @@
-// GitHub Copilot: Redesign this Check-In page to feel like a focused, modern CTA.
-// Requirements:
-// - Match the Login page style (gradient + glass card).
-// - Feature one primary card with a bold "Check In" title and description.
-// - If using QR scanning, highlight the scan area with a subtle glow/border animation.
-// - If using code entry, make a large input + prominent "Check In" button.
-// - Add a small "Recent check-ins" list below in a secondary glass card.
-// - Do not change the check-in logic, just the layout and Tailwind classes.
-
+// Brutalist/Geometric Design System for NSBE UCF Attendance
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
@@ -17,8 +9,24 @@ import {
   AlertCircle,
   Camera,
   X,
+  Zap,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface AttendancePageProps {
   upcomingEvents: Array<{
@@ -212,66 +220,112 @@ export function AttendancePage({
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830]">
-        {/* Animated orbs */}
+    <div
+      className={`${bricolage.variable} ${sora.variable} min-h-screen relative overflow-hidden font-sans`}
+    >
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none z-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Brutalist background with geometric shapes */}
+      <div className="absolute inset-0 bg-[#0a0a0a]">
+        {/* Base green gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+
+        {/* Diagonal geometric shapes */}
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 2, -2, 0],
+            scale: [1, 1.05, 1],
           }}
           transition={{
-            duration: 8,
+            duration: 20,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-0 right-0 w-96 h-96 bg-[#ffb81c] rounded-full blur-3xl opacity-30"
+          className="absolute top-0 -right-24 w-[600px] h-[600px] bg-[#ffb81c] opacity-15"
+          style={{
+            clipPath: "polygon(40% 0%, 100% 0%, 60% 100%, 0% 100%)",
+            transform: "rotate(-15deg)",
+          }}
         />
         <motion.div
           animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -3, 3, 0],
+            scale: [1, 0.95, 1],
           }}
           transition={{
-            duration: 10,
+            duration: 25,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute bottom-0 left-0 w-96 h-96 bg-[#ed1c24] rounded-full blur-3xl opacity-20"
+          className="absolute bottom-0 -left-32 w-[500px] h-[500px] bg-[#ed1c24] opacity-12"
+          style={{
+            clipPath: "polygon(0% 0%, 60% 0%, 100% 100%, 40% 100%)",
+            transform: "rotate(12deg)",
+          }}
+        />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
         />
       </div>
 
       {/* Content */}
       <div className="relative z-10 p-4 lg:p-8 space-y-6">
-        {/* Header */}
+        {/* Header - Brutalist style matching Dashboard */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: -30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative"
         >
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-lg rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl">
-              <QrCode className="w-10 h-10 text-white" />
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <h1
+                  className={`text-4xl lg:text-5xl font-extrabold mb-3 text-black ${bricolage.className} tracking-tight`}
+                >
+                  Check In
+                </h1>
+                <p
+                  className={`text-lg ${sora.className} text-black/70 max-w-2xl`}
+                >
+                  Scan the event QR code to check in and track your progress
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+                <Zap className="w-4 h-4 text-black" />
+                <span
+                  className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
+                >
+                  Quick Scan
+                </span>
+              </div>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold text-white">
-              Check In
-            </h1>
           </div>
-          <p className="text-white/90 text-lg">
-            Scan the event QR code to check in and track your progress
-          </p>
         </motion.div>
 
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* QR Code Scanner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 lg:p-12 border border-white/20 shadow-2xl"
-          >
+        {/* QR Code Scanner - Brutalist style */}
+        <motion.div
+          initial={{ opacity: 0, y: 30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
+          className="relative max-w-4xl mx-auto"
+        >
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8 lg:p-12">
             <div>
               {!isCameraActive ? (
                 <div className="max-w-lg mx-auto text-center">
@@ -283,25 +337,38 @@ export function AttendancePage({
                   >
                     <motion.div
                       animate={{
-                        scale: [1, 1.1, 1],
-                        opacity: [0.3, 0.5, 0.3],
+                        boxShadow: [
+                          "0 0 20px rgba(0, 166, 81, 0.3)",
+                          "0 0 40px rgba(0, 166, 81, 0.5)",
+                          "0 0 20px rgba(0, 166, 81, 0.3)",
+                        ],
                       }}
                       transition={{
-                        duration: 4,
+                        duration: 3,
                         repeat: Infinity,
                         ease: "easeInOut",
                       }}
-                      className="absolute inset-0 bg-[#ffb81c] rounded-3xl blur-2xl"
-                    />
-                    <div className="relative w-40 h-40 bg-white/20 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center shadow-2xl border border-white/30">
-                      <QrCode className="w-24 h-24 text-white" />
-                    </div>
+                      className="mx-auto w-64 h-64 bg-black/5 flex items-center justify-center border-4 border-dashed border-black"
+                    >
+                      <div className="text-center">
+                        <QrCode className="w-24 h-24 text-black/60 mx-auto mb-4" />
+                        <p
+                          className={`text-black/80 font-bold mb-2 ${bricolage.className} uppercase text-lg`}
+                        >
+                          Ready to Scan
+                        </p>
+                        <p
+                          className={`text-sm ${sora.className} text-black/60 font-medium`}
+                        >
+                          Position QR code within frame
+                        </p>
+                      </div>
+                    </motion.div>
                   </motion.div>
 
-                  <h2 className="text-3xl font-bold text-white mb-3">
-                    Ready to Scan
-                  </h2>
-                  <p className="text-white/90 text-lg mb-8">
+                  <p
+                    className={`text-black/70 mb-8 ${sora.className} text-lg`}
+                  >
                     Click below to open your camera and scan the event QR code
                   </p>
 
@@ -309,13 +376,18 @@ export function AttendancePage({
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-6 p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 rounded-xl"
+                      className="mb-6 relative"
                     >
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-200 mt-0.5" />
-                        <p className="text-red-100 text-sm font-medium">
-                          {scanError}
-                        </p>
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                      <div className="relative bg-[#ed1c24] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-white mt-0.5" />
+                          <p
+                            className={`text-white text-sm font-medium ${sora.className}`}
+                          >
+                            {scanError}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -323,11 +395,14 @@ export function AttendancePage({
                   <motion.button
                     whileHover={{
                       scale: 1.02,
-                      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+                      boxShadow: "8px 8px 0 0 rgba(0,0,0,1)",
+                      x: 4,
+                      y: 4,
                     }}
                     whileTap={{ scale: 0.98 }}
                     onClick={startCamera}
-                    className="w-full bg-white text-[#00a651] py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2"
+                    style={{ fontFamily: "var(--font-bricolage)" }}
+                    className="w-full bg-[#00a651] text-white py-4 border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 hover:bg-[#008a44] text-lg"
                   >
                     <Camera className="w-5 h-5" />
                     Open Camera to Scan
@@ -338,19 +413,26 @@ export function AttendancePage({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="mt-8 p-5 bg-green-500/20 backdrop-blur-sm border-2 border-green-400/40 rounded-2xl shadow-lg"
+                      className="mt-8 relative"
                     >
-                      <div className="flex items-center gap-3 justify-center">
-                        <div className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
-                          <CheckCircle2 className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm text-green-100 font-medium">
-                            Event Active Now
-                          </p>
-                          <p className="text-base font-semibold text-white">
-                            {activeEvents[0].name}
-                          </p>
+                      <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+                      <div className="relative bg-[#00a651] border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-5">
+                        <div className="flex items-center gap-3 justify-center">
+                          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30">
+                            <CheckCircle2 className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <p
+                              className={`text-sm text-white/90 font-medium ${sora.className}`}
+                            >
+                              Event Active Now
+                            </p>
+                            <p
+                              className={`text-base font-semibold text-white ${bricolage.className}`}
+                            >
+                              {activeEvents[0].name}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -360,14 +442,18 @@ export function AttendancePage({
                 <div className="max-w-lg mx-auto">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30">
-                        <Camera className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 bg-black/5 border-2 border-black rounded-full flex items-center justify-center">
+                        <Camera className="w-5 h-5 text-black" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-white">
+                        <h2
+                          className={`text-xl font-bold text-black ${bricolage.className}`}
+                        >
                           Scanning Active
                         </h2>
-                        <p className="text-sm text-white/80">
+                        <p
+                          className={`text-sm text-black/70 ${sora.className}`}
+                        >
                           Position QR code in frame
                         </p>
                       </div>
@@ -376,7 +462,8 @@ export function AttendancePage({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={stopCamera}
-                      className="px-4 py-2 text-red-100 hover:text-white bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-400/30 transition-all flex items-center gap-1"
+                      className="px-4 py-2 bg-[#ed1c24] text-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transition-all flex items-center gap-1 font-bold uppercase text-sm hover:bg-[#c91a1f]"
+                      style={{ fontFamily: "var(--font-bricolage)" }}
                     >
                       <X className="w-4 h-4" />
                       Close
@@ -386,97 +473,135 @@ export function AttendancePage({
                   <div className="relative">
                     <motion.div
                       animate={{
-                        scale: [1, 1.05, 1],
-                        opacity: [0.3, 0.5, 0.3],
+                        boxShadow: [
+                          "0 0 20px rgba(0, 166, 81, 0.3)",
+                          "0 0 40px rgba(0, 166, 81, 0.5)",
+                          "0 0 20px rgba(0, 166, 81, 0.3)",
+                        ],
                       }}
                       transition={{
                         duration: 3,
                         repeat: Infinity,
                         ease: "easeInOut",
                       }}
-                      className="absolute -inset-4 bg-[#ffb81c] rounded-3xl blur-xl"
+                      className="absolute -inset-4 border-4 border-dashed border-black bg-black/5"
                     />
                     <div
                       id="qr-reader"
                       ref={scannerElementRef}
-                      className="relative rounded-2xl overflow-hidden border-4 border-white/40 shadow-2xl min-h-[350px]"
+                      className="relative overflow-hidden border-4 border-black min-h-[350px] bg-black/5"
                     ></div>
                   </div>
 
-                  <div className="mt-6 p-4 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-xl">
-                    <p className="text-sm text-white font-medium text-center">
-                      💡 Hold your device steady and ensure good lighting
-                    </p>
+                  <div className="mt-6 relative">
+                    <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                    <div className="relative bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-4">
+                      <p
+                        className={`text-sm text-black font-medium text-center ${sora.className}`}
+                      >
+                        💡 Hold your device steady and ensure good lighting
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Today's Events */}
-          {todayEvents.length > 0 && (
+        {/* Today's Events - Brutalist style */}
+        {todayEvents.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.7 }}
+            className="space-y-6 max-w-7xl mx-auto"
+          >
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="space-y-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="flex items-center gap-3"
             >
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Today&apos;s Events
-                </h2>
-                <p className="text-white/80">Events happening today</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {todayEvents.map((event, index) => {
-                  const config = categoryConfig[event.category];
-                  return (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ y: -5 }}
-                    >
-                      <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-300">
-                        <div className="mb-4">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 text-sm text-white font-medium">
-                            <span>{config.icon}</span>
-                            <span>{config.label}</span>
-                          </div>
-                        </div>
-                        <h3 className="font-bold text-lg text-white mb-4">
-                          {event.name}
-                        </h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 text-sm text-white/90">
-                            <div className="w-8 h-8 bg-blue-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center border border-blue-400/30">
-                              <Clock className="w-4 h-4 text-blue-200" />
-                            </div>
-                            <span className="font-medium">
-                              {formatTime(event.startTime)} -{" "}
-                              {formatTime(event.endTime)}
-                            </span>
-                          </div>
-                          {event.location && (
-                            <div className="flex items-center gap-3 text-sm text-white/90">
-                              <div className="w-8 h-8 bg-purple-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center border border-purple-400/30">
-                                <MapPin className="w-4 h-4 text-purple-200" />
-                              </div>
-                              <span className="font-medium">
-                                {event.location}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+              <h2
+                className={`text-2xl font-bold text-white ${bricolage.className}`}
+              >
+                Today&apos;s Events
+              </h2>
+              <div className="px-3 py-1 bg-blue-500/20 backdrop-blur-sm rounded-full text-blue-100 text-sm font-medium border border-blue-400/30">
+                {todayEvents.length}
               </div>
             </motion.div>
-          )}
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {todayEvents.map((event, index) => {
+                const config = categoryConfig[event.category];
+                return (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 30, rotate: -1 }}
+                    animate={{ opacity: 1, y: 0, rotate: 0 }}
+                    transition={{
+                      delay: 0.6 + index * 0.1,
+                      duration: 0.6,
+                    }}
+                    whileHover={{
+                      rotate: 1,
+                      scale: 1.02,
+                      x: 4,
+                      y: -4,
+                      transition: { duration: 0.2 },
+                    }}
+                    className="relative"
+                  >
+                    <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+                    <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+                      <div className="mb-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/5 border-2 border-black text-sm font-medium">
+                          <span>{config.icon}</span>
+                          <span
+                            className={`text-black ${bricolage.className} font-bold uppercase text-xs`}
+                          >
+                            {config.label}
+                          </span>
+                        </div>
+                      </div>
+                      <h3
+                        className={`font-bold text-lg text-black mb-4 ${bricolage.className}`}
+                      >
+                        {event.name}
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-sm text-black/80">
+                          <div className="w-8 h-8 bg-black/5 border-2 border-black flex items-center justify-center">
+                            <Clock className="w-4 h-4 text-black" />
+                          </div>
+                          <span
+                            className={`font-medium ${sora.className}`}
+                          >
+                            {formatTime(event.startTime)} -{" "}
+                            {formatTime(event.endTime)}
+                          </span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-center gap-3 text-sm text-black/80">
+                            <div className="w-8 h-8 bg-black/5 border-2 border-black flex items-center justify-center">
+                              <MapPin className="w-4 h-4 text-black" />
+                            </div>
+                            <span
+                              className={`font-medium ${sora.className}`}
+                            >
+                              {event.location}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

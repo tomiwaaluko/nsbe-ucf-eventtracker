@@ -39,6 +39,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 interface DashboardProps {
@@ -475,29 +476,75 @@ export function Dashboard({
               >
                 Attendance by Category
               </h4>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={progressData}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={progressData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.1)"
+                  stroke="#000000"
+                  strokeWidth={2}
+                  opacity={0.2}
                 />
-                <XAxis dataKey="category" stroke="rgba(255,255,255,0.7)" />
-                <YAxis stroke="rgba(255,255,255,0.7)" />
+                <XAxis
+                  dataKey="category"
+                  stroke="#000000"
+                  strokeWidth={2}
+                  tick={{ fill: "#000000", fontSize: 12, fontWeight: "bold" }}
+                  tickLine={{ stroke: "#000000", strokeWidth: 2 }}
+                  axisLine={{ stroke: "#000000", strokeWidth: 3 }}
+                />
+                <YAxis
+                  stroke="#000000"
+                  strokeWidth={2}
+                  tick={{ fill: "#000000", fontSize: 12, fontWeight: "bold" }}
+                  tickLine={{ stroke: "#000000", strokeWidth: 2 }}
+                  axisLine={{ stroke: "#000000", strokeWidth: 3 }}
+                  domain={[0, 3]}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    borderRadius: "0.75rem",
-                    color: "white",
+                    backgroundColor: "#ffffff",
+                    border: "4px solid #000000",
+                    borderRadius: "0",
+                    color: "#000000",
+                    fontWeight: "bold",
+                    boxShadow: "4px 4px 0 0 rgba(0,0,0,1)",
+                  }}
+                  labelStyle={{
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                    textTransform: "uppercase",
                   }}
                 />
-                <Bar dataKey="current" fill="#00a651" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="current"
+                  fill="#00a651"
+                  radius={[0, 0, 0, 0]}
+                >
+                  {progressData.map((entry, index) => (
+                    <Cell
+                      key={`cell-current-${index}`}
+                      stroke="#000000"
+                      strokeWidth={3}
+                    />
+                  ))}
+                </Bar>
                 <Bar
                   dataKey="target"
-                  fill="rgba(255,255,255,0.2)"
-                  radius={[8, 8, 0, 0]}
-                />
+                  fill="#e5e7eb"
+                  radius={[0, 0, 0, 0]}
+                >
+                  {progressData.map((entry, index) => (
+                    <Cell
+                      key={`cell-target-${index}`}
+                      stroke="#000000"
+                      strokeWidth={3}
+                      strokeDasharray="5 5"
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
             </div>

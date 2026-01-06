@@ -16,6 +16,21 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface SidebarProps {
   currentPage: string;
@@ -125,65 +140,84 @@ export function Sidebar({
   return (
     <>
       {/* Mobile menu button */}
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-[#00a651] to-[#008a44] rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="lg:hidden fixed top-4 left-4 z-50 relative"
         aria-label="Toggle menu"
       >
-        {isOpen ? (
-          <X className="w-6 h-6 text-white" />
-        ) : (
-          <Menu className="w-6 h-6 text-white" />
-        )}
-      </button>
+        <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+        <div className="relative bg-[#00a651] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-2">
+          {isOpen ? (
+            <X className="w-6 h-6 text-white" />
+          ) : (
+            <Menu className="w-6 h-6 text-white" />
+          )}
+        </div>
+      </motion.button>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-80 bg-white border-r border-gray-200 flex-col h-screen sticky top-0">
+      <aside
+        className={`hidden lg:flex w-80 bg-white border-r-4 border-black flex-col h-screen sticky top-0 ${bricolage.variable} ${sora.variable}`}
+      >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b-4 border-black">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                <Image
-                  src="/nsbe-logo.png"
-                  alt="NSBE Logo"
-                  width={40}
-                  height={40}
-                  className="object-contain"
-                />
+              <div className="relative">
+                <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                <div className="relative w-10 h-10 bg-[#00a651] border-2 border-black flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/nsbe-logo.png"
+                    alt="NSBE Logo"
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                  />
+                </div>
               </div>
               <div>
-                <h3 className="text-gray-900 font-semibold">NSBE UCF</h3>
-                <p className="text-xs text-gray-500">Event Tracker</p>
+                <h3
+                  className={`text-black font-extrabold ${bricolage.className}`}
+                >
+                  NSBE UCF
+                </h3>
+                <p className={`text-xs text-black/60 ${sora.className}`}>
+                  Event Tracker
+                </p>
               </div>
             </div>
           </div>
 
           {/* User info */}
           <div
-            className="p-4 border-b border-gray-200"
+            className="p-4 border-b-4 border-black"
             suppressHydrationWarning
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00a651] to-[#008a44] flex items-center justify-center">
-                <span
-                  className="text-white font-semibold text-sm"
-                  suppressHydrationWarning
-                >
-                  {userName && userName.length > 0
-                    ? userName.charAt(0).toUpperCase()
-                    : "M"}
-                </span>
+              <div className="relative">
+                <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                <div className="relative w-10 h-10 bg-[#00a651] border-2 border-black flex items-center justify-center">
+                  <span
+                    className={`text-white font-bold text-sm ${bricolage.className}`}
+                    suppressHydrationWarning
+                  >
+                    {userName && userName.length > 0
+                      ? userName.charAt(0).toUpperCase()
+                      : "M"}
+                  </span>
+                </div>
               </div>
               <div className="flex-1 min-w-0">
                 <p
-                  className="text-sm font-medium text-gray-900 truncate"
+                  className={`text-sm font-bold text-black truncate ${bricolage.className}`}
                   suppressHydrationWarning
                 >
                   {userName}
                 </p>
                 <p
-                  className="text-xs text-gray-500 capitalize"
+                  className={`text-xs text-black/60 capitalize ${sora.className}`}
                   suppressHydrationWarning
                 >
                   {userRole}
@@ -202,21 +236,44 @@ export function Sidebar({
                 const isActive = currentPage === item.id;
 
                 return (
-                  <button
+                  <motion.button
                     key={item.id}
                     onClick={() => {
                       onNavigate(item.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
+                    whileHover={
+                      !isActive
+                        ? {
+                            x: 2,
+                            y: -2,
+                            transition: { duration: 0.2 },
+                          }
+                        : {}
+                    }
+                    whileTap={{ scale: 0.98 }}
+                    className="relative w-full"
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
+                    {isActive && (
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                    )}
+                    <div
+                      className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                        isActive
+                          ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                          : "bg-white text-black hover:bg-black/5"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span
+                        className={`font-bold ${bricolage.className} ${
+                          isActive ? "text-white" : "text-black"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                  </motion.button>
                 );
               })}
 
@@ -224,7 +281,9 @@ export function Sidebar({
             {filteredMenuItems.some((item) => item.section === "admin") && (
               <>
                 <div className="pt-4 pb-2 px-2">
-                  <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  <p
+                    className={`text-xs uppercase tracking-wider text-black/60 font-bold ${bricolage.className}`}
+                  >
                     Administration
                   </p>
                 </div>
@@ -235,21 +294,44 @@ export function Sidebar({
                     const isActive = currentPage === item.id;
 
                     return (
-                      <button
+                      <motion.button
                         key={item.id}
                         onClick={() => {
                           onNavigate(item.id);
                           setIsOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                          isActive
-                            ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        whileHover={
+                          !isActive
+                            ? {
+                                x: 2,
+                                y: -2,
+                                transition: { duration: 0.2 },
+                              }
+                            : {}
+                        }
+                        whileTap={{ scale: 0.98 }}
+                        className="relative w-full"
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-medium">{item.label}</span>
-                      </button>
+                        {isActive && (
+                          <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                        )}
+                        <div
+                          className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                            isActive
+                              ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                              : "bg-white text-black hover:bg-black/5"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 flex-shrink-0" />
+                          <span
+                            className={`font-bold ${bricolage.className} ${
+                              isActive ? "text-white" : "text-black"
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      </motion.button>
                     );
                   })}
               </>
@@ -257,8 +339,8 @@ export function Sidebar({
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <button
+          <div className="p-4 border-t-4 border-black">
+            <motion.button
               onClick={() => {
                 if (onLogout) {
                   onLogout();
@@ -266,11 +348,24 @@ export function Sidebar({
                   console.log("Logout");
                 }
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+              whileHover={{
+                x: 2,
+                y: -2,
+                transition: { duration: 0.2 },
+              }}
+              whileTap={{ scale: 0.98 }}
+              className="relative w-full"
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
+              <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+              <div className="relative flex items-center gap-3 px-4 py-3 bg-white border-2 border-black hover:bg-red-50 transition-colors">
+                <LogOut className="w-5 h-5 text-[#ed1c24]" />
+                <span
+                  className={`font-bold text-[#ed1c24] ${bricolage.className}`}
+                >
+                  Logout
+                </span>
+              </div>
+            </motion.button>
           </div>
         </div>
       </aside>
@@ -294,53 +389,65 @@ export function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="lg:hidden fixed left-0 top-0 h-screen w-80 bg-white z-50 shadow-xl"
+              className={`lg:hidden fixed left-0 top-0 h-screen w-80 bg-white border-r-4 border-black z-50 ${bricolage.variable} ${sora.variable}`}
             >
               <div className="flex flex-col h-full">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b-4 border-black">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                      <Image
-                        src="/nsbe-logo.png"
-                        alt="NSBE Logo"
-                        width={40}
-                        height={40}
-                        className="object-contain"
-                      />
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                      <div className="relative w-10 h-10 bg-[#00a651] border-2 border-black flex items-center justify-center overflow-hidden">
+                        <Image
+                          src="/nsbe-logo.png"
+                          alt="NSBE Logo"
+                          width={40}
+                          height={40}
+                          className="object-contain"
+                        />
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-gray-900 font-semibold">NSBE UCF</h3>
-                      <p className="text-xs text-gray-500">Event Tracker</p>
+                      <h3
+                        className={`text-black font-extrabold ${bricolage.className}`}
+                      >
+                        NSBE UCF
+                      </h3>
+                      <p className={`text-xs text-black/60 ${sora.className}`}>
+                        Event Tracker
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* User info */}
                 <div
-                  className="p-4 border-b border-gray-200"
+                  className="p-4 border-b-4 border-black"
                   suppressHydrationWarning
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00a651] to-[#008a44] flex items-center justify-center">
-                      <span
-                        className="text-white font-semibold text-sm"
-                        suppressHydrationWarning
-                      >
-                        {userName && userName.length > 0
-                          ? userName.charAt(0).toUpperCase()
-                          : "M"}
-                      </span>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                      <div className="relative w-10 h-10 bg-[#00a651] border-2 border-black flex items-center justify-center">
+                        <span
+                          className={`text-white font-bold text-sm ${bricolage.className}`}
+                          suppressHydrationWarning
+                        >
+                          {userName && userName.length > 0
+                            ? userName.charAt(0).toUpperCase()
+                            : "M"}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-sm font-medium text-gray-900 truncate"
+                        className={`text-sm font-bold text-black truncate ${bricolage.className}`}
                         suppressHydrationWarning
                       >
                         {userName}
                       </p>
                       <p
-                        className="text-xs text-gray-500 capitalize"
+                        className={`text-xs text-black/60 capitalize ${sora.className}`}
                         suppressHydrationWarning
                       >
                         {userRole}
@@ -359,21 +466,44 @@ export function Sidebar({
                       const isActive = currentPage === item.id;
 
                       return (
-                        <button
+                        <motion.button
                           key={item.id}
                           onClick={() => {
                             onNavigate(item.id);
                             setIsOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                            isActive
-                              ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          whileHover={
+                            !isActive
+                              ? {
+                                  x: 2,
+                                  y: -2,
+                                  transition: { duration: 0.2 },
+                                }
+                              : {}
+                          }
+                          whileTap={{ scale: 0.98 }}
+                          className="relative w-full"
                         >
-                          <Icon className="w-5 h-5 flex-shrink-0" />
-                          <span className="font-medium">{item.label}</span>
-                        </button>
+                          {isActive && (
+                            <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                          )}
+                          <div
+                            className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                              isActive
+                                ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                                : "bg-white text-black hover:bg-black/5"
+                            }`}
+                          >
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            <span
+                              className={`font-bold ${bricolage.className} ${
+                                isActive ? "text-white" : "text-black"
+                              }`}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        </motion.button>
                       );
                     })}
 
@@ -383,7 +513,9 @@ export function Sidebar({
                   ) && (
                     <>
                       <div className="pt-4 pb-2 px-2">
-                        <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                        <p
+                          className={`text-xs uppercase tracking-wider text-black/60 font-bold ${bricolage.className}`}
+                        >
                           Administration
                         </p>
                       </div>
@@ -394,21 +526,44 @@ export function Sidebar({
                           const isActive = currentPage === item.id;
 
                           return (
-                            <button
+                            <motion.button
                               key={item.id}
                               onClick={() => {
                                 onNavigate(item.id);
                                 setIsOpen(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                                isActive
-                                  ? "bg-gradient-to-r from-[#00a651] to-[#008a44] text-white shadow-lg"
-                                  : "text-gray-700 hover:bg-gray-100"
-                              }`}
+                              whileHover={
+                                !isActive
+                                  ? {
+                                      x: 2,
+                                      y: -2,
+                                      transition: { duration: 0.2 },
+                                    }
+                                  : {}
+                              }
+                              whileTap={{ scale: 0.98 }}
+                              className="relative w-full"
                             >
-                              <Icon className="w-5 h-5 flex-shrink-0" />
-                              <span className="font-medium">{item.label}</span>
-                            </button>
+                              {isActive && (
+                                <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                              )}
+                              <div
+                                className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                                  isActive
+                                    ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                                    : "bg-white text-black hover:bg-black/5"
+                                }`}
+                              >
+                                <Icon className="w-5 h-5 flex-shrink-0" />
+                                <span
+                                  className={`font-bold ${bricolage.className} ${
+                                    isActive ? "text-white" : "text-black"
+                                  }`}
+                                >
+                                  {item.label}
+                                </span>
+                              </div>
+                            </motion.button>
                           );
                         })}
                     </>
@@ -416,8 +571,8 @@ export function Sidebar({
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-200">
-                  <button
+                <div className="p-4 border-t-4 border-black">
+                  <motion.button
                     onClick={() => {
                       if (onLogout) {
                         onLogout();
@@ -425,11 +580,24 @@ export function Sidebar({
                         console.log("Logout");
                       }
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+                    whileHover={{
+                      x: 2,
+                      y: -2,
+                      transition: { duration: 0.2 },
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className="relative w-full"
                   >
-                    <LogOut className="w-5 h-5" />
-                    <span className="font-medium">Logout</span>
-                  </button>
+                    <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                    <div className="relative flex items-center gap-3 px-4 py-3 bg-white border-2 border-black hover:bg-red-50 transition-colors">
+                      <LogOut className="w-5 h-5 text-[#ed1c24]" />
+                      <span
+                        className={`font-bold text-[#ed1c24] ${bricolage.className}`}
+                      >
+                        Logout
+                      </span>
+                    </div>
+                  </motion.button>
                 </div>
               </div>
             </motion.aside>
