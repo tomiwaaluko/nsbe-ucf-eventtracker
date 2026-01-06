@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthFlow } from "@/components/AuthFlow";
 import { toast } from "sonner";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showError, setShowError] = useState(false);
@@ -58,5 +58,13 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <AuthFlow onAuthComplete={handleAuthComplete} />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <HomeContent />
+    </Suspense>
   );
 }
