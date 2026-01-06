@@ -31,6 +31,30 @@ export const api = {
     return response.json();
   },
 
+  // OAuth
+  getOAuthUrl: (provider: "google" | "discord", redirectUri?: string) => {
+    const params = new URLSearchParams();
+    if (redirectUri) {
+      params.set("redirect_uri", redirectUri);
+    }
+    return `${API_URL}/auth/oauth/${provider}?${params.toString()}`;
+  },
+
+  linkOAuthAccount: async (
+    token: string,
+    data: { provider: "google" | "discord"; code: string; state: string }
+  ) => {
+    const response = await fetch(`${API_URL}/auth/oauth/link`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
   // Members
   getMe: async (token: string) => {
     const response = await fetch(`${API_URL}/members/me`, {

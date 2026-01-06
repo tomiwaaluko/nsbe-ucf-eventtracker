@@ -16,15 +16,19 @@ enum EventCategory {
 }
 
 model Member {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  role      String   @default("member") // member | admin | super_admin
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  email         String   @unique
+  firstName     String?
+  lastName      String?
+  role          String   @default("member") // member | admin | super_admin
+  emailVerified Boolean  @default(false)
+  passwordHash  String?  // Nullable for OAuth-only accounts
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  attendance Attendance[]
+  attendance    Attendance[]
   eventsCreated Event[]
+  oauthAccounts OAuthAccount[]
 }
 
 model Event {
@@ -56,4 +60,24 @@ model Attendance {
   event  Event  @relation(fields: [eventId], references: [id])
 
   @@unique([memberId, eventId])
+}
+
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  userId         String
+  provider       String   // "google" | "discord"
+  providerUserId String   // Provider's unique user ID
+  providerEmail  String?  // Email from provider (may be null)
+  emailVerified  Boolean  @default(false) // Whether provider verified email
+  accessToken    String?  // Encrypted if stored
+  refreshToken   String?  // Encrypted if stored
+  scopes         String?  // Comma-separated scopes
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           Member   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@index([provider, providerEmail])
 }
