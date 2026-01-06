@@ -47,48 +47,21 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
 
-  // Growth data (mock - would come from real data)
-  const memberGrowthData = [
-    { month: "Aug", members: 45 },
-    { month: "Sep", members: 62 },
-    { month: "Oct", members: 78 },
-    { month: "Nov", members: 85 },
-    { month: "Dec", members: 92 },
-  ];
+  // Growth data - empty, should come from real data
+  const memberGrowthData: { month: string; members: number }[] = [];
 
-  const eventAttendanceData = [
-    { month: "Aug", attendance: 120 },
-    { month: "Sep", attendance: 185 },
-    { month: "Oct", attendance: 210 },
-    { month: "Nov", attendance: 245 },
-    { month: "Dec", attendance: 280 },
-  ];
+  const eventAttendanceData: { month: string; attendance: number }[] = [];
 
-  const eventTypeData = [
-    { name: "Workshops", value: 45, color: "#ffb81c" },
-    { name: "GBMs", value: 38, color: "#00a651" },
-    { name: "Community Service", value: 32, color: "#ed1c24" },
-  ];
+  const eventTypeData: { name: string; value: number; color: string }[] = [];
 
   // Activity heatmap data - generate from actual attendance records across all members
-  const months = [
-    "August 2024",
-    "September 2024",
-    "October 2024",
-    "November 2024",
-    "December 2024",
-  ];
+  const months: string[] = [];
 
   // Generate all heatmap data once using useMemo
   const allHeatmapData = useMemo(() => {
-    const daysInMonth = [31, 30, 31, 30, 31];
-    const monthNames = [
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+    if (months.length === 0) {
+      return [];
+    }
 
     // Create a Set of dates when any member attended events
     const attendedDates = new Set(
@@ -100,52 +73,35 @@ export function AdminDashboard({
 
     return months.map((month, monthIndex) => {
       const data = [];
-      const numDays = daysInMonth[monthIndex];
-      const monthNumber = 8 + monthIndex; // August = 8, September = 9, etc.
+      const date = new Date(month);
+      const year = date.getFullYear();
+      const monthNumber = date.getMonth() + 1;
+      const numDays = new Date(year, monthNumber, 0).getDate();
+      const monthName = month.split(' ')[0];
 
       for (let day = 1; day <= numDays; day++) {
-        const dateKey = `2024-${monthNumber}-${day}`;
+        const dateKey = `${year}-${monthNumber}-${day}`;
         const hasEvent = attendedDates.has(dateKey) ? 1 : 0;
         data.push({
           day,
           hasEvent,
-          date: `${monthNames[monthIndex]} ${day}`,
+          date: `${monthName} ${day}`,
         });
       }
       return data;
     });
-  }, [attendanceRecords]);
+  }, [attendanceRecords, months]);
 
   const getHeatmapColor = (hasEvent: number) => {
     return hasEvent === 1 ? "#00a651" : "#e5e7eb";
   };
 
-  const recentActivityData = [
-    {
-      type: "Workshop",
-      name: "Resume Building Workshop",
-      attendees: 42,
-      date: "2024-12-14",
-    },
-    {
-      type: "GBM",
-      name: "December General Body Meeting",
-      attendees: 56,
-      date: "2024-12-12",
-    },
-    {
-      type: "Community Service",
-      name: "Food Drive Volunteer Day",
-      attendees: 28,
-      date: "2024-12-10",
-    },
-    {
-      type: "Workshop",
-      name: "Technical Interview Prep",
-      attendees: 35,
-      date: "2024-12-08",
-    },
-  ];
+  const recentActivityData: {
+    type: string;
+    name: string;
+    attendees: number;
+    date: string;
+  }[] = [];
 
   const progressStats = [
     {
@@ -200,7 +156,6 @@ export function AdminDashboard({
             icon={<Users className="w-6 h-6" />}
             color="#00a651"
             subtitle={`${stats.activeMembers} active`}
-            trend={{ value: 12, isPositive: true }}
           />
           <StatsCard
             title="Total Events"
@@ -208,7 +163,6 @@ export function AdminDashboard({
             icon={<Calendar className="w-6 h-6" />}
             color="#ffb81c"
             subtitle={`${stats.upcomingEvents} upcoming`}
-            trend={{ value: 8, isPositive: true }}
           />
           <StatsCard
             title="Total Attendance"
@@ -216,7 +170,6 @@ export function AdminDashboard({
             icon={<UserCheck className="w-6 h-6" />}
             color="#ed1c24"
             subtitle="This semester"
-            trend={{ value: 15, isPositive: true }}
           />
           <StatsCard
             title="Avg. Attendance"
@@ -224,7 +177,6 @@ export function AdminDashboard({
             icon={<Activity className="w-6 h-6" />}
             color="#00a651"
             subtitle="Per event"
-            trend={{ value: 3, isPositive: false }}
           />
         </motion.div>
 
@@ -273,8 +225,9 @@ export function AdminDashboard({
             <h4 className="text-lg font-semibold text-white mb-4">
               Member Growth
             </h4>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={memberGrowthData}>
+            {memberGrowthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={memberGrowthData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="rgba(255,255,255,0.1)"
@@ -298,6 +251,11 @@ export function AdminDashboard({
                 />
               </LineChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-white/70">
+                No growth data available
+              </div>
+            )}
           </motion.div>
 
           {/* Event Attendance Trend */}
@@ -310,8 +268,9 @@ export function AdminDashboard({
             <h4 className="text-lg font-semibold text-white mb-4">
               Event Attendance Trend
             </h4>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={eventAttendanceData}>
+            {eventAttendanceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={eventAttendanceData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="rgba(255,255,255,0.1)"
@@ -333,6 +292,11 @@ export function AdminDashboard({
                 />
               </BarChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-white/70">
+                No attendance data available
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -348,8 +312,9 @@ export function AdminDashboard({
             <h4 className="text-lg font-semibold text-white mb-4">
               Event Distribution
             </h4>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
+            {eventTypeData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
                 <Pie
                   data={eventTypeData}
                   cx="50%"
@@ -378,6 +343,11 @@ export function AdminDashboard({
                 />
               </PieChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-white/70">
+                No event distribution data available
+              </div>
+            )}
           </motion.div>
 
           {/* Activity Heatmap */}
@@ -398,13 +368,13 @@ export function AdminDashboard({
                   onClick={() =>
                     setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
                   }
-                  disabled={currentMonthIndex === 0}
+                  disabled={currentMonthIndex === 0 || months.length === 0}
                   className="h-8 w-8 p-0 text-white hover:bg-white/20"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <span className="text-sm text-white/90 min-w-[120px] text-center">
-                  {months[currentMonthIndex]}
+                  {months.length > 0 ? months[currentMonthIndex] : "No data"}
                 </span>
                 <Button
                   variant="ghost"
@@ -414,7 +384,7 @@ export function AdminDashboard({
                       Math.min(months.length - 1, currentMonthIndex + 1)
                     )
                   }
-                  disabled={currentMonthIndex === months.length - 1}
+                  disabled={currentMonthIndex === months.length - 1 || months.length === 0}
                   className="h-8 w-8 p-0 text-white hover:bg-white/20"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -424,8 +394,9 @@ export function AdminDashboard({
 
             <div className="space-y-3">
               {/* Heatmap Grid */}
-              <div className="grid grid-cols-7 gap-x-0.5 gap-y-1">
-                {allHeatmapData[currentMonthIndex].map((item) => (
+              {allHeatmapData.length > 0 && allHeatmapData[currentMonthIndex] ? (
+                <div className="grid grid-cols-7 gap-x-0.5 gap-y-1">
+                  {allHeatmapData[currentMonthIndex].map((item) => (
                   <motion.div
                     key={item.day}
                     initial={{ scale: 0 }}
@@ -445,8 +416,13 @@ export function AdminDashboard({
                       </span>
                     </div>
                   </motion.div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-white/70">
+                  No activity data available
+                </div>
+              )}
 
               {/* Legend */}
               <div className="flex items-center gap-4 pt-3 border-t border-white/20">
@@ -481,7 +457,8 @@ export function AdminDashboard({
             </Button>
           </div>
           <div className="space-y-3">
-            {recentActivityData.map((activity, index) => (
+            {recentActivityData.length > 0 ? (
+              recentActivityData.map((activity, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, x: -20 }}
@@ -522,7 +499,12 @@ export function AdminDashboard({
                   </div>
                 </div>
               </motion.div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-8 text-white/70">
+                No recent events available
+              </div>
+            )}
           </div>
         </motion.div>
 
