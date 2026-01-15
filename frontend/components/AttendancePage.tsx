@@ -181,7 +181,6 @@ export function AttendancePage({
         const stream = videoElement.srcObject as MediaStream;
         stream.getTracks().forEach((track) => {
           track.stop();
-          console.log("Camera track stopped:", track.label);
         });
         videoElement.srcObject = null;
       }

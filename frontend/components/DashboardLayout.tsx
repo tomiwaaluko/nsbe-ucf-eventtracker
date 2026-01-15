@@ -40,7 +40,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
     // Update user data from localStorage whenever the component mounts or pathname changes
     const updatedUserData = getUserData();
-    console.log("DashboardLayout - Loading user data:", updatedUserData);
     setUserData(updatedUserData);
   }, [router, pathname]);
 
@@ -48,7 +47,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const handleStorageChange = () => {
       const updatedUserData = getUserData();
-      console.log("Storage changed, updating user data:", updatedUserData);
       setUserData(updatedUserData);
     };
 

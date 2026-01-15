@@ -14,11 +14,11 @@ export default function Events() {
   };
 
   const handleCheckIn = (eventId: string) => {
-    console.log("Check in to event:", eventId);
+    // TODO: Implement check-in functionality
   };
 
   const handleCreateEvent = () => {
-    console.log("Create new event");
+    // TODO: Implement create event functionality
   };
 
   return (

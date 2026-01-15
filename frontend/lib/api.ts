@@ -18,8 +18,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-console.log("API_URL configured as:", API_URL);
-
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {

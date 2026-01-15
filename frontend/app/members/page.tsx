@@ -28,17 +28,14 @@ export default function MembersPage() {
 
   const handleEditMember = (memberId: string, data: Partial<Member>) => {
     // TODO: Implement API call to update member
-    console.log("Edit member:", memberId, data);
   };
 
   const handleViewMember = (memberId: string) => {
     // TODO: Navigate to member profile or show details
-    console.log("View member:", memberId);
   };
 
   const handleToggleStatus = (memberId: string, isActive: boolean) => {
     // TODO: Implement API call to toggle member status
-    console.log("Toggle status:", memberId, isActive);
   };
 
   return (

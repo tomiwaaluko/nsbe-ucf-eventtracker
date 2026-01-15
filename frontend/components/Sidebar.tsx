@@ -125,16 +125,8 @@ export function Sidebar({
 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Debug logging
-  console.log("Sidebar received:", { userRole, userName });
-
   const filteredMenuItems = menuItems.filter((item) =>
     item.roles.includes(userRole)
-  );
-
-  console.log(
-    "Filtered menu items:",
-    filteredMenuItems.map((i) => i.label)
   );
 
   return (
@@ -344,8 +336,6 @@ export function Sidebar({
               onClick={() => {
                 if (onLogout) {
                   onLogout();
-                } else {
-                  console.log("Logout");
                 }
               }}
               whileHover={{
@@ -576,8 +566,6 @@ export function Sidebar({
                     onClick={() => {
                       if (onLogout) {
                         onLogout();
-                      } else {
-                        console.log("Logout");
                       }
                     }}
                     whileHover={{

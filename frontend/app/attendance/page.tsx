@@ -8,7 +8,7 @@ export default function Attendance() {
   const [upcomingEvents] = useState([]);
 
   const handleCheckIn = (eventId: string) => {
-    console.log("Check in to event:", eventId);
+    // TODO: Implement check-in functionality
   };
 
   return (

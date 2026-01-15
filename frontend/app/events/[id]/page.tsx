@@ -44,7 +44,7 @@ export default function EventDetail() {
   };
 
   const handleEdit = (eventId: string) => {
-    console.log("Edit event:", eventId);
+    // TODO: Implement edit event functionality
   };
 
   if (isLoading || !event) {
