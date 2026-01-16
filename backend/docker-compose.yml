@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nsbe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nsbe_user
+      POSTGRES_PASSWORD: nsbe_password
+      POSTGRES_DB: nsbe_eventtracker
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nsbe_user -d nsbe_eventtracker']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nsbe-backend
+    restart: unless-stopped
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://nsbe_user:nsbe_password@postgres:5432/nsbe_eventtracker
+      # Add your other environment variables here
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-your-supabase-jwt-secret-change-in-production}
+      # OAuth credentials (add your actual values in .env)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH_CALLBACK_URL: ${OAUTH_CALLBACK_URL:-http://localhost:4000/api/auth/google/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "node_modules/.bin/prisma migrate deploy && npm run start:prod"
+
+volumes:
+  postgres_data:

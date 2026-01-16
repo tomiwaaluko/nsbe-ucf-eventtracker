@@ -58,8 +58,6 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         try {
           const memberData = await api.getMe(data.session.access_token);
 
-          console.log("Member data from backend:", memberData);
-
           toast.success("Welcome back!", {
             description: "You have successfully signed in.",
           });
@@ -76,7 +74,6 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
             role: memberData.role || "member",
           };
 
-          console.log("Passing user data to onAuthComplete:", userData);
           onAuthComplete(userData);
         } catch (memberError) {
           console.error("Failed to fetch member data:", memberError);

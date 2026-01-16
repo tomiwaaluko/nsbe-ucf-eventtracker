@@ -18,8 +18,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-console.log("API_URL configured as:", API_URL);
-
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
@@ -27,6 +25,30 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
+    });
+    return response.json();
+  },
+
+  // OAuth
+  getOAuthUrl: (provider: "google" | "discord", redirectUri?: string) => {
+    const params = new URLSearchParams();
+    if (redirectUri) {
+      params.set("redirect_uri", redirectUri);
+    }
+    return `${API_URL}/auth/oauth/${provider}?${params.toString()}`;
+  },
+
+  linkOAuthAccount: async (
+    token: string,
+    data: { provider: "google" | "discord"; code: string; state: string }
+  ) => {
+    const response = await fetch(`${API_URL}/auth/oauth/link`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
     });
     return response.json();
   },

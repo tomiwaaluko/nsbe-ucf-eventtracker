@@ -34,7 +34,6 @@ export default function DashboardPage() {
       try {
         // Fetch fresh user data from API
         const userData = await api.getMe(token);
-        console.log("Fetched fresh user data from API:", userData);
 
         // Update localStorage with fresh data
         const updatedUser = {
@@ -44,7 +43,6 @@ export default function DashboardPage() {
           role: userData.role || "member",
         };
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        console.log("Updated localStorage with:", updatedUser);
 
         // Update component state
         setMemberData((prev) => ({
@@ -62,7 +60,6 @@ export default function DashboardPage() {
 
         // If token is invalid (401), redirect to login
         if (error.message && error.message.includes("401")) {
-          console.log("Token expired or invalid, redirecting to login");
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           router.push("/");

@@ -62,6 +62,11 @@ backend/generated/
 *.temp
 .cache/
 
+# Claude AI temporary files
+tmpclaude-*
+*-cwd
+settings.local.json
+
 # Build info
 .next/
 .nuxt/
