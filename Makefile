@@ -1,4 +1,4 @@
-.PHONY: help install install-backend install-frontend clean dev dev-backend dev-frontend build build-backend build-frontend test lint format prisma-generate prisma-migrate prisma-studio prisma-seed docker-db-up docker-db-down
+.PHONY: help install install-backend install-frontend clean dev dev-backend dev-frontend build build-backend build-frontend test lint format prisma-generate prisma-migrate prisma-studio prisma-seed docker-up docker-down docker-build docker-logs docker-restart docker-ps docker-clean
 
 help:
 	@echo "NSBE UCF Event Tracker - Available Commands:"
@@ -26,6 +26,15 @@ help:
 	@echo "  make prisma-migrate   - Run Prisma migrations"
 	@echo "  make prisma-studio    - Open Prisma Studio"
 	@echo "  make prisma-seed      - Seed the database"
+	@echo ""
+	@echo "Docker Commands:"
+	@echo "  make docker-up        - Start all Docker containers (postgres + backend)"
+	@echo "  make docker-down      - Stop all Docker containers"
+	@echo "  make docker-build     - Build Docker images"
+	@echo "  make docker-logs      - View Docker container logs"
+	@echo "  make docker-restart   - Restart Docker containers"
+	@echo "  make docker-ps        - List running Docker containers"
+	@echo "  make docker-clean     - Stop containers and remove volumes"
 
 install: install-backend install-frontend
 	@echo "All dependencies installed successfully!"
@@ -36,12 +45,12 @@ install-backend:
 
 install-frontend:
 	@echo "Installing frontend dependencies..."
-	cd frontendvite && npm install
+	cd frontend && npm install
 
 clean:
 	@echo "Cleaning build artifacts and dependencies..."
 	rm -rf backend/node_modules backend/dist
-	rm -rf frontendvite/node_modules frontendvite/dist
+	rm -rf frontend/node_modules frontend/dist
 	@echo "Clean complete!"
 
 dev:
@@ -56,7 +65,7 @@ dev-backend:
 
 dev-frontend:
 	@echo "Starting frontend..."
-	cd frontendvite && npm run dev
+	cd frontend && npm run dev
 
 build: build-backend build-frontend
 	@echo "Build complete!"
@@ -67,7 +76,7 @@ build-backend:
 
 build-frontend:
 	@echo "Building frontend..."
-	cd frontendvite && npm run build
+	cd frontend && npm run build
 
 test:
 	@echo "Running backend tests..."
@@ -77,7 +86,7 @@ lint:
 	@echo "Linting backend..."
 	cd backend && npm run lint
 	@echo "Linting frontend..."
-	cd frontendvite && npm run lint
+	cd frontend && npm run lint
 
 format:
 	@echo "Formatting backend code..."
@@ -98,3 +107,33 @@ prisma-studio:
 prisma-seed:
 	@echo "Seeding database..."
 	cd backend && npx prisma db seed
+
+docker-up:
+	@echo "Starting Docker containers..."
+	cd backend && docker-compose up -d
+	@echo "Containers started! Backend: http://localhost:4000"
+
+docker-down:
+	@echo "Stopping Docker containers..."
+	cd backend && docker-compose down
+
+docker-build:
+	@echo "Building Docker images..."
+	cd backend && docker-compose build
+
+docker-logs:
+	@echo "Showing Docker logs (Ctrl+C to exit)..."
+	cd backend && docker-compose logs -f
+
+docker-restart:
+	@echo "Restarting Docker containers..."
+	cd backend && docker-compose restart
+
+docker-ps:
+	@echo "Listing Docker containers..."
+	cd backend && docker-compose ps
+
+docker-clean:
+	@echo "Stopping containers and removing volumes..."
+	cd backend && docker-compose down -v
+	@echo "Docker cleanup complete!"
