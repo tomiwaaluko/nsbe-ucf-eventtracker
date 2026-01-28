@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   Req,
+  Res,
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
@@ -47,6 +48,37 @@ export class EventsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);
+  }
+
+  @Get(':id/qr')
+  async getEventQRCode(
+    @Param('id') id: string,
+    @Query('format') format?: 'png' | 'svg' | 'dataurl',
+    @Query('size') size?: string,
+    @Res() res?,
+  ) {
+    const qrFormat = format || 'png';
+    const qrSize = size ? parseInt(size, 10) : 512;
+
+    // Validate size (max 2048px)
+    const validatedSize = Math.min(Math.max(qrSize, 128), 2048);
+
+    const result = await this.eventsService.generateEventQRCode(
+      id,
+      qrFormat,
+      validatedSize,
+    );
+
+    if (qrFormat === 'png') {
+      res.setHeader('Content-Type', 'image/png');
+      res.send(result);
+    } else if (qrFormat === 'svg') {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(result);
+    } else {
+      // dataurl format returns JSON
+      return { dataUrl: result };
+    }
   }
 
   @Put(':id')
