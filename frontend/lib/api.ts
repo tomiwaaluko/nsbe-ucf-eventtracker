@@ -154,6 +154,30 @@ export const api = {
     return response.json();
   },
 
+  getEventQR: async (
+    token: string,
+    id: string,
+    format: "png" | "svg" | "dataurl" = "dataurl",
+    size: number = 512
+  ) => {
+    const params = new URLSearchParams();
+    params.set("format", format);
+    params.set("size", size.toString());
+
+    const response = await fetch(
+      `${API_URL}/events/${id}/qr?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (format === "png" || format === "svg") {
+      return response.blob();
+    } else {
+      return response.json();
+    }
+  },
+
   // Attendance
   checkIn: async (token: string, data: { eventId: string; token: string }) => {
     const response = await fetch(`${API_URL}/attendance/check-in`, {

@@ -13,6 +13,7 @@ import {
   MapPin,
   Users,
   MoreVertical,
+  QrCode,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -52,6 +53,7 @@ interface EventManagementProps {
   onEditEvent: (eventId: string) => void;
   onDeleteEvent: (eventId: string) => void;
   onViewEvent: (eventId: string) => void;
+  onViewQRCode?: (eventId: string) => void;
 }
 
 export function EventManagement({
@@ -60,6 +62,7 @@ export function EventManagement({
   onEditEvent,
   onDeleteEvent,
   onViewEvent,
+  onViewQRCode,
 }: EventManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -334,6 +337,14 @@ export function EventManagement({
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          {onViewQRCode && (
+                            <DropdownMenuItem
+                              onClick={() => onViewQRCode(event.id)}
+                            >
+                              <QrCode className="w-4 h-4 mr-2" />
+                              View QR Code
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => onEditEvent(event.id)}
                           >
@@ -390,6 +401,12 @@ export function EventManagement({
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
+                      {onViewQRCode && (
+                        <DropdownMenuItem onClick={() => onViewQRCode(event.id)}>
+                          <QrCode className="w-4 h-4 mr-2" />
+                          View QR Code
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onEditEvent(event.id)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Event

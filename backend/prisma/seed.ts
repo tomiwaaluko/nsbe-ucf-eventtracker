@@ -19,6 +19,19 @@ async function main() {
   });
   console.log('✅ Created admin:', admin.email);
 
+  // Create another super admin member with Supabase UID (set in Supabase Auth)
+  const adminJerome = await prisma.member.upsert({
+    where: { email: 'aridsondez@gmail.com' },
+    update: { role: 'super_admin' },
+    create: {
+      email: 'aridsondez@gmail.com',
+      firstName: 'aridsondez',
+      lastName: 'jerome',
+      role: 'super_admin',
+    },
+  });
+  console.log('✅ Created super admin:', adminJerome.email);
+
   // Create regular member with Supabase UID
   const member = await prisma.member.upsert({
     where: { email: 'user@test.com' },
