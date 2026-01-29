@@ -54,39 +54,39 @@ const getCategoryConfig = (category: EventCategory) => {
     [EventCategory.GBM]: {
       gradient: "from-green-500 to-green-600",
       color: "bg-green-100 text-green-700 border-green-200",
-      icon: "📢",
+      icon: "",
     },
     [EventCategory.SOCIAL]: {
       gradient: "from-yellow-500 to-yellow-600",
       color: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      icon: "🎉",
+      icon: "",
     },
     [EventCategory.WORKSHOP]: {
       gradient: "from-blue-500 to-blue-600",
       color: "bg-blue-100 text-blue-700 border-blue-200",
-      icon: "🎓",
+      icon: "",
     },
     [EventCategory.FUNDRAISER]: {
       gradient: "from-red-500 to-red-600",
       color: "bg-red-100 text-red-700 border-red-200",
-      icon: "💰",
+      icon: "",
     },
     [EventCategory.COMMUNITY_SERVICE]: {
       gradient: "from-amber-700 to-amber-800",
       color: "bg-amber-100 text-amber-700 border-amber-200",
-      icon: "🤝",
+      icon: "",
     },
     [EventCategory.COMMITTEE_PARTICIPATION]: {
       gradient: "from-purple-500 to-purple-600",
       color: "bg-purple-100 text-purple-700 border-purple-200",
-      icon: "👥",
+      icon: "",
     },
   };
   
   const config = configMap[category] || {
     gradient: "from-gray-500 to-gray-600",
     color: "bg-gray-100 text-gray-700 border-gray-200",
-    icon: "📅",
+    icon: "",
   };
   
   return {
@@ -152,9 +152,11 @@ export function EventDetailPage({
       <div
         className={`bg-gradient-to-r ${config.gradient} rounded-2xl p-8 text-white relative overflow-hidden`}
       >
-        <div className="absolute top-0 right-0 text-9xl opacity-10">
-          {config.icon}
-        </div>
+        {config.icon && (
+          <div className="absolute top-0 right-0 text-9xl opacity-10">
+            {config.icon}
+          </div>
+        )}
         <div className="relative z-10">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge className="bg-white bg-opacity-20 text-white border-white border-opacity-30">

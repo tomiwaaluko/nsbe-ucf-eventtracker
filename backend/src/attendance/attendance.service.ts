@@ -33,7 +33,7 @@ export class AttendanceService {
       throw new BadRequestException('Event is not currently running');
     }
 
-    return this.prisma.attendance.upsert({
+    const attendance = await this.prisma.attendance.upsert({
       where: {
         memberId_eventId: {
           memberId,
@@ -46,7 +46,24 @@ export class AttendanceService {
         eventId: dto.eventId,
         checkInMethod: 'qr',
       },
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            category: true,
+          },
+        },
+      },
     });
+
+    return {
+      ...attendance,
+      event: attendance.event,
+    };
   }
 
   async manualCheckIn(adminId: string, dto: ManualCheckInDto) {

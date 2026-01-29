@@ -32,8 +32,12 @@ export default function DashboardPage() {
     // Fetch fresh user data from backend and update localStorage
     const fetchData = async () => {
       try {
-        // Fetch fresh user data from API
-        const userData = await api.getMe(token);
+        // Fetch all data in parallel
+        const [userData, records, eventsData] = await Promise.all([
+          api.getMe(token),
+          api.getMyAttendance(token),
+          api.getEvents(token),
+        ]);
 
         // Update localStorage with fresh data
         const updatedUser = {
@@ -44,17 +48,77 @@ export default function DashboardPage() {
         };
         localStorage.setItem("user", JSON.stringify(updatedUser));
 
-        // Update component state
-        setMemberData((prev) => ({
-          ...prev,
-          name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        // Process attendance records
+        const attendanceArray = Array.isArray(records) ? records : [];
+        setAttendanceRecords(attendanceArray);
+
+        // Calculate statistics from attendance records using backend bucket logic
+        // Bucket 1: WORKSHOP + SOCIAL (Workshops & Socials)
+        // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE (Fundraiser & Community Service)
+        // Bucket 3: GBM (General Body Meeting)
+        // COMMITTEE_PARTICIPATION doesn't count toward achievements
+        let workshopsSocialsAttended = 0; // Bucket 1
+        let fundraiserCommunityServiceAttended = 0; // Bucket 2
+        let gbmAttended = 0; // Bucket 3
+        let totalEvents = 0;
+
+        attendanceArray.forEach((record: any) => {
+          if (record.event) {
+            const category = record.event.category;
+            
+            // Only count categories that are part of achievement buckets
+            // COMMITTEE_PARTICIPATION is excluded
+            if (category !== "COMMITTEE_PARTICIPATION") {
+              totalEvents++;
+            }
+            
+            // Map to buckets (matching backend logic)
+            if (category === "WORKSHOP" || category === "SOCIAL") {
+              workshopsSocialsAttended++;
+            } else if (category === "GBM") {
+              gbmAttended++;
+            } else if (category === "COMMUNITY_SERVICE" || category === "FUNDRAISER") {
+              fundraiserCommunityServiceAttended++;
+            }
+            // COMMITTEE_PARTICIPATION is skipped (doesn't count)
+          }
+        });
+
+        // Process upcoming events - filter to only active, upcoming events
+        const now = new Date();
+        const upcoming = (Array.isArray(eventsData) ? eventsData : [])
+          .filter((event: any) => {
+            if (!event.isActive) return false;
+            const startTime = new Date(event.startTime);
+            return startTime > now;
+          })
+          .sort((a: any, b: any) => {
+            return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+          })
+          .slice(0, 6) // Limit to 6 upcoming events
+          .map((event: any) => ({
+            id: event.id,
+            name: event.name,
+            description: event.description || undefined,
+            category: event.category,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            location: event.location || undefined,
+            isActive: event.isActive ?? true,
+          }));
+
+        setUpcomingEvents(upcoming);
+
+        // Update component state with calculated statistics (using bucket names)
+        setMemberData({
+          name: `${updatedUser.firstName} ${updatedUser.lastName}`.trim() || "User",
           email: updatedUser.email,
           role: updatedUser.role,
-        }));
-
-        // Fetch attendance records
-        const records = await api.getMyAttendance(token);
-        setAttendanceRecords(Array.isArray(records) ? records : []);
+          totalEvents,
+          workshopsAttended: workshopsSocialsAttended, // Bucket 1: WORKSHOP + SOCIAL
+          gbmAttended, // Bucket 3: GBM
+          communityServiceAttended: fundraiserCommunityServiceAttended, // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE
+        });
       } catch (error: any) {
         console.error("Failed to fetch data:", error);
 
@@ -72,13 +136,14 @@ export default function DashboardPage() {
           const user = JSON.parse(userStr);
           setMemberData((prev) => ({
             ...prev,
-            name: `${user.firstName} ${user.lastName}`,
+            name: `${user.firstName} ${user.lastName}`.trim() || "User",
             email: user.email,
             role: user.role || "member",
           }));
         }
 
         setAttendanceRecords([]);
+        setUpcomingEvents([]);
       } finally {
         setIsLoading(false);
       }

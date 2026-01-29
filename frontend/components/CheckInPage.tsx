@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import confetti from "canvas-confetti";
+
+console.log("🟢 [CHECKINPAGE] CheckInPage module loaded");
 import {
   QrCode,
   Check,
@@ -50,6 +52,8 @@ interface CheckInPageProps {
 }
 
 export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps) {
+  console.log("🎬 [COMPONENT] CheckInPage component rendered");
+  
   const [scanMode, setScanMode] = useState<"camera" | "manual">("camera");
   const [isScanning, setIsScanning] = useState(false);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
@@ -65,15 +69,33 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerDivId = "qr-reader";
+  
+  console.log("🎬 [COMPONENT] Initial state - scanMode:", scanMode, "isScanning:", isScanning);
 
   useEffect(() => {
+    console.log("🔄 [EFFECT] useEffect triggered, scanMode:", scanMode, "isScanning:", isScanning);
+    console.log("🔄 [EFFECT] Component mounted, starting camera if needed");
+    
     if (scanMode === "camera" && !isScanning) {
-      startScanning();
+      console.log("🔄 [EFFECT] Conditions met - starting camera scan...");
+      // Add a small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        console.log("🔄 [EFFECT] Timer fired, calling startScanning");
+        startScanning();
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        console.log("🔄 [EFFECT] Cleanup: clearing timer and stopping scanner");
+        stopScanning();
+      };
     }
 
     return () => {
+      console.log("🔄 [EFFECT] Cleanup: stopping scanner");
       stopScanning();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanMode]);
 
   const triggerConfetti = () => {
@@ -120,13 +142,47 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
   };
 
   const startScanning = async () => {
+    console.log("📷 [CAMERA] ========== STARTING CAMERA ==========");
+    console.log("📷 [CAMERA] Starting camera scanning...");
+    console.log("📷 [CAMERA] scannerDivId:", scannerDivId);
+    
+    // Wait a bit for the DOM to be ready
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    
+    // Check if scanner div exists
+    const scannerDiv = document.getElementById(scannerDivId);
+    console.log("📷 [CAMERA] Scanner div exists:", !!scannerDiv);
+    if (!scannerDiv) {
+      console.error("❌ [CAMERA] Scanner div not found! Waiting and retrying...");
+      // Wait a bit more and try again
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const retryDiv = document.getElementById(scannerDivId);
+      if (!retryDiv) {
+        console.error("❌ [CAMERA] Scanner div still not found after retry!");
+        return;
+      }
+      console.log("✅ [CAMERA] Scanner div found on retry");
+    } else {
+      console.log("📷 [CAMERA] Scanner div visible:", scannerDiv.offsetWidth > 0 && scannerDiv.offsetHeight > 0);
+      console.log("📷 [CAMERA] Scanner div dimensions:", scannerDiv.offsetWidth, "x", scannerDiv.offsetHeight);
+      console.log("📷 [CAMERA] Scanner div display:", window.getComputedStyle(scannerDiv).display);
+      console.log("📷 [CAMERA] Scanner div visibility:", window.getComputedStyle(scannerDiv).visibility);
+    }
+    
     try {
       if (html5QrCodeRef.current) {
+        console.log("📷 [CAMERA] Stopping existing scanner instance...");
         await stopScanning();
       }
 
+      console.log("📷 [CAMERA] Creating new Html5Qrcode instance...");
       html5QrCodeRef.current = new Html5Qrcode(scannerDivId);
+      console.log("📷 [CAMERA] Html5Qrcode instance created:", !!html5QrCodeRef.current);
 
+      console.log("📷 [CAMERA] Starting camera with facingMode: environment");
+      console.log("📷 [CAMERA] onScanSuccess callback:", typeof onScanSuccess);
+      console.log("📷 [CAMERA] onScanFailure callback:", typeof onScanFailure);
+      
       await html5QrCodeRef.current.start(
         { facingMode: "environment" },
         {
@@ -134,18 +190,35 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         },
-        onScanSuccess,
-        onScanFailure
+        (decodedText: string, decodedResult: any) => {
+          console.log("🔍 [QR SCAN] ========== CALLBACK FIRED ==========");
+          console.log("🔍 [QR SCAN] Callback fired! decodedText:", decodedText);
+          console.log("🔍 [QR SCAN] decodedResult:", decodedResult);
+          onScanSuccess(decodedText, decodedResult);
+        },
+        (errorMessage: string) => {
+          // Only log occasionally to avoid spam
+          if (Math.random() < 0.01) {
+            console.log("🔍 [QR SCAN] Scan failure callback:", errorMessage);
+          }
+          onScanFailure(errorMessage);
+        }
       );
 
+      console.log("✅ [CAMERA] Camera started successfully - await start() completed");
       setIsScanning(true);
       setCameraPermissionDenied(false);
+      console.log("✅ [CAMERA] isScanning set to true");
     } catch (error: any) {
-      console.error("Failed to start scanning:", error);
+      console.error("❌ [CAMERA] Failed to start scanning:", error);
+      console.error("❌ [CAMERA] Error name:", error.name);
+      console.error("❌ [CAMERA] Error message:", error.message);
+      console.error("❌ [CAMERA] Error stack:", error.stack);
       if (
         error.name === "NotAllowedError" ||
         error.message?.includes("Permission denied")
       ) {
+        console.error("❌ [CAMERA] Camera permission denied");
         setCameraPermissionDenied(true);
         setScanMode("manual");
       }
@@ -154,61 +227,111 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
   };
 
   const stopScanning = async () => {
+    console.log("🛑 [CAMERA] stopScanning called");
+    console.log("🛑 [CAMERA] html5QrCodeRef.current exists:", !!html5QrCodeRef.current);
+    console.log("🛑 [CAMERA] isScanning:", isScanning);
     try {
-      if (html5QrCodeRef.current && isScanning) {
+      if (html5QrCodeRef.current) {
+        console.log("🛑 [CAMERA] Stopping scanner...");
         await html5QrCodeRef.current.stop();
+        console.log("🛑 [CAMERA] Scanner stopped successfully");
         html5QrCodeRef.current = null;
+      } else {
+        console.log("🛑 [CAMERA] No scanner instance to stop");
       }
       setIsScanning(false);
-    } catch (error) {
-      console.error("Failed to stop scanning:", error);
+      console.log("🛑 [CAMERA] isScanning set to false");
+    } catch (error: any) {
+      console.error("❌ [CAMERA] Failed to stop scanning:", error);
+      console.error("❌ [CAMERA] Error name:", error.name);
+      console.error("❌ [CAMERA] Error message:", error.message);
+      setIsScanning(false);
     }
   };
 
-  const onScanSuccess = async (decodedText: string) => {
+  const onScanSuccess = async (decodedText: string, decodedResult: any) => {
+    console.log("🔍 [QR SCAN] ========== QR CODE DETECTED ==========");
+    console.log("🔍 [QR SCAN] QR code scanned successfully!");
+    console.log("🔍 [QR SCAN] Raw decoded text:", decodedText);
+    console.log("🔍 [QR SCAN] Decoded result object:", decodedResult);
+    console.log("🔍 [QR SCAN] Type of decodedText:", typeof decodedText);
+    console.log("🔍 [QR SCAN] Length of decodedText:", decodedText?.length);
+    
     try {
-      // Stop scanning immediately
+      // Stop scanning immediately to prevent multiple scans
+      console.log("🔍 [QR SCAN] Stopping camera before processing...");
       await stopScanning();
+      console.log("🔍 [QR SCAN] Camera stopped successfully");
 
       setLoading(true);
       setResult(null);
 
       // Parse QR payload
-      const payload = JSON.parse(decodedText);
+      console.log("🔍 [QR SCAN] Attempting to parse QR payload...");
+      let payload;
+      try {
+        payload = JSON.parse(decodedText);
+        console.log("🔍 [QR SCAN] Parsed payload:", payload);
+      } catch (parseError) {
+        console.error("🔍 [QR SCAN] JSON parse error:", parseError);
+        console.error("🔍 [QR SCAN] Decoded text that failed to parse:", decodedText);
+        throw new Error("Invalid QR code format - not valid JSON");
+      }
+
+      console.log("🔍 [QR SCAN] Validating payload structure...");
+      console.log("🔍 [QR SCAN] payload.type:", payload.type);
+      console.log("🔍 [QR SCAN] payload.eventId:", payload.eventId);
+      console.log("🔍 [QR SCAN] payload.token:", payload.token ? "***" : undefined);
 
       if (
         payload.type !== "event_checkin" ||
         !payload.eventId ||
         !payload.token
       ) {
+        console.error("🔍 [QR SCAN] Invalid QR code format - missing required fields");
+        console.error("🔍 [QR SCAN] Expected: { type: 'event_checkin', eventId: string, token: string }");
         throw new Error("Invalid QR code format");
       }
 
+      console.log("🔍 [QR SCAN] Payload validation passed, calling check-in API...");
+      console.log("🔍 [QR SCAN] eventId:", payload.eventId);
+      console.log("🔍 [QR SCAN] qrSecret (token):", payload.token ? "***" : undefined);
+
       // Call check-in API
       const response = await onCheckIn(payload.eventId, payload.token);
+      console.log("🔍 [QR SCAN] Check-in API response:", response);
+      
       setResult(response);
 
       if (response.success) {
+        console.log("✅ [QR SCAN] Check-in successful!");
         triggerConfetti();
 
         // Auto-dismiss success message and restart scanning after 5 seconds
         setTimeout(() => {
           setResult(null);
           if (scanMode === "camera") {
+            console.log("🔍 [QR SCAN] Restarting camera for next scan...");
             startScanning();
           }
         }, 5000);
       } else {
+        console.error("❌ [QR SCAN] Check-in failed:", response.message);
         // On failure, restart scanning after 3 seconds
         setTimeout(() => {
           setResult(null);
           if (scanMode === "camera") {
+            console.log("🔍 [QR SCAN] Restarting camera after failure...");
             startScanning();
           }
         }, 3000);
       }
     } catch (error: any) {
-      console.error("QR scan error:", error);
+      console.error("❌ [QR SCAN] Error during check-in process:", error);
+      console.error("❌ [QR SCAN] Error name:", error.name);
+      console.error("❌ [QR SCAN] Error message:", error.message);
+      console.error("❌ [QR SCAN] Error stack:", error.stack);
+      
       setResult({
         success: false,
         message:
@@ -221,19 +344,26 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
       setTimeout(() => {
         setResult(null);
         if (scanMode === "camera") {
+          console.log("🔍 [QR SCAN] Restarting camera after error...");
           startScanning();
         }
       }, 3000);
     } finally {
       setLoading(false);
+      console.log("🔍 [QR SCAN] Loading state set to false");
     }
   };
 
   const onScanFailure = (error: string) => {
     // Ignore continuous scan failures (normal during scanning)
     // Only log if it's not a "No MultiFormat Readers" error
-    if (!error.includes("NotFoundException")) {
-      console.debug("QR scan attempt:", error);
+    if (!error.includes("NotFoundException") && !error.includes("No QR code")) {
+      // Only log occasionally to avoid spam
+      if (Math.random() < 0.01) { // Log 1% of scan attempts
+        console.debug("🔍 [QR SCAN] Scan attempt (normal):", error);
+      }
+    } else {
+      console.log("🔍 [QR SCAN] Scan failure (expected):", error);
     }
   };
 
@@ -472,7 +602,7 @@ export function CheckInPage({ onCheckIn, upcomingEvents = [] }: CheckInPageProps
                             animate={{ opacity: 1 }}
                             className={`mt-4 text-black/80 font-bold ${bricolage.className} uppercase text-sm`}
                           >
-                            📷 Scanning for QR code...
+                            Scanning for QR code...
                           </motion.p>
                         )}
                         {loading && (

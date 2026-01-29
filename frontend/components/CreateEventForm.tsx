@@ -21,12 +21,21 @@ interface CreateEventFormProps {
 }
 
 export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
+  // Get today's date in YYYY-MM-DD format for the date input
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     category: "" as EventCategory | "",
     semester: getCurrentSemester(),
-    date: "",
+    date: getTodayDate(),
     startTime: "",
     endTime: "",
     location: "",
