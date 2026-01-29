@@ -63,9 +63,15 @@ export function ManualCheckIn({
   // Filter members based on search
   const filteredMembers = Array.isArray(members)
     ? members.filter(
-        (member) =>
-          member.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-          member.email.toLowerCase().includes(memberSearch.toLowerCase())
+        (member) => {
+          const name = member.name || "";
+          const email = member.email || "";
+          const searchLower = memberSearch.toLowerCase();
+          return (
+            name.toLowerCase().includes(searchLower) ||
+            email.toLowerCase().includes(searchLower)
+          );
+        }
       )
     : [];
 

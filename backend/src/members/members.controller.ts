@@ -8,6 +8,7 @@ import {
   UseGuards,
   ForbiddenException,
   Param,
+  NotFoundException,
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -33,15 +34,6 @@ export class MembersController {
     return this.membersService.updateMe(req.user.id, dto);
   }
 
-  @Get()
-  async search(@Req() req, @Query('query') query: string) {
-    const member = await this.membersService.findMe(req.user.id);
-    if (!member || !isAdmin(member.role)) {
-      throw new ForbiddenException('Admin access required');
-    }
-    return this.membersService.search(query);
-  }
-
   @Put(':id/role')
   async updateRole(
     @Req() req,
@@ -57,5 +49,42 @@ export class MembersController {
       where: { id: memberId },
       data: { role: body.role },
     });
+  }
+
+  @Put(':id/status')
+  async updateStatus(
+    @Req() req,
+    @Param('id') memberId: string,
+    @Body() body: { isActive: boolean },
+  ) {
+    const currentMember = await this.membersService.findMe(req.user.id);
+    if (!currentMember || !isAdmin(currentMember.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    return await this.membersService.updateMemberStatus(
+      memberId,
+      body.isActive,
+    );
+  }
+
+  @Get()
+  async getAllMembers(
+    @Req() req,
+    @Query('query') query?: string,
+    @Query('semester') semester?: string,
+  ) {
+    const member = await this.membersService.findMe(req.user.id);
+    if (!member || !isAdmin(member.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    // If query parameter is provided, use search functionality
+    if (query) {
+      return this.membersService.search(query);
+    }
+
+    // Otherwise, return all members with statistics
+    return this.membersService.getAllMembers(semester);
   }
 }
