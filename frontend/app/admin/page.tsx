@@ -19,6 +19,8 @@ export default function AdminPage() {
     membersWithThreeThreeThree: 0,
   });
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,13 +32,18 @@ export default function AdminPage() {
           return;
         }
 
-        const [adminStats, allAttendance] = await Promise.all([
+        // Fetch all data needed for graphs
+        const [adminStats, allAttendance, allEvents, allMembers] = await Promise.all([
           api.getAdminStats(token),
           api.getAllAttendance(token),
+          api.getEvents(token),
+          api.getAllMembers(token),
         ]);
 
         setStats(adminStats);
         setAttendanceRecords(Array.isArray(allAttendance) ? allAttendance : []);
+        setEvents(Array.isArray(allEvents) ? allEvents : []);
+        setMembers(Array.isArray(allMembers) ? allMembers : []);
       } catch (error) {
         console.error("Failed to fetch admin data:", error);
         // Fallback to empty data if API fails
@@ -51,6 +58,8 @@ export default function AdminPage() {
           membersWithThreeThreeThree: 0,
         });
         setAttendanceRecords([]);
+        setEvents([]);
+        setMembers([]);
       } finally {
         setLoading(false);
       }
@@ -72,11 +81,23 @@ export default function AdminPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Loading admin dashboard...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <AdminDashboard
         stats={stats}
         attendanceRecords={attendanceRecords}
+        events={events}
+        members={members}
         onNavigate={handleNavigate}
       />
     </DashboardLayout>
