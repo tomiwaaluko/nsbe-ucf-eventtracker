@@ -352,6 +352,7 @@ export function EventsPage({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
                       whileHover={{ y: -5 }}
+                      className="h-full"
                     >
                       <EventCard
                         event={event}
@@ -389,6 +390,7 @@ export function EventsPage({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 + i * 0.1, duration: 0.5 }}
                         whileHover={{ y: -5 }}
+                        className="h-full"
                       >
                         <EventCard
                           event={event}
@@ -426,6 +428,7 @@ export function EventsPage({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7 + i * 0.1, duration: 0.5 }}
                         whileHover={{ y: -5 }}
+                        className="h-full"
                       >
                         <EventCard
                           event={event}

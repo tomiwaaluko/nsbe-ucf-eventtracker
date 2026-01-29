@@ -226,7 +226,9 @@ export const api = {
 
   // Attendance
   checkIn: async (token: string, data: { eventId: string; token: string }) => {
-    const response = await fetch(`${API_URL}/attendance/check-in`, {
+    const url = `${API_URL}/attendance/check-in`;
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -234,7 +236,23 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    return response.json();
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { message: errorText || response.statusText };
+      }
+      
+      const errorMessage = errorData.message || `Failed to check in: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result;
   },
 
   manualCheckIn: async (
