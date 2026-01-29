@@ -10,9 +10,12 @@ generator client {
 }
 
 enum EventCategory {
-  COMMUNITY_SERVICE
   GBM
-  SOCIAL_AEX
+  SOCIAL
+  WORKSHOP
+  FUNDRAISER
+  COMMUNITY_SERVICE
+  COMMITTEE_PARTICIPATION
 }
 
 model Member {

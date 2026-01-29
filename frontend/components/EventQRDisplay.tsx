@@ -16,12 +16,13 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { EventCategory } from "@/lib/constants/event-categories";
 
 interface Event {
   id: string;
   name: string;
   description?: string;
-  category: "COMMUNITY_SERVICE" | "GBM" | "SOCIAL_AEX";
+  category: EventCategory;
   startTime: Date | string;
   endTime: Date | string;
   location?: string;
@@ -50,11 +51,36 @@ export function EventQRDisplay({
   const loadQRCode = async () => {
     try {
       setIsLoading(true);
+      console.log("Loading QR code for event:", event.id);
       const result = await api.getEventQR(token, event.id, "dataurl", 512);
-      setQrDataUrl(result.dataUrl);
-    } catch (error) {
+      console.log("QR code API response:", result);
+      
+      // Handle response - check if it's already a dataUrl string or an object
+      if (typeof result === 'string') {
+        console.log("QR code is string format, length:", result.length);
+        setQrDataUrl(result);
+      } else if (result && typeof result === 'object' && 'dataUrl' in result) {
+        console.log("QR code is object format, dataUrl length:", result.dataUrl?.length);
+        if (typeof result.dataUrl === 'string' && result.dataUrl.startsWith('data:image')) {
+          setQrDataUrl(result.dataUrl);
+        } else {
+          throw new Error('Invalid QR code dataUrl format');
+        }
+      } else {
+        console.error("Unexpected QR code response format:", result);
+        throw new Error('Invalid QR code response format');
+      }
+    } catch (error: any) {
       console.error("Failed to load QR code:", error);
-      toast.error("Failed to load QR code");
+      console.error("Error details:", {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response,
+      });
+      const errorMessage = error?.message || "Failed to load QR code";
+      toast.error(errorMessage);
+      // Set empty string to prevent broken image display
+      setQrDataUrl("");
     } finally {
       setIsLoading(false);
     }
@@ -149,12 +175,22 @@ export function EventQRDisplay({
             <div className="w-96 h-96 bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
               <QrCode className="w-16 h-16 text-gray-400" />
             </div>
-          ) : (
+          ) : qrDataUrl ? (
             <img
               src={qrDataUrl}
               alt="Event QR Code"
               className="w-96 h-96 rounded-lg shadow-2xl"
+              onError={(e) => {
+                console.error("Failed to load QR code image");
+                toast.error("Failed to display QR code image");
+                e.currentTarget.style.display = "none";
+              }}
             />
+          ) : (
+            <div className="w-96 h-96 bg-red-50 rounded-lg flex flex-col items-center justify-center border-2 border-red-200">
+              <QrCode className="w-16 h-16 text-red-400 mb-2" />
+              <p className="text-red-600 text-sm">Failed to load QR code</p>
+            </div>
           )}
 
           <p className="mt-8 text-gray-600 text-center max-w-md">
@@ -186,7 +222,7 @@ export function EventQRDisplay({
             <div className="w-full aspect-square bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
               <QrCode className="w-16 h-16 text-gray-400" />
             </div>
-          ) : (
+          ) : qrDataUrl ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -196,8 +232,18 @@ export function EventQRDisplay({
                 src={qrDataUrl}
                 alt="Event QR Code"
                 className="w-full rounded-lg shadow-md border-2 border-gray-200"
+                onError={(e) => {
+                  console.error("Failed to load QR code image");
+                  toast.error("Failed to display QR code image");
+                  e.currentTarget.style.display = "none";
+                }}
               />
             </motion.div>
+          ) : (
+            <div className="w-full aspect-square bg-red-50 rounded-lg flex flex-col items-center justify-center border-2 border-red-200">
+              <QrCode className="w-16 h-16 text-red-400 mb-2" />
+              <p className="text-red-600 text-sm text-center px-4">Failed to load QR code</p>
+            </div>
           )}
         </div>
 

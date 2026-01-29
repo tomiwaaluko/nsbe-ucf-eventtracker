@@ -7,12 +7,13 @@ import { EventQRDisplay } from "@/components/EventQRDisplay";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { EventCategory } from "@/lib/constants/event-categories";
 
 interface Event {
   id: string;
   name: string;
   description?: string;
-  category: "COMMUNITY_SERVICE" | "GBM" | "SOCIAL_AEX";
+  category: EventCategory;
   startTime: Date | string;
   endTime: Date | string;
   location?: string;

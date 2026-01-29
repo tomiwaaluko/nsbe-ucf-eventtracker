@@ -12,15 +12,16 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import { EVENT_CATEGORIES, EventCategory, getEventCategoryLabel, getEventCategoryColor } from "@/lib/constants/event-categories";
 
 interface EventDetailPageProps {
   event: {
     id: string;
     name: string;
     description?: string;
-    category: "COMMUNITY_SERVICE" | "GBM" | "SOCIAL_AEX";
-    startTime: Date;
-    endTime: Date;
+    category: EventCategory;
+    startTime: Date | string;
+    endTime: Date | string;
     location?: string;
     isActive: boolean;
     createdBy?: {
@@ -33,7 +34,7 @@ interface EventDetailPageProps {
       firstName?: string;
       lastName?: string;
       email: string;
-      checkedInAt: Date;
+      checkedInAt: Date | string;
     }>;
   };
   onBack: () => void;
@@ -42,25 +43,56 @@ interface EventDetailPageProps {
   userRole?: "member" | "admin" | "super_admin";
 }
 
-const categoryConfig = {
-  COMMUNITY_SERVICE: {
-    label: "Community Service",
-    color: "bg-red-100 text-red-700 border-red-200",
-    gradient: "from-red-500 to-red-600",
-    icon: "🤝",
-  },
-  GBM: {
-    label: "General Body Meeting",
-    color: "bg-green-100 text-green-700 border-green-200",
-    gradient: "from-green-500 to-green-600",
-    icon: "📢",
-  },
-  SOCIAL_AEX: {
-    label: "Workshop / Social",
-    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    gradient: "from-yellow-500 to-yellow-600",
-    icon: "🎓",
-  },
+/**
+ * Get category configuration for display
+ */
+const getCategoryConfig = (category: EventCategory) => {
+  const categoryData = EVENT_CATEGORIES.find((cat) => cat.value === category);
+  
+  // Map categories to Tailwind classes and icons
+  const configMap: Record<EventCategory, { gradient: string; color: string; icon: string }> = {
+    [EventCategory.GBM]: {
+      gradient: "from-green-500 to-green-600",
+      color: "bg-green-100 text-green-700 border-green-200",
+      icon: "📢",
+    },
+    [EventCategory.SOCIAL]: {
+      gradient: "from-yellow-500 to-yellow-600",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      icon: "🎉",
+    },
+    [EventCategory.WORKSHOP]: {
+      gradient: "from-blue-500 to-blue-600",
+      color: "bg-blue-100 text-blue-700 border-blue-200",
+      icon: "🎓",
+    },
+    [EventCategory.FUNDRAISER]: {
+      gradient: "from-red-500 to-red-600",
+      color: "bg-red-100 text-red-700 border-red-200",
+      icon: "💰",
+    },
+    [EventCategory.COMMUNITY_SERVICE]: {
+      gradient: "from-amber-700 to-amber-800",
+      color: "bg-amber-100 text-amber-700 border-amber-200",
+      icon: "🤝",
+    },
+    [EventCategory.COMMITTEE_PARTICIPATION]: {
+      gradient: "from-purple-500 to-purple-600",
+      color: "bg-purple-100 text-purple-700 border-purple-200",
+      icon: "👥",
+    },
+  };
+  
+  const config = configMap[category] || {
+    gradient: "from-gray-500 to-gray-600",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    icon: "📅",
+  };
+  
+  return {
+    label: getEventCategoryLabel(category),
+    ...config,
+  };
 };
 
 export function EventDetailPage({
@@ -70,7 +102,7 @@ export function EventDetailPage({
   onEdit,
   userRole = "member",
 }: EventDetailPageProps) {
-  const config = categoryConfig[event.category];
+  const config = getCategoryConfig(event.category);
   const startDate = new Date(event.startTime);
   const endDate = new Date(event.endTime);
   const isPast = endDate < new Date();
