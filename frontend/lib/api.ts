@@ -107,6 +107,22 @@ export const api = {
     return response.json();
   },
 
+  updateMemberStatus: async (token: string, memberId: string, isActive: boolean) => {
+    const response = await fetch(`${API_URL}/members/${memberId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to update member status: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
   // Events
   getEvents: async (token: string) => {
     const response = await fetch(`${API_URL}/events`, {

@@ -27,8 +27,54 @@ export default function ManualCheckInPage() {
           api.getEvents(token),
         ]);
 
-        setMembers(memberData);
-        setEvents(eventData);
+        // Map backend member data to frontend format
+        const mappedMembers = memberData.map((member: any) => {
+          const name = [member.firstName, member.lastName]
+            .filter(Boolean)
+            .join(" ") || "Unknown Member";
+          
+          return {
+            id: member.id,
+            name: name,
+            email: member.email,
+            hasAttended: false, // This would need to be checked against attendance records
+          };
+        });
+
+        // Map backend event data to frontend format
+        // Filter to only show active events (or events that haven't ended yet)
+        const now = new Date();
+        const mappedEvents = eventData
+          .filter((event: any) => {
+            // Only show active events or events that haven't ended
+            if (event.isActive === false) return false;
+            const endTime = new Date(event.endTime);
+            // Optionally filter out past events (uncomment if needed):
+            // return endTime >= now;
+            return true; // Show all active events for now
+          })
+          .map((event: any) => {
+            // Map category to eventType
+            let eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE" = "WORKSHOP";
+            if (event.category === "GBM") {
+              eventType = "GBM";
+            } else if (event.category === "COMMUNITY_SERVICE") {
+              eventType = "COMMUNITY_SERVICE";
+            } else if (event.category === "WORKSHOP" || event.category === "SOCIAL") {
+              eventType = "WORKSHOP";
+            }
+            
+            return {
+              id: event.id,
+              name: event.name,
+              eventType: eventType,
+              date: event.startTime, // Use startTime as the date
+              location: event.location || "TBD",
+            };
+          });
+
+        setMembers(mappedMembers);
+        setEvents(mappedEvents);
       } catch (error) {
         console.error("Failed to fetch data:", error);
         toast.error("Failed to load data");
