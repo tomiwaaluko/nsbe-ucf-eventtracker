@@ -54,15 +54,8 @@ export default function ManualCheckInPage() {
             return true; // Show all active events for now
           })
           .map((event: any) => {
-            // Map category to eventType
-            let eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE" = "WORKSHOP";
-            if (event.category === "GBM") {
-              eventType = "GBM";
-            } else if (event.category === "COMMUNITY_SERVICE") {
-              eventType = "COMMUNITY_SERVICE";
-            } else if (event.category === "WORKSHOP" || event.category === "SOCIAL") {
-              eventType = "WORKSHOP";
-            }
+            // Map category directly - all categories are now supported
+            const eventType = event.category as "GBM" | "SOCIAL" | "WORKSHOP" | "FUNDRAISER" | "COMMUNITY_SERVICE" | "COMMITTEE_PARTICIPATION";
             
             return {
               id: event.id,

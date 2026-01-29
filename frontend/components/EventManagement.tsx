@@ -306,7 +306,7 @@ export function EventManagement({
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-white/60" />
                         <span className="text-sm text-white/90">
-                          {getAttendanceCount(event)} attendees
+                          {getAttendanceCount(event)}
                         </span>
                       </div>
                     </td>
@@ -465,7 +465,7 @@ export function EventManagement({
                   <div className="flex items-center gap-2 text-white/80">
                     <Users className="w-4 h-4" />
                     <span>
-                      {getAttendanceCount(event)} attendees
+                      {getAttendanceCount(event)}
                     </span>
                   </div>
                 </div>

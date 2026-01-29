@@ -30,7 +30,7 @@ interface Member {
 interface Event {
   id: string;
   name: string;
-  eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE";
+  eventType: "GBM" | "SOCIAL" | "WORKSHOP" | "FUNDRAISER" | "COMMUNITY_SERVICE" | "COMMITTEE_PARTICIPATION";
   date: string;
   location: string;
 }
@@ -82,12 +82,18 @@ export function ManualCheckIn({
 
   const getEventTypeColor = (type: string) => {
     switch (type) {
-      case "WORKSHOP":
-        return "#ffb81c";
       case "GBM":
-        return "#00a651";
+        return "#00a651"; // NSBE Green
+      case "SOCIAL":
+        return "#ffb81c"; // NSBE Gold
+      case "WORKSHOP":
+        return "#0066cc"; // Blue
+      case "FUNDRAISER":
+        return "#ed1c24"; // NSBE Red
       case "COMMUNITY_SERVICE":
-        return "#ed1c24";
+        return "#8b4513"; // Brown
+      case "COMMITTEE_PARTICIPATION":
+        return "#9932cc"; // Purple
       default:
         return "#6b7280";
     }
@@ -95,12 +101,18 @@ export function ManualCheckIn({
 
   const getEventTypeLabel = (type: string) => {
     switch (type) {
+      case "GBM":
+        return "General Body Meeting";
+      case "SOCIAL":
+        return "Social";
       case "WORKSHOP":
         return "Workshop";
-      case "GBM":
-        return "GBM";
+      case "FUNDRAISER":
+        return "Fundraiser";
       case "COMMUNITY_SERVICE":
         return "Community Service";
+      case "COMMITTEE_PARTICIPATION":
+        return "Committee Participation";
       default:
         return type;
     }
