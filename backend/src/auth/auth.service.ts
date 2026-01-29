@@ -6,34 +6,22 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   async findOrCreateMember(userId: string, email: string) {
-    // First check if member exists by email
     const existingMember = await this.prisma.member.findUnique({
       where: { email },
     });
 
     if (existingMember) {
-      // If member exists but has different ID, update it to match Supabase user ID
-      // IMPORTANT: Explicitly preserve the existing role to prevent role loss
       if (existingMember.id !== userId) {
         return this.prisma.member.update({
           where: { email },
-          data: { 
-            id: userId,
-            // Explicitly preserve role - don't let it default or get overwritten
-            role: existingMember.role,
-          },
+          data: { id: userId, role: existingMember.role },
         });
       }
       return existingMember;
     }
 
-    // Create new member if doesn't exist
     return this.prisma.member.create({
-      data: {
-        id: userId,
-        email,
-        role: 'member',
-      },
+      data: { id: userId, email, role: 'member' },
     });
   }
 

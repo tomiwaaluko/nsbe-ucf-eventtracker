@@ -310,7 +310,6 @@ export class OAuthService {
           },
         });
 
-        // Update email verification status if needed
         if (!existingMember.emailVerified) {
           await this.prisma.member.update({
             where: { id: existingMember.id },
@@ -327,15 +326,13 @@ export class OAuthService {
     }
 
     // Step 3: Create new account
-    // First create Supabase Auth user, then use its ID for Member
     let supabaseUserId: string;
     
     if (this.supabaseAdmin && profile.email) {
       try {
-        // Create Supabase Auth user
         const { data: authUser, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
           email: profile.email,
-          email_confirm: profile.emailVerified, // Auto-confirm if email is verified
+          email_confirm: profile.emailVerified,
           user_metadata: {
             first_name: profile.firstName,
             last_name: profile.lastName,
@@ -348,40 +345,33 @@ export class OAuthService {
         });
 
         if (authError) {
-          // If user already exists in Supabase Auth, try to get it
           if (authError.message?.includes('already registered')) {
             const { data: existingUser } = await this.supabaseAdmin.auth.admin.getUserByEmail(profile.email);
             if (existingUser?.user) {
               supabaseUserId = existingUser.user.id;
             } else {
-              // Fallback: generate UUID
               supabaseUserId = crypto.randomUUID();
             }
           } else {
             console.error('Error creating Supabase Auth user:', authError);
-            // Fallback: generate UUID
             supabaseUserId = crypto.randomUUID();
           }
         } else if (authUser?.user) {
           supabaseUserId = authUser.user.id;
         } else {
-          // Fallback: generate UUID
           supabaseUserId = crypto.randomUUID();
         }
       } catch (error) {
         console.error('Error creating Supabase Auth user:', error);
-        // Fallback: generate UUID
         supabaseUserId = crypto.randomUUID();
       }
     } else {
-      // No Supabase Admin configured, generate UUID
       supabaseUserId = crypto.randomUUID();
     }
 
-    // Create Member with Supabase user ID
     const newMember = await this.prisma.member.create({
       data: {
-        id: supabaseUserId, // Use Supabase Auth user ID
+        id: supabaseUserId,
         email: profile.email || `oauth_${provider}_${profile.providerUserId}@temp.local`,
         firstName: profile.firstName,
         lastName: profile.lastName,
@@ -407,9 +397,6 @@ export class OAuthService {
     };
   }
 
-  /**
-   * Generate JWT token for authenticated user
-   */
   generateJWT(member: any): string {
     const payload = {
       sub: member.id,
@@ -418,13 +405,10 @@ export class OAuthService {
     };
 
     return jwt.sign(payload, this.jwtSecret, {
-      expiresIn: '7d', // Match your existing JWT expiration
+      expiresIn: '7d',
     });
   }
 
-  /**
-   * Get redirect URL after OAuth callback
-   */
   getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string): string {
     const params = new URLSearchParams();
     
