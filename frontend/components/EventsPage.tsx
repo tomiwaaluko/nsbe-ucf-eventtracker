@@ -12,6 +12,7 @@ import {
 } from "./ui/select";
 import { Search, Plus, Calendar, Zap } from "lucide-react";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
+import { EVENT_CATEGORIES } from "@/lib/constants/event-categories";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -224,11 +225,11 @@ export function EventsPage({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="GBM">General Body Meetings</SelectItem>
-                  <SelectItem value="SOCIAL_AEX">Workshops / Social</SelectItem>
-                  <SelectItem value="COMMUNITY_SERVICE">
-                    Community Service
-                  </SelectItem>
+                  {EVENT_CATEGORIES.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

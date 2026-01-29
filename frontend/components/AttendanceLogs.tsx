@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { EVENT_CATEGORIES, getEventCategoryLabel } from "@/lib/constants/event-categories";
 
 interface AttendanceRecord {
   id: string;
@@ -29,7 +30,7 @@ interface AttendanceRecord {
   memberEmail: string;
   eventId: string;
   eventName: string;
-  eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE";
+  eventType: "GBM" | "SOCIAL" | "WORKSHOP" | "FUNDRAISER" | "COMMUNITY_SERVICE" | "COMMITTEE_PARTICIPATION";
   checkInTime: string;
   checkInMethod: "QR_CODE" | "MANUAL";
   checkedInBy?: string;
@@ -252,11 +253,11 @@ export function AttendanceLogs({ attendanceRecords }: AttendanceLogsProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                <SelectItem value="GBM">GBM</SelectItem>
-                <SelectItem value="COMMUNITY_SERVICE">
-                  Community Service
-                </SelectItem>
+                {EVENT_CATEGORIES.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

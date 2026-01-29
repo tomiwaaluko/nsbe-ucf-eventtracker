@@ -30,6 +30,13 @@ export class EventsService {
         createdBy: {
           select: { email: true, firstName: true, lastName: true },
         },
+        attendance: {
+          select: {
+            id: true,
+            memberId: true,
+            checkedInAt: true,
+          },
+        },
       },
     });
   }
@@ -40,6 +47,13 @@ export class EventsService {
       include: {
         createdBy: {
           select: { email: true, firstName: true, lastName: true },
+        },
+        attendance: {
+          select: {
+            id: true,
+            memberId: true,
+            checkedInAt: true,
+          },
         },
       },
     });

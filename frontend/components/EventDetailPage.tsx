@@ -237,8 +237,8 @@ export function EventDetailPage({
             </div>
           </motion.div>
 
-          {/* Attendees */}
-          {event.attendees && event.attendees.length > 0 && (
+          {/* Attendees - Only visible to admins */}
+          {canEdit && event.attendees && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -246,44 +246,52 @@ export function EventDetailPage({
               className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900">Attendees</h3>
+                <h3 className="text-gray-900">Attendee List</h3>
                 <Badge>{event.attendees.length}</Badge>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                {event.attendees.map((attendee) => (
-                  <div
-                    key={attendee.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Avatar>
-                      <AvatarFallback className="bg-[#00a651] text-white">
-                        {getInitials(
-                          attendee.firstName,
-                          attendee.lastName,
-                          attendee.email
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">
-                        {attendee.firstName && attendee.lastName
-                          ? `${attendee.firstName} ${attendee.lastName}`
-                          : attendee.email}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(attendee.checkedInAt).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          }
-                        )}
-                      </p>
+              {event.attendees.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                  {event.attendees.map((attendee) => (
+                    <div
+                      key={attendee.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Avatar>
+                        <AvatarFallback className="bg-[#00a651] text-white">
+                          {getInitials(
+                            attendee.firstName,
+                            attendee.lastName,
+                            attendee.email
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 truncate">
+                          {attendee.firstName && attendee.lastName
+                            ? `${attendee.firstName} ${attendee.lastName}`
+                            : attendee.email}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Checked in at{" "}
+                          {new Date(attendee.checkedInAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            }
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No attendees yet</p>
+                </div>
+              )}
             </motion.div>
           )}
         </div>

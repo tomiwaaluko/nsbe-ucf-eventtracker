@@ -25,13 +25,12 @@ export default function EventDetail() {
 
       try {
         setIsLoading(true);
-        const eventData = await api.getEvent(token, eventId);
-        setEvent(eventData);
-
-        // Get user role for edit button visibility
+        
+        // Get user role first to determine if we should fetch attendance
+        let role: "member" | "admin" | "super_admin" = "member";
         try {
           const userData = await api.getMe(token);
-          const role = userData.role;
+          role = userData.role;
           if (role === "admin" || role === "super_admin" || role === "member") {
             setUserRole(role);
           } else {
@@ -42,7 +41,7 @@ export default function EventDetail() {
           const userStr = localStorage.getItem("user");
           if (userStr) {
             const user = JSON.parse(userStr);
-            const role = user.role;
+            role = user.role;
             if (role === "admin" || role === "super_admin" || role === "member") {
               setUserRole(role);
             } else {
@@ -50,6 +49,34 @@ export default function EventDetail() {
             }
           }
         }
+
+        // Fetch event data
+        const eventData = await api.getEvent(token, eventId);
+        
+        // If user is admin, fetch attendance data
+        if (role === "admin" || role === "super_admin") {
+          try {
+            const attendanceData = await api.getEventAttendance(token, eventId);
+            // Map attendance data to attendees format
+            const attendees = attendanceData.map((record: any) => ({
+              id: record.id,
+              firstName: record.member?.firstName || null,
+              lastName: record.member?.lastName || null,
+              email: record.member?.email || "",
+              checkedInAt: record.checkedInAt,
+            }));
+            eventData.attendees = attendees;
+          } catch (error) {
+            console.error("Failed to load attendance data:", error);
+            // Don't fail the whole page if attendance fetch fails
+            eventData.attendees = [];
+          }
+        } else {
+          // Non-admins don't see attendees
+          eventData.attendees = undefined;
+        }
+        
+        setEvent(eventData);
       } catch (error: any) {
         console.error("Failed to load event:", error);
         toast.error("Failed to load event");
