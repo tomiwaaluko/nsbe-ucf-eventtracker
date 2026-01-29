@@ -11,6 +11,8 @@ export default function ManualCheckInPage() {
   const router = useRouter();
   const [members, setMembers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,10 +24,14 @@ export default function ManualCheckInPage() {
           return;
         }
 
-        const [memberData, eventData] = await Promise.all([
+        const [memberData, eventData, adminData, meData] = await Promise.all([
           api.getAllMembers(token),
           api.getEvents(token),
+          api.getAdmins(token).catch(() => []),
+          api.getMe(token),
         ]);
+        setAdmins(adminData);
+        setCurrentUser(meData);
 
         // Map backend member data to frontend format
         const mappedMembers = memberData.map((member: any) => {
@@ -73,6 +79,7 @@ export default function ManualCheckInPage() {
         toast.error("Failed to load data");
         setMembers([]);
         setEvents([]);
+        setAdmins([]);
       } finally {
         setLoading(false);
       }
@@ -123,6 +130,8 @@ export default function ManualCheckInPage() {
       <ManualCheckIn
         members={members}
         events={events}
+        admins={admins}
+        currentUser={currentUser}
         onCheckIn={handleCheckIn}
       />
     </DashboardLayout>

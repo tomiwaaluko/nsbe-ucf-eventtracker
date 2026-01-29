@@ -106,6 +106,13 @@ const menuItems = [
     roles: ["admin", "super_admin"],
     section: "admin",
   },
+  {
+    id: "admin-admins",
+    label: "Manage Admins",
+    icon: Shield,
+    roles: ["super_admin"],
+    section: "admin",
+  },
 
   {
     id: "settings",
