@@ -51,7 +51,7 @@ async function main() {
     data: {
       name: 'Resume Building Workshop',
       description: 'Learn how to build a professional resume',
-      category: 'SOCIAL_AEX',
+      category: 'WORKSHOP',
       semester: 'Fall 2024',
       location: 'Engineering Building Room 101',
       startTime: new Date('2024-12-20T18:00:00'),

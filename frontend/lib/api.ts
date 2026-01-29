@@ -164,17 +164,47 @@ export const api = {
     params.set("format", format);
     params.set("size", size.toString());
 
-    const response = await fetch(
-      `${API_URL}/events/${id}/qr?${params.toString()}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    // Add timeout to prevent hanging (10 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    if (format === "png" || format === "svg") {
-      return response.blob();
-    } else {
-      return response.json();
+    try {
+      const response = await fetch(
+        `${API_URL}/events/${id}/qr?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Failed to fetch QR code: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch {
+          // If not JSON, use the text as error message
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (format === "png" || format === "svg") {
+        return response.blob();
+      } else {
+        return response.json();
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('QR code request timed out. Please try again.');
+      }
+      throw error;
     }
   },
 

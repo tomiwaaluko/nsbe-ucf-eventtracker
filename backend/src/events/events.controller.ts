@@ -12,6 +12,7 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -55,29 +56,45 @@ export class EventsController {
     @Param('id') id: string,
     @Query('format') format?: 'png' | 'svg' | 'dataurl',
     @Query('size') size?: string,
-    @Res() res?,
+    @Res() res?: Response,
   ) {
-    const qrFormat = format || 'png';
-    const qrSize = size ? parseInt(size, 10) : 512;
+    if (!res) {
+      throw new Error('Response object not available');
+    }
 
-    // Validate size (max 2048px)
-    const validatedSize = Math.min(Math.max(qrSize, 128), 2048);
+    try {
+      const qrFormat = format || 'png';
+      const qrSize = size ? parseInt(size, 10) : 512;
 
-    const result = await this.eventsService.generateEventQRCode(
-      id,
-      qrFormat,
-      validatedSize,
-    );
+      // Validate size (max 2048px)
+      const validatedSize = Math.min(Math.max(qrSize, 128), 2048);
 
-    if (qrFormat === 'png') {
-      res.setHeader('Content-Type', 'image/png');
-      res.send(result);
-    } else if (qrFormat === 'svg') {
-      res.setHeader('Content-Type', 'image/svg+xml');
-      res.send(result);
-    } else {
-      // dataurl format returns JSON
-      return { dataUrl: result };
+      const result = await this.eventsService.generateEventQRCode(
+        id,
+        qrFormat,
+        validatedSize,
+      );
+
+      if (qrFormat === 'png') {
+        res.setHeader('Content-Type', 'image/png');
+        res.send(result);
+      } else if (qrFormat === 'svg') {
+        res.setHeader('Content-Type', 'image/svg+xml');
+        res.send(result);
+      } else {
+        // dataurl format returns JSON
+        res.setHeader('Content-Type', 'application/json');
+        res.json({ dataUrl: result });
+      }
+    } catch (error) {
+      // Ensure error response is sent when using @Res()
+      if (!res.headersSent) {
+        res.status(error.status || 500).json({
+          statusCode: error.status || 500,
+          message: error.message || 'Failed to generate QR code',
+        });
+      }
+      throw error;
     }
   }
 

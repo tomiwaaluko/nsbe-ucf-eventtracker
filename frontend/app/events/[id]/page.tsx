@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { EventDetailPage } from "@/components/EventDetailPage";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function EventDetail() {
   const params = useParams();
@@ -11,29 +13,54 @@ export default function EventDetail() {
   const eventId = params.id as string;
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<"member" | "admin" | "super_admin">("member");
 
   useEffect(() => {
-    // TODO: Fetch real event data from API
-    // For now, using mock data
-    const mockEvent = {
-      id: eventId,
-      name: "Sample Event",
-      description: "This is a sample event description.",
-      category: "GBM" as const,
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      location: "Student Union",
-      isActive: true,
-      createdBy: {
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@example.com",
-      },
-      attendees: [],
+    const loadEvent = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const eventData = await api.getEvent(token, eventId);
+        setEvent(eventData);
+
+        // Get user role for edit button visibility
+        try {
+          const userData = await api.getMe(token);
+          const role = userData.role;
+          if (role === "admin" || role === "super_admin" || role === "member") {
+            setUserRole(role);
+          } else {
+            setUserRole("member");
+          }
+        } catch (error) {
+          // If getMe fails, try to get from localStorage
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            const role = user.role;
+            if (role === "admin" || role === "super_admin" || role === "member") {
+              setUserRole(role);
+            } else {
+              setUserRole("member");
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error("Failed to load event:", error);
+        toast.error("Failed to load event");
+        router.push("/events");
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setEvent(mockEvent);
-    setIsLoading(false);
-  }, [eventId]);
+
+    loadEvent();
+  }, [eventId, router]);
 
   const handleBack = () => {
     router.push("/events");
@@ -44,7 +71,7 @@ export default function EventDetail() {
   };
 
   const handleEdit = (eventId: string) => {
-    // TODO: Implement edit event functionality
+    router.push(`/events/${eventId}/edit`);
   };
 
   if (isLoading || !event) {
@@ -64,7 +91,7 @@ export default function EventDetail() {
         onBack={handleBack}
         onCheckIn={handleCheckIn}
         onEdit={handleEdit}
-        userRole="member"
+        userRole={userRole}
       />
     </DashboardLayout>
   );

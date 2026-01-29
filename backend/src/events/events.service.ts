@@ -67,16 +67,22 @@ export class EventsService {
     format: 'png' | 'svg' | 'dataurl' = 'png',
     size: number = 512,
   ): Promise<Buffer | string> {
+    console.log(`[QR Code] Generating QR code for event: ${eventId}, format: ${format}, size: ${size}`);
+    
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
       select: { qrSecret: true, isActive: true },
     });
 
     if (!event) {
+      console.error(`[QR Code] Event not found: ${eventId}`);
       throw new NotFoundException('Event not found');
     }
 
+    console.log(`[QR Code] Event found - isActive: ${event.isActive}, qrSecret exists: ${!!event.qrSecret}`);
+
     if (!event.isActive) {
+      console.error(`[QR Code] Event is not active: ${eventId}`);
       throw new BadRequestException('Cannot generate QR for inactive event');
     }
 
@@ -88,6 +94,7 @@ export class EventsService {
     };
 
     const payloadString = JSON.stringify(payload);
+    console.log(`[QR Code] Payload created, generating QR code...`);
 
     const options = {
       width: size,
@@ -95,12 +102,20 @@ export class EventsService {
       errorCorrectionLevel: 'M' as const,
     };
 
-    if (format === 'svg') {
-      return await QRCode.toString(payloadString, { ...options, type: 'svg' });
-    } else if (format === 'dataurl') {
-      return await QRCode.toDataURL(payloadString, options);
-    } else {
-      return await QRCode.toBuffer(payloadString, options);
+    try {
+      let result: Buffer | string;
+      if (format === 'svg') {
+        result = await QRCode.toString(payloadString, { ...options, type: 'svg' });
+      } else if (format === 'dataurl') {
+        result = await QRCode.toDataURL(payloadString, options);
+      } else {
+        result = await QRCode.toBuffer(payloadString, options);
+      }
+      console.log(`[QR Code] QR code generated successfully, result type: ${typeof result}, length: ${typeof result === 'string' ? result.length : result.length}`);
+      return result;
+    } catch (error) {
+      console.error(`[QR Code] Error generating QR code:`, error);
+      throw new BadRequestException(`Failed to generate QR code: ${error.message}`);
     }
   }
 }

@@ -2,10 +2,42 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventCategory } from '@prisma/client';
 
+/**
+ * Event category buckets for achievement tracking:
+ * - Bucket 1: Workshops & Socials (WORKSHOP, SOCIAL)
+ * - Bucket 2: Fundraiser & Community Service (FUNDRAISER, COMMUNITY_SERVICE)
+ * - Bucket 3: General Body Meeting (GBM)
+ */
+export enum EventBucket {
+  WORKSHOPS_SOCIALS = 'workshops_socials',
+  FUNDRAISER_COMMUNITY_SERVICE = 'fundraiser_community_service',
+  GBM = 'gbm',
+}
+
+/**
+ * Maps an event category to its bucket
+ */
+function getEventBucket(category: EventCategory): EventBucket {
+  switch (category) {
+    case EventCategory.WORKSHOP:
+    case EventCategory.SOCIAL:
+      return EventBucket.WORKSHOPS_SOCIALS;
+    case EventCategory.FUNDRAISER:
+    case EventCategory.COMMUNITY_SERVICE:
+      return EventBucket.FUNDRAISER_COMMUNITY_SERVICE;
+    case EventCategory.GBM:
+      return EventBucket.GBM;
+    default:
+      // COMMITTEE_PARTICIPATION doesn't count toward achievements
+      // Return a default bucket, but it won't be counted
+      return EventBucket.WORKSHOPS_SOCIALS;
+  }
+}
+
 export interface MemberProgress {
-  communityService: number;
-  gbm: number;
-  socialAex: number;
+  workshopsSocials: number; // Bucket 1: WORKSHOP + SOCIAL
+  fundraiserCommunityService: number; // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE
+  gbm: number; // Bucket 3: GBM
   has111: boolean;
   has333: boolean;
   completed111At?: Date;
@@ -35,43 +67,51 @@ export class StatsService {
       },
     });
 
-    const counts = {
-      [EventCategory.COMMUNITY_SERVICE]: 0,
-      [EventCategory.GBM]: 0,
-      [EventCategory.SOCIAL_AEX]: 0,
+    // Count events by bucket
+    const bucketCounts = {
+      [EventBucket.WORKSHOPS_SOCIALS]: 0,
+      [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
+      [EventBucket.GBM]: 0,
     };
 
     let completed111At: Date | undefined;
     let completed333At: Date | undefined;
 
     for (const record of attendance) {
-      counts[record.event.category]++;
+      const bucket = getEventBucket(record.event.category);
+      // Only count categories that are part of achievement buckets
+      // COMMITTEE_PARTICIPATION is excluded
+      if (
+        record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+      ) {
+        bucketCounts[bucket]++;
+      }
 
-      // Check if 111 requirement met
+      // Check if 111 requirement met (1 from each bucket)
       if (
         !completed111At &&
-        counts.COMMUNITY_SERVICE >= 1 &&
-        counts.GBM >= 1 &&
-        counts.SOCIAL_AEX >= 1
+        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 1 &&
+        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 1 &&
+        bucketCounts[EventBucket.GBM] >= 1
       ) {
         completed111At = record.checkedInAt;
       }
 
-      // Check if 333 requirement met
+      // Check if 333 requirement met (3 from each bucket)
       if (
         !completed333At &&
-        counts.COMMUNITY_SERVICE >= 3 &&
-        counts.GBM >= 3 &&
-        counts.SOCIAL_AEX >= 3
+        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
+        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
+        bucketCounts[EventBucket.GBM] >= 3
       ) {
         completed333At = record.checkedInAt;
       }
     }
 
     return {
-      communityService: counts.COMMUNITY_SERVICE,
-      gbm: counts.GBM,
-      socialAex: counts.SOCIAL_AEX,
+      workshopsSocials: bucketCounts[EventBucket.WORKSHOPS_SOCIALS],
+      fundraiserCommunityService: bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE],
+      gbm: bucketCounts[EventBucket.GBM],
       has111: !!completed111At,
       has333: !!completed333At,
       completed111At,
@@ -100,22 +140,29 @@ export class StatsService {
 
     const leaderboard = members
       .map((member) => {
-        const counts = {
-          [EventCategory.COMMUNITY_SERVICE]: 0,
-          [EventCategory.GBM]: 0,
-          [EventCategory.SOCIAL_AEX]: 0,
+        const bucketCounts = {
+          [EventBucket.WORKSHOPS_SOCIALS]: 0,
+          [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
+          [EventBucket.GBM]: 0,
         };
 
         let completed111At: Date | undefined;
 
         for (const record of member.attendance) {
-          counts[record.event.category]++;
+          const bucket = getEventBucket(record.event.category);
+          // Only count categories that are part of achievement buckets
+          if (
+            record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+          ) {
+            bucketCounts[bucket]++;
+          }
 
+          // Check if 111 requirement met (1 from each bucket)
           if (
             !completed111At &&
-            counts.COMMUNITY_SERVICE >= 1 &&
-            counts.GBM >= 1 &&
-            counts.SOCIAL_AEX >= 1
+            bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 1 &&
+            bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 1 &&
+            bucketCounts[EventBucket.GBM] >= 1
           ) {
             completed111At = record.checkedInAt;
           }
@@ -164,22 +211,29 @@ export class StatsService {
 
     const leaderboard = members
       .map((member) => {
-        const counts = {
-          [EventCategory.COMMUNITY_SERVICE]: 0,
-          [EventCategory.GBM]: 0,
-          [EventCategory.SOCIAL_AEX]: 0,
+        const bucketCounts = {
+          [EventBucket.WORKSHOPS_SOCIALS]: 0,
+          [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
+          [EventBucket.GBM]: 0,
         };
 
         let completed333At: Date | undefined;
 
         for (const record of member.attendance) {
-          counts[record.event.category]++;
+          const bucket = getEventBucket(record.event.category);
+          // Only count categories that are part of achievement buckets
+          if (
+            record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+          ) {
+            bucketCounts[bucket]++;
+          }
 
+          // Check if 333 requirement met (3 from each bucket)
           if (
             !completed333At &&
-            counts.COMMUNITY_SERVICE >= 3 &&
-            counts.GBM >= 3 &&
-            counts.SOCIAL_AEX >= 3
+            bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
+            bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
+            bucketCounts[EventBucket.GBM] >= 3
           ) {
             completed333At = record.checkedInAt;
           }
@@ -278,30 +332,36 @@ export class StatsService {
     let membersWithThreeThreeThree = 0;
 
     for (const member of members) {
-      const counts = {
-        [EventCategory.COMMUNITY_SERVICE]: 0,
-        [EventCategory.GBM]: 0,
-        [EventCategory.SOCIAL_AEX]: 0,
+      const bucketCounts = {
+        [EventBucket.WORKSHOPS_SOCIALS]: 0,
+        [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
+        [EventBucket.GBM]: 0,
       };
 
       for (const record of member.attendance) {
-        counts[record.event.category]++;
+        const bucket = getEventBucket(record.event.category);
+        // Only count categories that are part of achievement buckets
+        if (
+          record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+        ) {
+          bucketCounts[bucket]++;
+        }
       }
 
-      // Check 111 achievement
+      // Check 111 achievement (1 from each bucket)
       if (
-        counts.COMMUNITY_SERVICE >= 1 &&
-        counts.GBM >= 1 &&
-        counts.SOCIAL_AEX >= 1
+        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 1 &&
+        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 1 &&
+        bucketCounts[EventBucket.GBM] >= 1
       ) {
         membersWithOneOneOne++;
       }
 
-      // Check 333 achievement
+      // Check 333 achievement (3 from each bucket)
       if (
-        counts.COMMUNITY_SERVICE >= 3 &&
-        counts.GBM >= 3 &&
-        counts.SOCIAL_AEX >= 3
+        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
+        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
+        bucketCounts[EventBucket.GBM] >= 3
       ) {
         membersWithThreeThreeThree++;
       }
