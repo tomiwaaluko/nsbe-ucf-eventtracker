@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, MapPin, Users, Clock, FileText, Hash } from "lucide-react";
+import { Calendar, MapPin, Clock, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Card } from "./ui/card";
+import { EVENT_CATEGORIES, EventCategory } from "@/lib/constants/event-categories";
+import { generateSemesterOptions, getCurrentSemester } from "@/lib/utils/semesters";
 
 interface CreateEventFormProps {
   onSubmit: (eventData: any) => void;
@@ -19,17 +21,24 @@ interface CreateEventFormProps {
 }
 
 export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
+  // Get today's date in YYYY-MM-DD format for the date input
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    eventType: "",
-    date: "",
+    category: "" as EventCategory | "",
+    semester: getCurrentSemester(),
+    date: getTodayDate(),
     startTime: "",
     endTime: "",
     location: "",
-    capacity: "",
-    qrSecret: "",
-    isActive: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,8 +67,11 @@ export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
     if (!formData.description.trim()) {
       newErrors.description = "Description is required";
     }
-    if (!formData.eventType) {
-      newErrors.eventType = "Event type is required";
+    if (!formData.category) {
+      newErrors.category = "Event category is required";
+    }
+    if (!formData.semester) {
+      newErrors.semester = "Semester is required";
     }
     if (!formData.date) {
       newErrors.date = "Date is required";
@@ -72,12 +84,6 @@ export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
     }
     if (!formData.location.trim()) {
       newErrors.location = "Location is required";
-    }
-    if (!formData.capacity || parseInt(formData.capacity) <= 0) {
-      newErrors.capacity = "Capacity must be greater than 0";
-    }
-    if (!formData.qrSecret.trim()) {
-      newErrors.qrSecret = "QR secret is required";
     }
 
     // Validate end time is after start time
@@ -96,17 +102,8 @@ export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit({
-        ...formData,
-        capacity: parseInt(formData.capacity),
-      });
+      onSubmit(formData);
     }
-  };
-
-  const generateQRSecret = () => {
-    const secret = Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
-    handleChange("qrSecret", secret);
   };
 
   return (
@@ -163,43 +160,63 @@ export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
               )}
             </div>
 
-            {/* Event Type */}
+            {/* Event Category */}
             <div>
-              <Label htmlFor="eventType">
-                Event Type <span className="text-red-500">*</span>
+              <Label htmlFor="category">
+                Event Category <span className="text-red-500">*</span>
               </Label>
               <Select
-                value={formData.eventType}
-                onValueChange={(value) => handleChange("eventType", value)}
+                value={formData.category}
+                onValueChange={(value) => handleChange("category", value as EventCategory)}
               >
                 <SelectTrigger
-                  className={`mt-1 ${errors.eventType ? "border-red-500" : ""}`}
+                  className={`mt-1 ${errors.category ? "border-red-500" : ""}`}
                 >
-                  <SelectValue placeholder="Select event type" />
+                  <SelectValue placeholder="Select event category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="WORKSHOP">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-[#ffb81c]" />
-                      <span>Workshop (Social/AEX)</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="GBM">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-[#00a651]" />
-                      <span>General Body Meeting</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="COMMUNITY_SERVICE">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-[#ed1c24]" />
-                      <span>Community Service</span>
-                    </div>
-                  </SelectItem>
+                  {EVENT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span>{cat.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {errors.eventType && (
-                <p className="text-xs text-red-500 mt-1">{errors.eventType}</p>
+              {errors.category && (
+                <p className="text-xs text-red-500 mt-1">{errors.category}</p>
+              )}
+            </div>
+
+            {/* Semester */}
+            <div>
+              <Label htmlFor="semester">
+                Semester <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.semester}
+                onValueChange={(value) => handleChange("semester", value)}
+              >
+                <SelectTrigger
+                  className={`mt-1 ${errors.semester ? "border-red-500" : ""}`}
+                >
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  {generateSemesterOptions().map((semester) => (
+                    <SelectItem key={semester} value={semester}>
+                      {semester}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.semester && (
+                <p className="text-xs text-red-500 mt-1">{errors.semester}</p>
               )}
             </div>
           </div>
@@ -271,105 +288,27 @@ export function CreateEventForm({ onSubmit, onCancel }: CreateEventFormProps) {
           </div>
         </Card>
 
-        {/* Location & Capacity */}
+        {/* Location */}
         <Card className="p-6">
-          <h3 className="text-gray-900 mb-4">Location & Capacity</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Location */}
-            <div>
-              <Label htmlFor="location">
-                Location <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  id="location"
-                  type="text"
-                  placeholder="e.g., Engineering Building Room 101"
-                  value={formData.location}
-                  onChange={(e) => handleChange("location", e.target.value)}
-                  className={`pl-10 ${errors.location ? "border-red-500" : ""}`}
-                />
-              </div>
-              {errors.location && (
-                <p className="text-xs text-red-500 mt-1">{errors.location}</p>
-              )}
-            </div>
-
-            {/* Capacity */}
-            <div>
-              <Label htmlFor="capacity">
-                Capacity <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative mt-1">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  id="capacity"
-                  type="number"
-                  min="1"
-                  placeholder="e.g., 50"
-                  value={formData.capacity}
-                  onChange={(e) => handleChange("capacity", e.target.value)}
-                  className={`pl-10 ${errors.capacity ? "border-red-500" : ""}`}
-                />
-              </div>
-              {errors.capacity && (
-                <p className="text-xs text-red-500 mt-1">{errors.capacity}</p>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Check-In Settings */}
-        <Card className="p-6">
-          <h3 className="text-gray-900 mb-4">Check-In Settings</h3>
-          <div className="space-y-4">
-            {/* QR Secret */}
-            <div>
-              <Label htmlFor="qrSecret">
-                QR Code Secret <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex gap-2 mt-1">
-                <div className="relative flex-1">
-                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="qrSecret"
-                    type="text"
-                    placeholder="Enter or generate a unique secret"
-                    value={formData.qrSecret}
-                    onChange={(e) => handleChange("qrSecret", e.target.value)}
-                    className={`pl-10 ${errors.qrSecret ? "border-red-500" : ""}`}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={generateQRSecret}
-                >
-                  Generate
-                </Button>
-              </div>
-              {errors.qrSecret && (
-                <p className="text-xs text-red-500 mt-1">{errors.qrSecret}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                This secret will be encoded in the QR code for check-in
-              </p>
-            </div>
-
-            {/* Active Status */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => handleChange("isActive", e.target.checked)}
-                className="w-4 h-4 text-[#00a651] border-gray-300 rounded focus:ring-[#00a651]"
+          <h3 className="text-gray-900 mb-4">Location</h3>
+          <div>
+            <Label htmlFor="location">
+              Location <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative mt-1">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                id="location"
+                type="text"
+                placeholder="e.g., Engineering Building Room 101"
+                value={formData.location}
+                onChange={(e) => handleChange("location", e.target.value)}
+                className={`pl-10 ${errors.location ? "border-red-500" : ""}`}
               />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Event is active (members can check in)
-              </Label>
             </div>
+            {errors.location && (
+              <p className="text-xs text-red-500 mt-1">{errors.location}</p>
+            )}
           </div>
         </Card>
 

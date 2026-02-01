@@ -10,9 +10,12 @@ generator client {
 }
 
 enum EventCategory {
-  COMMUNITY_SERVICE
   GBM
-  SOCIAL_AEX
+  SOCIAL
+  WORKSHOP
+  FUNDRAISER
+  COMMUNITY_SERVICE
+  COMMITTEE_PARTICIPATION
 }
 
 model Member {
@@ -22,6 +25,7 @@ model Member {
   lastName      String?
   role          String   @default("member") // member | admin | super_admin
   emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
   passwordHash  String?  // Nullable for OAuth-only accounts
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -14,7 +14,7 @@ import {
   ClipboardList,
   Shield,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
 
@@ -124,10 +124,18 @@ export function Sidebar({
   onLogout,
 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Only render admin section after hydration to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredMenuItems = menuItems.filter((item) =>
     item.roles.includes(userRole)
   );
+
+  const hasAdminItems = filteredMenuItems.some((item) => item.section === "admin");
 
   return (
     <>
@@ -270,7 +278,7 @@ export function Sidebar({
               })}
 
             {/* Admin Section */}
-            {filteredMenuItems.some((item) => item.section === "admin") && (
+            {mounted && hasAdminItems && (
               <>
                 <div className="pt-4 pb-2 px-2">
                   <p
@@ -498,9 +506,7 @@ export function Sidebar({
                     })}
 
                   {/* Admin Section */}
-                  {filteredMenuItems.some(
-                    (item) => item.section === "admin"
-                  ) && (
+                  {mounted && hasAdminItems && (
                     <>
                       <div className="pt-4 pb-2 px-2">
                         <p

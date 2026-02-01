@@ -38,24 +38,27 @@ interface AttendancePageProps {
     location?: string;
     isActive: boolean;
   }>;
-  onCheckIn: (eventId: string) => void;
+  onCheckIn: (
+    eventId: string,
+    qrSecret: string
+  ) => Promise<{ success: boolean; message: string; event?: any }>;
 }
 
 const categoryConfig = {
   COMMUNITY_SERVICE: {
     label: "Community Service",
     color: "bg-red-100 text-red-700 border-red-200",
-    icon: "🤝",
+    icon: "",
   },
   GBM: {
     label: "General Body Meeting",
     color: "bg-blue-100 text-blue-700 border-blue-200",
-    icon: "📢",
+    icon: "",
   },
   SOCIAL_AEX: {
     label: "Workshop / Social",
     color: "bg-purple-100 text-purple-700 border-purple-200",
-    icon: "🎓",
+    icon: "",
   },
 };
 
@@ -65,6 +68,12 @@ export function AttendancePage({
 }: AttendancePageProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [checkInResult, setCheckInResult] = useState<{
+    success: boolean;
+    message: string;
+    event?: any;
+  } | null>(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +123,7 @@ export function AttendancePage({
   const startCamera = async () => {
     try {
       setScanError("");
+      setCheckInResult(null);
 
       // First set camera active to show the div
       setIsCameraActive(true);
@@ -138,14 +148,67 @@ export function AttendancePage({
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
           },
-          (decodedText) => {
-            // Successfully scanned QR code
-            stopCamera();
-            if (activeEvents.length > 0) {
-              onCheckIn(activeEvents[0].id);
+          async (decodedText: string, decodedResult: any) => {
+            try {
+              // Stop camera immediately
+              await stopCamera();
+
+              // Parse QR payload
+              let payload;
+              try {
+                payload = JSON.parse(decodedText);
+              } catch (parseError) {
+                setScanError("Invalid QR code format. Please scan a valid event QR code.");
+                setCheckInResult({
+                  success: false,
+                  message: "Invalid QR code format. Please scan a valid event QR code.",
+                });
+                return;
+              }
+
+              // Validate payload structure
+              if (
+                payload.type !== "event_checkin" ||
+                !payload.eventId ||
+                !payload.token
+              ) {
+                setScanError("Invalid QR code format. Expected event check-in QR code.");
+                setCheckInResult({
+                  success: false,
+                  message: "Invalid QR code format. Expected event check-in QR code.",
+                });
+                return;
+              }
+
+              // Call check-in API
+              setIsCheckingIn(true);
+              setCheckInResult(null);
+
+              const result = await onCheckIn(payload.eventId, payload.token);
+
+              setCheckInResult(result);
+
+              if (result.success) {
+                // Clear error on success
+                setScanError("");
+                // Auto-clear success message after 5 seconds
+                setTimeout(() => {
+                  setCheckInResult(null);
+                }, 5000);
+              } else {
+                setScanError(result.message);
+              }
+            } catch (error: any) {
+              setScanError(error.message || "Failed to check in. Please try again.");
+              setCheckInResult({
+                success: false,
+                message: error.message || "Failed to check in. Please try again.",
+              });
+            } finally {
+              setIsCheckingIn(false);
             }
           },
-          (errorMessage) => {
+          (errorMessage: string) => {
             // Handle scan errors silently (they happen frequently while scanning)
           }
         );
@@ -153,7 +216,6 @@ export function AttendancePage({
         throw new Error("No cameras found on this device");
       }
     } catch (err: any) {
-      console.error("Camera error:", err);
       setScanError(
         err?.message ||
           "Failed to start camera. Please check camera permissions."
@@ -185,7 +247,7 @@ export function AttendancePage({
         videoElement.srcObject = null;
       }
     } catch (err) {
-      console.error("Error stopping camera:", err);
+      // Ignore errors when stopping camera
     } finally {
       setIsCameraActive(false);
     }
@@ -391,6 +453,65 @@ export function AttendancePage({
                     </motion.div>
                   )}
 
+                  {checkInResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 relative"
+                    >
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                      <div
+                        className={`relative border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-4 ${
+                          checkInResult.success
+                            ? "bg-[#00a651]"
+                            : "bg-[#ed1c24]"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {checkInResult.success ? (
+                            <CheckCircle2 className="w-5 h-5 text-white mt-0.5" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-white mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <p
+                              className={`text-white text-sm font-medium ${sora.className}`}
+                            >
+                              {checkInResult.message}
+                            </p>
+                            {checkInResult.success && checkInResult.event && (
+                              <p
+                                className={`text-white/90 text-xs mt-1 ${sora.className}`}
+                              >
+                                Event: {checkInResult.event.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {isCheckingIn && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mb-6 relative"
+                    >
+                      <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
+                      <div className="relative bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <p
+                            className={`text-black text-sm font-medium ${sora.className}`}
+                          >
+                            Processing check-in...
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <motion.button
                     whileHover={{
                       scale: 1.02,
@@ -556,7 +677,7 @@ export function AttendancePage({
                     <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
                       <div className="mb-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/5 border-2 border-black text-sm font-medium">
-                          <span>{config.icon}</span>
+                          {config.icon && <span>{config.icon}</span>}
                           <span
                             className={`text-black ${bricolage.className} font-bold uppercase text-xs`}
                           >

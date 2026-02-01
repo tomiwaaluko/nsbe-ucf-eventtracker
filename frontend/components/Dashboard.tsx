@@ -48,9 +48,9 @@ interface DashboardProps {
     email: string;
     role: string;
     totalEvents: number;
-    workshopsAttended: number;
-    gbmAttended: number;
-    communityServiceAttended: number;
+    workshopsAttended: number; // Bucket 1: WORKSHOP + SOCIAL
+    gbmAttended: number; // Bucket 3: GBM
+    communityServiceAttended: number; // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE
   };
   attendanceRecords: any[];
   upcomingEvents: any[];
@@ -67,10 +67,13 @@ export function Dashboard({
 }: DashboardProps) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
 
-  // Calculate progress
-  const workshopProgress = (memberData.workshopsAttended / 3) * 100;
+  // Calculate progress using bucket logic (matching backend)
+  // Bucket 1: Workshops & Socials (WORKSHOP + SOCIAL)
+  // Bucket 2: Fundraiser & Community Service (FUNDRAISER + COMMUNITY_SERVICE)
+  // Bucket 3: GBM
+  const workshopsSocialsProgress = (memberData.workshopsAttended / 3) * 100;
   const gbmProgress = (memberData.gbmAttended / 3) * 100;
-  const communityProgress = (memberData.communityServiceAttended / 3) * 100;
+  const fundraiserCommunityServiceProgress = (memberData.communityServiceAttended / 3) * 100;
   const overallProgress =
     ((memberData.workshopsAttended +
       memberData.gbmAttended +
@@ -78,70 +81,108 @@ export function Dashboard({
       9) *
     100;
 
-  // Check achievements
+  // Check achievements using bucket logic (matching backend)
+  // 1-1-1: 1 from each bucket
   const has111 =
-    memberData.workshopsAttended >= 1 &&
-    memberData.gbmAttended >= 1 &&
-    memberData.communityServiceAttended >= 1;
+    memberData.workshopsAttended >= 1 && // Bucket 1: Workshops & Socials
+    memberData.communityServiceAttended >= 1 && // Bucket 2: Fundraiser & Community Service
+    memberData.gbmAttended >= 1; // Bucket 3: GBM
+  // 3-3-3: 3 from each bucket
   const has333 =
-    memberData.workshopsAttended >= 3 &&
-    memberData.gbmAttended >= 3 &&
-    memberData.communityServiceAttended >= 3;
+    memberData.workshopsAttended >= 3 && // Bucket 1: Workshops & Socials
+    memberData.communityServiceAttended >= 3 && // Bucket 2: Fundraiser & Community Service
+    memberData.gbmAttended >= 3; // Bucket 3: GBM
 
-  // Chart data
+  // Chart data using bucket labels (matching backend)
   const progressData = [
-    { category: "Workshops", current: memberData.workshopsAttended, target: 3 },
-    { category: "GBMs", current: memberData.gbmAttended, target: 3 },
+    { 
+      category: "Workshops & Socials", 
+      current: memberData.workshopsAttended, 
+      target: 3 
+    }, // Bucket 1: WORKSHOP + SOCIAL
+    { 
+      category: "GBMs", 
+      current: memberData.gbmAttended, 
+      target: 3 
+    }, // Bucket 3: GBM
     {
-      category: "Community",
+      category: "Fundraiser & Comm. Serv.",
       current: memberData.communityServiceAttended,
       target: 3,
-    },
+    }, // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE
   ];
 
   // Activity heatmap data - generate from actual attendance records
-  const months = [
-    "August 2024",
-    "September 2024",
-    "October 2024",
-    "November 2024",
-    "December 2024",
-  ];
-
-  const allHeatmapData = useMemo(() => {
-    const daysInMonth = [31, 30, 31, 30, 31];
-    const monthNames = [
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
+  const { allHeatmapData, months } = useMemo(() => {
     // Create a Set of dates when user attended events
     const attendedDates = new Set(
       attendanceRecords.map((record) => {
-        const date = new Date(record.checkedInAt);
+        const date = new Date(record.checkedInAt || record.checkInTime);
         return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
       })
     );
 
-    return months.map((month, monthIndex) => {
-      const data = [];
-      const numDays = daysInMonth[monthIndex];
-      const monthNumber = 8 + monthIndex; // August = 8, September = 9, etc.
+    // Get date range from attendance records or use current semester
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (attendanceRecords && attendanceRecords.length > 0) {
+      const dates = attendanceRecords
+        .map((record) => new Date(record.checkedInAt || record.checkInTime))
+        .filter((date) => !isNaN(date.getTime()));
+      
+      if (dates.length > 0) {
+        startDate = new Date(Math.min(...dates.map(d => d.getTime())));
+        endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+      } else {
+        // Fallback to current semester
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), 7, 1); // August
+        endDate = new Date(now.getFullYear(), 11, 31); // December
+      }
+    } else {
+      // No records - show current semester
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), 7, 1); // August
+      endDate = new Date(now.getFullYear(), 11, 31); // December
+    }
 
-      for (let day = 1; day <= numDays; day++) {
-        const dateKey = `2024-${monthNumber}-${day}`;
+    // Generate months from start to end (or current month if end is in future)
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endMonth = endDate > currentMonth ? currentMonth : endDate;
+    
+    const monthData: Array<{ month: string; data: Array<{ day: number; hasEvent: number; date: string }> }> = [];
+    const monthNames: string[] = [];
+    
+    let date = new Date(startDate);
+    while (date <= endMonth) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthName = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const data = [];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${month + 1}-${day}`;
         const hasEvent = attendedDates.has(dateKey) ? 1 : 0;
         data.push({
           day,
           hasEvent,
-          date: `${monthNames[monthIndex]} ${day}`,
+          date: `${date.toLocaleDateString("en-US", { month: "short" })} ${day}`,
         });
       }
-      return data;
-    });
+      
+      monthData.push({ month: monthName, data });
+      monthNames.push(monthName);
+      date.setMonth(date.getMonth() + 1);
+    }
+
+    // Limit to last 5 months for display
+    const limitedData = monthData.slice(-5);
+    const limitedMonths = monthNames.slice(-5);
+    
+    return { allHeatmapData: limitedData, months: limitedMonths };
   }, [attendanceRecords]);
 
   const getHeatmapColor = (hasEvent: number) => {
@@ -276,7 +317,7 @@ export function Dashboard({
               delay: 0.2,
             },
             {
-              title: "Workshops",
+              title: "Workshops & Socials",
               value: memberData.workshopsAttended,
               icon: <Award className="w-6 h-6" />,
               color: "#ffb81c",
@@ -292,7 +333,7 @@ export function Dashboard({
               delay: 0.4,
             },
             {
-              title: "Community Service",
+              title: "Fundraiser & Comm. Serv.",
               value: memberData.communityServiceAttended,
               icon: <TrendingUp className="w-6 h-6" />,
               color: "#ed1c24",
@@ -364,7 +405,8 @@ export function Dashboard({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   {
-                    title: "Workshops",
+                    title: "Workshops & Socials",
+                    description: "Workshops + Social events",
                     current: memberData.workshopsAttended,
                     target: 3,
                     color: "#ffb81c",
@@ -372,13 +414,15 @@ export function Dashboard({
                   },
                   {
                     title: "GBMs",
+                    description: "General Body Meetings",
                     current: memberData.gbmAttended,
                     target: 3,
                     color: "#00a651",
                     icon: <Users className="w-5 h-5" />,
                   },
                   {
-                    title: "Community",
+                    title: "Fundraiser & Comm. Serv.",
+                    description: "Fundraisers + Comm. Serv. events",
                     current: memberData.communityServiceAttended,
                     target: 3,
                     color: "#ed1c24",
@@ -398,6 +442,7 @@ export function Dashboard({
                       </div>
                       <p
                         className={`text-sm font-bold uppercase ${bricolage.className} text-black`}
+                        title={progress.description || ""}
                       >
                         {progress.title}
                       </p>
@@ -596,7 +641,7 @@ export function Dashboard({
 
             <div className="space-y-3">
               <div className="grid grid-cols-7 gap-x-0.5 gap-y-2">
-                {allHeatmapData[currentMonthIndex].map((item) => (
+                {allHeatmapData[currentMonthIndex]?.data.map((item) => (
                   <div
                     key={item.day}
                     className="w-10 h-10 border-2 border-black relative group cursor-pointer transition-all hover:scale-110"
@@ -668,14 +713,14 @@ export function Dashboard({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <AchievementBadge
               title="1-1-1 Complete"
-              description="Attended 1 of each event type"
+              description="1 Workshop/Social + 1 Fundraiser/Comm. Serv. + 1 GBM"
               unlocked={has111}
               icon={<Award className="w-8 h-8" />}
               color="#00a651"
             />
             <AchievementBadge
               title="3-3-3 Complete"
-              description="Attended 3 of each event type"
+              description="3 Workshops/Socials + 3 Fundraisers/Comm. Serv. + 3 GBMs"
               unlocked={has333}
               icon={<Award className="w-8 h-8" />}
               color="#ffb81c"
