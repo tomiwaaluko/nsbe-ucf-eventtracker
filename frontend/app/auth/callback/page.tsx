@@ -16,11 +16,23 @@ function CallbackContent() {
       const linkRequired = searchParams.get("link_required");
       const email = searchParams.get("email");
       const provider = searchParams.get("provider");
+      const accountLinked = searchParams.get("account_linked");
 
       if (token) {
         // Success - store token and redirect
         try {
           localStorage.setItem("token", token);
+
+          // Store account linking flag temporarily for dashboard notification
+          if (accountLinked === "true" && provider) {
+            localStorage.setItem(
+              "account_linked",
+              JSON.stringify({
+                provider,
+                timestamp: Date.now(),
+              })
+            );
+          }
 
           // Fetch user data to get role
           const userData = await api.getMe(token);

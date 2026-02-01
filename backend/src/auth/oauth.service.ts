@@ -270,7 +270,7 @@ export class OAuthService {
   async linkOrCreateAccount(
     provider: OAuthProvider,
     profile: OAuthProfile,
-  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean }> {
+  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean; isAccountLinked: boolean }> {
     // Step 1: Check if OAuth account already exists
     const existingOAuthAccount = await this.prisma.oAuthAccount.findUnique({
       where: {
@@ -288,6 +288,7 @@ export class OAuthService {
         member: existingOAuthAccount.user,
         isNewAccount: false,
         requiresLinking: false,
+        isAccountLinked: false,
       };
     }
 
@@ -322,6 +323,7 @@ export class OAuthService {
           member: { ...existingMember, emailVerified: true },
           isNewAccount: false,
           requiresLinking: false,
+          isAccountLinked: true,
         };
       }
     }
@@ -404,6 +406,7 @@ export class OAuthService {
       member: newMember,
       isNewAccount: true,
       requiresLinking: !profile.email || !profile.emailVerified,
+      isAccountLinked: false,
     };
   }
 
@@ -425,12 +428,13 @@ export class OAuthService {
   /**
    * Get redirect URL after OAuth callback
    */
-  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string): string {
+  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string, isAccountLinked?: boolean): string {
     const params = new URLSearchParams();
-    
+
     if (token) {
       params.set('token', token);
       if (provider) params.set('provider', provider);
+      if (isAccountLinked) params.set('account_linked', 'true');
     } else if (error) {
       params.set('error', error);
     } else if (linkRequired) {
