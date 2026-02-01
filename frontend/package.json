@@ -37,6 +37,8 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.81.1",
+    "autoprefixer": "^10.4.22",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -47,6 +49,7 @@
     "lucide-react": "^0.553.0",
     "next": "^16.0.10",
     "next-themes": "^0.4.6",
+    "postcss": "^8.5.6",
     "react": "^19.2.3",
     "react-day-picker": "^9.11.1",
     "react-dom": "19.2.0",
@@ -57,9 +60,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^1.1.2",
-    "autoprefixer": "^10.4.22",
-    "postcss": "^8.5.6"
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@types/node": "^20",

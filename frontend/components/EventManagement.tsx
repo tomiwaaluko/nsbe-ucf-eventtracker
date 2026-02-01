@@ -13,6 +13,7 @@ import {
   MapPin,
   Users,
   MoreVertical,
+  QrCode,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -30,20 +31,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { EventCategory, EVENT_CATEGORIES, getEventCategoryLabel, getEventCategoryColor } from "@/lib/constants/event-categories";
 
 interface Event {
   id: string;
   name: string;
-  description: string;
-  eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE";
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  capacity: number;
-  attendees: number;
-  qrSecret: string;
+  description?: string | null;
+  category: EventCategory;
+  semester: string;
+  startTime: string; // ISO datetime string
+  endTime: string; // ISO datetime string
+  location?: string | null;
   isActive: boolean;
+  createdBy?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
+  attendance?: Array<{
+    id: string;
+    memberId: string;
+    checkedInAt: string;
+  }>;
 }
 
 interface EventManagementProps {
@@ -52,6 +61,7 @@ interface EventManagementProps {
   onEditEvent: (eventId: string) => void;
   onDeleteEvent: (eventId: string) => void;
   onViewEvent: (eventId: string) => void;
+  onViewQRCode?: (eventId: string) => void;
 }
 
 export function EventManagement({
@@ -60,6 +70,7 @@ export function EventManagement({
   onEditEvent,
   onDeleteEvent,
   onViewEvent,
+  onViewQRCode,
 }: EventManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -72,9 +83,9 @@ export function EventManagement({
     ? events.filter((event) => {
         const matchesSearch =
           event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.location.toLowerCase().includes(searchQuery.toLowerCase());
+          (event.location && event.location.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesType =
-          filterType === "all" || event.eventType === filterType;
+          filterType === "all" || event.category === filterType;
         const matchesStatus =
           filterStatus === "all" ||
           (filterStatus === "active" && event.isActive) ||
@@ -89,34 +100,19 @@ export function EventManagement({
   const endIndex = startIndex + itemsPerPage;
   const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
-  const getEventTypeColor = (type: string) => {
-    switch (type) {
-      case "WORKSHOP":
-        return "#ffb81c";
-      case "GBM":
-        return "#00a651";
-      case "COMMUNITY_SERVICE":
-        return "#ed1c24";
-      default:
-        return "#6b7280";
-    }
+  const getEventTypeColor = (category: EventCategory) => {
+    return getEventCategoryColor(category);
   };
 
-  const getEventTypeLabel = (type: string) => {
-    switch (type) {
-      case "WORKSHOP":
-        return "Workshop";
-      case "GBM":
-        return "GBM";
-      case "COMMUNITY_SERVICE":
-        return "Community Service";
-      default:
-        return type;
-    }
+  const getEventTypeLabel = (category: EventCategory) => {
+    return getEventCategoryLabel(category);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -124,13 +120,21 @@ export function EventManagement({
     });
   };
 
-  const formatTime = (timeString: string) => {
-    // Assume timeString is in format "HH:MM"
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) {
+      return "Invalid Time";
+    }
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Helper to get attendance count
+  const getAttendanceCount = (event: Event) => {
+    return event.attendance?.length || 0;
   };
 
   return (
@@ -188,11 +192,11 @@ export function EventManagement({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                <SelectItem value="GBM">GBM</SelectItem>
-                <SelectItem value="COMMUNITY_SERVICE">
-                  Community Service
-                </SelectItem>
+                {EVENT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -259,28 +263,30 @@ export function EventManagement({
                         <p className="text-sm font-medium text-white">
                           {event.name}
                         </p>
-                        <p className="text-xs text-white/60 mt-1 line-clamp-1">
-                          {event.description}
-                        </p>
+                        {event.description && (
+                          <p className="text-xs text-white/60 mt-1 line-clamp-1">
+                            {event.description}
+                          </p>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <Badge
                         style={{
                           backgroundColor: `${getEventTypeColor(
-                            event.eventType
+                            event.category
                           )}40`,
                           color: "white",
                         }}
                         className="font-medium"
                       >
-                        {getEventTypeLabel(event.eventType)}
+                        {getEventTypeLabel(event.category)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm">
                         <p className="text-white font-medium">
-                          {formatDate(event.date)}
+                          {formatDate(event.startTime)}
                         </p>
                         <p className="text-white/70">
                           {formatTime(event.startTime)} -{" "}
@@ -292,7 +298,7 @@ export function EventManagement({
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-white/60" />
                         <span className="text-sm text-white/90">
-                          {event.location}
+                          {event.location || "TBD"}
                         </span>
                       </div>
                     </td>
@@ -300,7 +306,7 @@ export function EventManagement({
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-white/60" />
                         <span className="text-sm text-white/90">
-                          {event.attendees} / {event.capacity}
+                          {getAttendanceCount(event)}
                         </span>
                       </div>
                     </td>
@@ -334,6 +340,14 @@ export function EventManagement({
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          {onViewQRCode && (
+                            <DropdownMenuItem
+                              onClick={() => onViewQRCode(event.id)}
+                            >
+                              <QrCode className="w-4 h-4 mr-2" />
+                              View QR Code
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => onEditEvent(event.id)}
                           >
@@ -371,9 +385,11 @@ export function EventManagement({
                     <h4 className="text-white font-medium mb-1">
                       {event.name}
                     </h4>
-                    <p className="text-xs text-white/60 line-clamp-2">
-                      {event.description}
-                    </p>
+                    {event.description && (
+                      <p className="text-xs text-white/60 line-clamp-2">
+                        {event.description}
+                      </p>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -390,6 +406,12 @@ export function EventManagement({
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
+                      {onViewQRCode && (
+                        <DropdownMenuItem onClick={() => onViewQRCode(event.id)}>
+                          <QrCode className="w-4 h-4 mr-2" />
+                          View QR Code
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => onEditEvent(event.id)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Event
@@ -409,12 +431,12 @@ export function EventManagement({
                   <Badge
                     style={{
                       backgroundColor: `${getEventTypeColor(
-                        event.eventType
+                        event.category
                       )}40`,
                       color: "white",
                     }}
                   >
-                    {getEventTypeLabel(event.eventType)}
+                    {getEventTypeLabel(event.category)}
                   </Badge>
                   <Badge
                     variant={event.isActive ? "default" : "secondary"}
@@ -432,18 +454,18 @@ export function EventManagement({
                   <div className="flex items-center gap-2 text-white/80">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {formatDate(event.date)} • {formatTime(event.startTime)} -{" "}
+                      {formatDate(event.startTime)} • {formatTime(event.startTime)} -{" "}
                       {formatTime(event.endTime)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-white/80">
                     <MapPin className="w-4 h-4" />
-                    <span>{event.location}</span>
+                    <span>{event.location || "TBD"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-white/80">
                     <Users className="w-4 h-4" />
                     <span>
-                      {event.attendees} / {event.capacity} attendees
+                      {getAttendanceCount(event)}
                     </span>
                   </div>
                 </div>

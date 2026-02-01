@@ -37,25 +37,128 @@ interface AdminDashboardProps {
     membersWithThreeThreeThree: number;
   };
   attendanceRecords: any[];
+  events: any[];
+  members: any[];
   onNavigate: (page: string) => void;
 }
 
 export function AdminDashboard({
   stats,
   attendanceRecords,
+  events,
+  members,
   onNavigate,
 }: AdminDashboardProps) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
 
-  // Growth data - empty, should come from real data
-  const memberGrowthData: { month: string; members: number }[] = [];
+  // Calculate member growth over time
+  const memberGrowthData = useMemo(() => {
+    if (!members || members.length === 0) return [];
 
-  const eventAttendanceData: { month: string; attendance: number }[] = [];
+    // Group members by month they joined
+    const membersByMonth = new Map<string, number>();
 
-  const eventTypeData: { name: string; value: number; color: string }[] = [];
+    members.forEach((member) => {
+      const date = new Date(member.createdAt || member.joinedDate || Date.now());
+      const monthKey = date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      membersByMonth.set(monthKey, (membersByMonth.get(monthKey) || 0) + 1);
+    });
 
-  // Activity heatmap data - generate from actual attendance records across all members
-  const months: string[] = [];
+    // Convert to array format and calculate cumulative count
+    let cumulativeCount = 0;
+    return Array.from(membersByMonth.entries())
+      .sort((a, b) => {
+        const dateA = new Date(a[0]);
+        const dateB = new Date(b[0]);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .map(([month, count]) => {
+        cumulativeCount += count;
+        return {
+          month,
+          members: cumulativeCount,
+        };
+      });
+  }, [members]);
+
+  // Calculate event attendance trends by month
+  const eventAttendanceData = useMemo(() => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return [];
+
+    // Group attendance by month
+    const attendanceByMonth = new Map<string, number>();
+
+    attendanceRecords.forEach((record) => {
+      const date = new Date(record.checkInTime || record.checkedInAt);
+      const monthKey = date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      attendanceByMonth.set(monthKey, (attendanceByMonth.get(monthKey) || 0) + 1);
+    });
+
+    // Convert to array and sort by date
+    return Array.from(attendanceByMonth.entries())
+      .map(([month, attendance]) => ({ month, attendance }))
+      .sort((a, b) => {
+        const dateA = new Date(a.month);
+        const dateB = new Date(b.month);
+        return dateA.getTime() - dateB.getTime();
+      });
+  }, [attendanceRecords]);
+
+  // Calculate event type distribution
+  const eventTypeData = useMemo(() => {
+    if (!events || events.length === 0) return [];
+
+    const categoryColors: Record<string, string> = {
+      GBM: "#00a651",
+      SOCIAL: "#ffb81c",
+      WORKSHOP: "#0066cc",
+      FUNDRAISER: "#ed1c24",
+      COMMUNITY_SERVICE: "#8b4513",
+      COMMITTEE_PARTICIPATION: "#9932cc",
+    };
+
+    const categoryLabels: Record<string, string> = {
+      GBM: "General Body Meeting",
+      SOCIAL: "Social",
+      WORKSHOP: "Workshop",
+      FUNDRAISER: "Fundraiser",
+      COMMUNITY_SERVICE: "Community Service",
+      COMMITTEE_PARTICIPATION: "Committee Participation",
+    };
+
+    // Count events by category
+    const categoryCounts = new Map<string, number>();
+    events.forEach((event) => {
+      const category = event.category || "UNKNOWN";
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    });
+
+    // Convert to array format
+    return Array.from(categoryCounts.entries()).map(([category, count]) => ({
+      name: categoryLabels[category] || category,
+      value: count,
+      color: categoryColors[category] || "#666666",
+    }));
+  }, [events]);
+
+  // Generate months for heatmap from attendance records
+  const months = useMemo(() => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return [];
+
+    const monthSet = new Set<string>();
+    attendanceRecords.forEach((record) => {
+      const date = new Date(record.checkInTime || record.checkedInAt);
+      const monthKey = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      monthSet.add(monthKey);
+    });
+
+    // Sort months chronologically
+    return Array.from(monthSet).sort((a, b) => {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateA.getTime() - dateB.getTime();
+    });
+  }, [attendanceRecords]);
 
   // Generate all heatmap data once using useMemo
   const allHeatmapData = useMemo(() => {
@@ -66,7 +169,7 @@ export function AdminDashboard({
     // Create a Set of dates when any member attended events
     const attendedDates = new Set(
       attendanceRecords.map((record) => {
-        const date = new Date(record.checkedInAt);
+        const date = new Date(record.checkInTime || record.checkedInAt);
         return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
       })
     );
@@ -96,32 +199,73 @@ export function AdminDashboard({
     return hasEvent === 1 ? "#00a651" : "#e5e7eb";
   };
 
-  const recentActivityData: {
-    type: string;
-    name: string;
-    attendees: number;
-    date: string;
-  }[] = [];
+  // Calculate recent activity from events and attendance
+  const recentActivityData = useMemo(() => {
+    if (!events || events.length === 0) return [];
+
+    // Get recent events (last 5, sorted by start time descending)
+    const recentEvents = [...events]
+      .filter((event) => {
+        const endTime = new Date(event.endTime);
+        return endTime <= new Date(); // Only past events
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.startTime).getTime();
+        const dateB = new Date(b.startTime).getTime();
+        return dateB - dateA; // Most recent first
+      })
+      .slice(0, 5);
+
+    // Map events to activity data with attendance counts
+    return recentEvents.map((event) => {
+      // Count attendees for this event
+      const attendeeCount = attendanceRecords.filter(
+        (record) => record.eventId === event.id
+      ).length;
+
+      // Get category label
+      const categoryLabels: Record<string, string> = {
+        GBM: "GBM",
+        SOCIAL: "Social",
+        WORKSHOP: "Workshop",
+        FUNDRAISER: "Fundraiser",
+        COMMUNITY_SERVICE: "Community Service",
+        COMMITTEE_PARTICIPATION: "Committee",
+      };
+
+      const eventDate = new Date(event.startTime);
+      const formattedDate = eventDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      return {
+        type: categoryLabels[event.category] || event.category,
+        name: event.name,
+        attendees: attendeeCount,
+        date: formattedDate,
+      };
+    });
+  }, [events, attendanceRecords]);
 
   const progressStats = [
     {
       label: "1-1-1 Achievement",
       value: stats.membersWithOneOneOne,
       total: stats.activeMembers,
-      percentage: (
-        (stats.membersWithOneOneOne / stats.activeMembers) *
-        100
-      ).toFixed(1),
+      percentage: stats.activeMembers > 0
+        ? ((stats.membersWithOneOneOne / stats.activeMembers) * 100).toFixed(1)
+        : "0.0",
       color: "#00a651",
     },
     {
       label: "3-3-3 Achievement",
       value: stats.membersWithThreeThreeThree,
       total: stats.activeMembers,
-      percentage: (
-        (stats.membersWithThreeThreeThree / stats.activeMembers) *
-        100
-      ).toFixed(1),
+      percentage: stats.activeMembers > 0
+        ? ((stats.membersWithThreeThreeThree / stats.activeMembers) * 100).toFixed(1)
+        : "0.0",
       color: "#ffb81c",
     },
   ];
