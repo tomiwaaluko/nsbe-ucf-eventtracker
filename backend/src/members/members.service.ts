@@ -7,9 +7,26 @@ export class MembersService {
   constructor(private prisma: PrismaService) {}
 
   async findMe(userId: string) {
-    return this.prisma.member.findUnique({
+    const member = await this.prisma.member.findUnique({
       where: { id: userId },
+      include: {
+        oauthAccounts: {
+          select: { provider: true },
+        },
+      },
     });
+
+    if (!member) {
+      return null;
+    }
+
+    // Transform response to include auth methods without exposing password hash
+    const { passwordHash, oauthAccounts, ...memberData } = member;
+    return {
+      ...memberData,
+      hasPassword: !!passwordHash,
+      oauthProviders: oauthAccounts.map((oa) => oa.provider),
+    };
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
