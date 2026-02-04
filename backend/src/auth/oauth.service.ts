@@ -108,10 +108,25 @@ export class OAuthService {
    * Get Google OAuth authorization URL
    */
   getGoogleAuthUrl(state: string, codeChallenge?: string): string {
+    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI');
+
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException(
+        'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.'
+      );
+    }
+
+    if (!this.googleClient) {
+      throw new BadRequestException(
+        'Google OAuth client is not initialized. Please check GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI environment variables.'
+      );
+    }
+
     const scopes = ['openid', 'email', 'profile'];
     const params: any = {
-      client_id: this.configService.get<string>('GOOGLE_CLIENT_ID'),
-      redirect_uri: this.configService.get<string>('GOOGLE_REDIRECT_URI'),
+      client_id: clientId,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: scopes.join(' '),
       state,
@@ -134,11 +149,18 @@ export class OAuthService {
   getDiscordAuthUrl(state: string): string {
     const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
     const redirectUri = this.configService.get<string>('DISCORD_REDIRECT_URI');
+
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException(
+        'Discord OAuth is not configured. Please set DISCORD_CLIENT_ID and DISCORD_REDIRECT_URI environment variables.'
+      );
+    }
+
     const scopes = ['identify', 'email'];
 
     const params = new URLSearchParams({
-      client_id: clientId!,
-      redirect_uri: redirectUri!,
+      client_id: clientId,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: scopes.join(' '),
       state,

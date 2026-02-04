@@ -4,7 +4,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventCategory } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import * as QRCode from 'qrcode';
+import QRCode from 'qrcode'; // lmk if this needs to be reverted to import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EventsService {
