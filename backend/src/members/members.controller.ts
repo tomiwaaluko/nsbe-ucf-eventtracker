@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Put,
+  Post,
+  Delete,
   Body,
   Query,
   Req,
@@ -9,12 +11,17 @@ import {
   ForbiddenException,
   Param,
   NotFoundException,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 
 @Controller('members')
 @UseGuards(JwtAuthGuard)
@@ -22,6 +29,7 @@ export class MembersController {
   constructor(
     private readonly membersService: MembersService,
     private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
   ) {}
 
   @Get('me')
@@ -95,5 +103,64 @@ export class MembersController {
 
     // Otherwise, return all members with statistics
     return this.membersService.getAllMembers(semester);
+  }
+
+  @Get(':id/profile')
+  async getMemberProfile(@Param('id') memberId: string) {
+    return this.membersService.getMemberProfile(memberId);
+  }
+
+  @Post('me/photo')
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max
+      },
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadPhoto(@UploadedFile() file: Express.Multer.File, @Req() req) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const memberId = req.user.id;
+
+    // Upload to Supabase Storage
+    const photoUrl = await this.storageService.uploadProfilePhoto(
+      memberId,
+      file.buffer,
+      file.mimetype,
+    );
+
+    // Update member record
+    const member = await this.membersService.updatePhoto(memberId, photoUrl);
+
+    return {
+      message: 'Photo uploaded successfully',
+      photoUrl: member.photoUrl,
+    };
+  }
+
+  @Delete('me/photo')
+  async deletePhoto(@Req() req) {
+    const memberId = req.user.id;
+    const member = await this.membersService.findById(memberId);
+
+    if (member.photoUrl) {
+      await this.storageService.deleteProfilePhoto(member.photoUrl);
+    }
+
+    await this.membersService.updatePhoto(memberId, null);
+
+    return { message: 'Photo deleted successfully' };
   }
 }

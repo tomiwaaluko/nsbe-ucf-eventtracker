@@ -1,9 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 import { User, Upload, X, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { getApiUrl } from "@/lib/api";
 
 interface ProfileSettingsProps {
   memberData: {
@@ -38,20 +40,56 @@ const GRADUATION_YEARS = Array.from(
 
 export function ProfileSettings({ memberData }: ProfileSettingsProps) {
   const [formData, setFormData] = useState({
-    firstName: memberData.firstName,
-    lastName: memberData.lastName,
-    email: memberData.email,
-    major: memberData.major || "",
-    graduationYear: memberData.graduationYear || "",
+    firstName: memberData.firstName || "",
+    lastName: memberData.lastName || "",
+    email: memberData.email || "",
+    major: "",
+    graduationYear: "",
+    phoneNumber: "",
+    linkedInUrl: "",
+    bio: "",
+    discordUsername: "",
   });
-  const [profilePhoto, setProfilePhoto] = useState(
-    memberData.profilePhoto || ""
-  );
-  const [previewUrl, setPreviewUrl] = useState(memberData.profilePhoto || "");
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch member data on mount
+  useEffect(() => {
+    const fetchMemberData = async () => {
+      try {
+        const response = await fetch(`${getApiUrl()}/members/me`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            email: data.email || "",
+            major: data.major || "",
+            graduationYear: data.graduationYear || "",
+            phoneNumber: data.phoneNumber || "",
+            linkedInUrl: data.linkedInUrl || "",
+            bio: data.bio || "",
+            discordUsername: data.discordUsername || "",
+          });
+          setProfilePhoto(data.photoUrl || "");
+          setPreviewUrl(data.photoUrl || "");
+        }
+      } catch (error) {
+        console.error('Failed to fetch member data:', error);
+      }
+    };
+
+    fetchMemberData();
+  }, []);
 
   const handleChange = (field: string, value: string | number) => {
     setFormData({ ...formData, [field]: value });
@@ -62,7 +100,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -75,28 +113,82 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     }
 
     // Validate file type
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
       toast.error("Invalid file type", {
-        description: "Please choose an image file.",
+        description: "Please choose a JPEG, PNG, or WebP image.",
       });
       return;
     }
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-      setHasChanges(true);
-    };
-    reader.readAsDataURL(file);
+    // Upload to server
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch(`${getApiUrl()}/members/me/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      setPreviewUrl(data.photoUrl);
+      setProfilePhoto(data.photoUrl);
+
+      toast.success("Photo uploaded!", {
+        description: "Your profile photo has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error("Upload failed", {
+        description: "Failed to upload photo. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRemovePhoto = () => {
-    setPreviewUrl("");
-    setProfilePhoto("");
-    setHasChanges(true);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+  const handleRemovePhoto = async () => {
+    if (!confirm('Are you sure you want to delete your profile photo?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${getApiUrl()}/members/me/photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Delete failed');
+      }
+
+      setPreviewUrl("");
+      setProfilePhoto("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      toast.success("Photo deleted!", {
+        description: "Your profile photo has been removed.",
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error("Delete failed", {
+        description: "Failed to delete photo. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,10 +203,8 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       newErrors.lastName = "Last name is required";
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+    if (formData.linkedInUrl && !/^https?:\/\/.+/.test(formData.linkedInUrl)) {
+      newErrors.linkedInUrl = "Please enter a valid URL";
     }
 
     setErrors(newErrors);
@@ -131,27 +221,46 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await fetch(`${getApiUrl()}/members/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          major: formData.major || undefined,
+          graduationYear: formData.graduationYear ? parseInt(formData.graduationYear as string) : undefined,
+          phoneNumber: formData.phoneNumber || undefined,
+          linkedInUrl: formData.linkedInUrl || undefined,
+          bio: formData.bio || undefined,
+          discordUsername: formData.discordUsername || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save profile');
+      }
+
       setHasChanges(false);
       toast.success("Profile updated!", {
         description: "Your profile information has been saved successfully.",
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error("Save failed", {
+        description: "Failed to update profile. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {
-    setFormData({
-      firstName: memberData.firstName,
-      lastName: memberData.lastName,
-      email: memberData.email,
-      major: memberData.major || "",
-      graduationYear: memberData.graduationYear || "",
-    });
-    setPreviewUrl(memberData.profilePhoto || "");
-    setHasChanges(false);
-    setErrors({});
+    // Reset to last saved values
+    window.location.reload();
   };
 
   return (
@@ -265,15 +374,11 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleChange("email", e.target.value)}
-              className={errors.email ? "border-red-500" : ""}
-              aria-invalid={!!errors.email}
+              disabled
+              className="bg-gray-100"
             />
-            {errors.email && (
-              <p className="text-sm text-red-600 font-semibold">⚠ {errors.email}</p>
-            )}
             <p className="text-xs text-black/70 font-medium">
-              This email is used for account recovery and notifications
+              Email cannot be changed
             </p>
           </div>
 
@@ -302,7 +407,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
               id="graduationYear"
               value={formData.graduationYear}
               onChange={(e) =>
-                handleChange("graduationYear", parseInt(e.target.value))
+                handleChange("graduationYear", e.target.value)
               }
               className="flex h-9 w-full rounded-md border-2 border-black bg-white px-3 py-1 text-sm font-medium text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
             >
@@ -313,6 +418,72 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="bio" className="font-bold text-black">Bio</Label>
+            <Textarea
+              id="bio"
+              value={formData.bio}
+              onChange={(e) => handleChange("bio", e.target.value)}
+              placeholder="Tell us about yourself..."
+              maxLength={500}
+              className="resize-none"
+              rows={4}
+            />
+            <p className="text-xs text-black/70 font-medium">
+              {formData.bio?.length || 0}/500 characters
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Information */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="font-extrabold text-black text-xl mb-4">
+          Contact Information
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Phone Number */}
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber" className="font-bold text-black">Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => handleChange("phoneNumber", e.target.value)}
+              placeholder="(123) 456-7890"
+            />
+          </div>
+
+          {/* Discord Username */}
+          <div className="space-y-2">
+            <Label htmlFor="discordUsername" className="font-bold text-black">Discord Username</Label>
+            <Input
+              id="discordUsername"
+              type="text"
+              value={formData.discordUsername}
+              onChange={(e) => handleChange("discordUsername", e.target.value)}
+              placeholder="username#1234"
+            />
+          </div>
+
+          {/* LinkedIn URL */}
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="linkedInUrl" className="font-bold text-black">LinkedIn Profile</Label>
+            <Input
+              id="linkedInUrl"
+              type="url"
+              value={formData.linkedInUrl}
+              onChange={(e) => handleChange("linkedInUrl", e.target.value)}
+              placeholder="https://linkedin.com/in/yourprofile"
+              className={errors.linkedInUrl ? "border-red-500" : ""}
+            />
+            {errors.linkedInUrl && (
+              <p className="text-sm text-red-600">⚠ {errors.linkedInUrl}</p>
+            )}
           </div>
         </div>
       </div>
@@ -370,6 +541,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
             • Major and graduation year help us tailor events to your interests
           </li>
           <li>• Profile photo personalizes your dashboard experience</li>
+          <li>• Contact info helps other members and officers connect with you</li>
         </ul>
       </div>
     </div>

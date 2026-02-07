@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const router = useRouter();

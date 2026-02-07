@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   Search,
   Edit,
@@ -343,9 +344,12 @@ export function MemberManagement({
                     >
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-medium text-white">
+                          <Link
+                            href={`/members/${member.id}`}
+                            className="text-sm font-medium text-white hover:text-[#ffb81c] transition-colors hover:underline"
+                          >
                             {member.name}
-                          </p>
+                          </Link>
                           <p className="text-xs text-white/60">
                             {member.email}
                           </p>
@@ -464,9 +468,12 @@ export function MemberManagement({
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="text-white font-medium mb-1">
+                      <Link
+                        href={`/members/${member.id}`}
+                        className="text-white font-medium mb-1 hover:text-[#ffb81c] transition-colors hover:underline block"
+                      >
                         {member.name}
-                      </h4>
+                      </Link>
                       <p className="text-xs text-white/60 flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {member.email}
