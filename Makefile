@@ -38,6 +38,15 @@ help:
 	@echo "  make prisma-migrate   - Run Prisma migrations"
 	@echo "  make prisma-studio    - Open Prisma Studio"
 	@echo "  make prisma-seed      - Seed the database"
+	@echo ""
+	@echo "Docker Commands:"
+	@echo "  make docker-up        - Start all Docker containers (postgres + backend)"
+	@echo "  make docker-down      - Stop all Docker containers"
+	@echo "  make docker-build     - Build Docker images"
+	@echo "  make docker-logs      - View Docker container logs"
+	@echo "  make docker-restart   - Restart Docker containers"
+	@echo "  make docker-ps        - List running Docker containers"
+	@echo "  make docker-clean     - Stop containers and remove volumes"
 
 # ============================================================================
 # Docker Commands
