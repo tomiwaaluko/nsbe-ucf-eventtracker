@@ -19,6 +19,19 @@ async function main() {
   });
   console.log('✅ Created admin:', admin.email);
 
+  // Create another super admin member with Supabase UID (set in Supabase Auth)
+  const adminJerome = await prisma.member.upsert({
+    where: { email: 'aridsondez@gmail.com' },
+    update: { role: 'super_admin' },
+    create: {
+      email: 'aridsondez@gmail.com',
+      firstName: 'aridsondez',
+      lastName: 'jerome',
+      role: 'super_admin',
+    },
+  });
+  console.log('✅ Created super admin:', adminJerome.email);
+
   // Create regular member with Supabase UID
   const member = await prisma.member.upsert({
     where: { email: 'user@test.com' },
@@ -38,7 +51,7 @@ async function main() {
     data: {
       name: 'Resume Building Workshop',
       description: 'Learn how to build a professional resume',
-      category: 'SOCIAL_AEX',
+      category: 'WORKSHOP',
       semester: 'Fall 2024',
       location: 'Engineering Building Room 101',
       startTime: new Date('2024-12-20T18:00:00'),

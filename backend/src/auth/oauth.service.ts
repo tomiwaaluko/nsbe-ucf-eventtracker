@@ -108,10 +108,25 @@ export class OAuthService {
    * Get Google OAuth authorization URL
    */
   getGoogleAuthUrl(state: string, codeChallenge?: string): string {
+    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI');
+
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException(
+        'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.'
+      );
+    }
+
+    if (!this.googleClient) {
+      throw new BadRequestException(
+        'Google OAuth client is not initialized. Please check GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI environment variables.'
+      );
+    }
+
     const scopes = ['openid', 'email', 'profile'];
     const params: any = {
-      client_id: this.configService.get<string>('GOOGLE_CLIENT_ID'),
-      redirect_uri: this.configService.get<string>('GOOGLE_REDIRECT_URI'),
+      client_id: clientId,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: scopes.join(' '),
       state,
@@ -134,11 +149,18 @@ export class OAuthService {
   getDiscordAuthUrl(state: string): string {
     const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
     const redirectUri = this.configService.get<string>('DISCORD_REDIRECT_URI');
+
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException(
+        'Discord OAuth is not configured. Please set DISCORD_CLIENT_ID and DISCORD_REDIRECT_URI environment variables.'
+      );
+    }
+
     const scopes = ['identify', 'email'];
 
     const params = new URLSearchParams({
-      client_id: clientId!,
-      redirect_uri: redirectUri!,
+      client_id: clientId,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: scopes.join(' '),
       state,
@@ -270,7 +292,7 @@ export class OAuthService {
   async linkOrCreateAccount(
     provider: OAuthProvider,
     profile: OAuthProfile,
-  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean }> {
+  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean; isAccountLinked: boolean }> {
     // Step 1: Check if OAuth account already exists
     const existingOAuthAccount = await this.prisma.oAuthAccount.findUnique({
       where: {
@@ -288,6 +310,7 @@ export class OAuthService {
         member: existingOAuthAccount.user,
         isNewAccount: false,
         requiresLinking: false,
+        isAccountLinked: false,
       };
     }
 
@@ -310,7 +333,6 @@ export class OAuthService {
           },
         });
 
-        // Update email verification status if needed
         if (!existingMember.emailVerified) {
           await this.prisma.member.update({
             where: { id: existingMember.id },
@@ -322,20 +344,19 @@ export class OAuthService {
           member: { ...existingMember, emailVerified: true },
           isNewAccount: false,
           requiresLinking: false,
+          isAccountLinked: true,
         };
       }
     }
 
     // Step 3: Create new account
-    // First create Supabase Auth user, then use its ID for Member
     let supabaseUserId: string;
     
     if (this.supabaseAdmin && profile.email) {
       try {
-        // Create Supabase Auth user
         const { data: authUser, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
           email: profile.email,
-          email_confirm: profile.emailVerified, // Auto-confirm if email is verified
+          email_confirm: profile.emailVerified,
           user_metadata: {
             first_name: profile.firstName,
             last_name: profile.lastName,
@@ -348,40 +369,33 @@ export class OAuthService {
         });
 
         if (authError) {
-          // If user already exists in Supabase Auth, try to get it
           if (authError.message?.includes('already registered')) {
             const { data: existingUser } = await this.supabaseAdmin.auth.admin.getUserByEmail(profile.email);
             if (existingUser?.user) {
               supabaseUserId = existingUser.user.id;
             } else {
-              // Fallback: generate UUID
               supabaseUserId = crypto.randomUUID();
             }
           } else {
             console.error('Error creating Supabase Auth user:', authError);
-            // Fallback: generate UUID
             supabaseUserId = crypto.randomUUID();
           }
         } else if (authUser?.user) {
           supabaseUserId = authUser.user.id;
         } else {
-          // Fallback: generate UUID
           supabaseUserId = crypto.randomUUID();
         }
       } catch (error) {
         console.error('Error creating Supabase Auth user:', error);
-        // Fallback: generate UUID
         supabaseUserId = crypto.randomUUID();
       }
     } else {
-      // No Supabase Admin configured, generate UUID
       supabaseUserId = crypto.randomUUID();
     }
 
-    // Create Member with Supabase user ID
     const newMember = await this.prisma.member.create({
       data: {
-        id: supabaseUserId, // Use Supabase Auth user ID
+        id: supabaseUserId,
         email: profile.email || `oauth_${provider}_${profile.providerUserId}@temp.local`,
         firstName: profile.firstName,
         lastName: profile.lastName,
@@ -404,12 +418,10 @@ export class OAuthService {
       member: newMember,
       isNewAccount: true,
       requiresLinking: !profile.email || !profile.emailVerified,
+      isAccountLinked: false,
     };
   }
 
-  /**
-   * Generate JWT token for authenticated user
-   */
   generateJWT(member: any): string {
     const payload = {
       sub: member.id,
@@ -418,19 +430,20 @@ export class OAuthService {
     };
 
     return jwt.sign(payload, this.jwtSecret, {
-      expiresIn: '7d', // Match your existing JWT expiration
+      expiresIn: '7d',
     });
   }
 
   /**
    * Get redirect URL after OAuth callback
    */
-  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string): string {
+  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string, isAccountLinked?: boolean): string {
     const params = new URLSearchParams();
-    
+
     if (token) {
       params.set('token', token);
       if (provider) params.set('provider', provider);
+      if (isAccountLinked) params.set('account_linked', 'true');
     } else if (error) {
       params.set('error', error);
     } else if (linkRequired) {

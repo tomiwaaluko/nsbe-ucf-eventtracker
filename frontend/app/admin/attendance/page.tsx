@@ -13,7 +13,7 @@ interface AttendanceRecord {
   memberEmail: string;
   eventId: string;
   eventName: string;
-  eventType: "WORKSHOP" | "GBM" | "COMMUNITY_SERVICE";
+  eventType: "GBM" | "SOCIAL" | "WORKSHOP" | "FUNDRAISER" | "COMMUNITY_SERVICE" | "COMMITTEE_PARTICIPATION";
   checkInTime: string;
   checkInMethod: "QR_CODE" | "MANUAL";
   checkedInBy?: string;

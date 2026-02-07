@@ -12,15 +12,16 @@ import {
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import { EVENT_CATEGORIES, EventCategory, getEventCategoryLabel, getEventCategoryColor } from "@/lib/constants/event-categories";
 
 interface EventDetailPageProps {
   event: {
     id: string;
     name: string;
     description?: string;
-    category: "COMMUNITY_SERVICE" | "GBM" | "SOCIAL_AEX";
-    startTime: Date;
-    endTime: Date;
+    category: EventCategory;
+    startTime: Date | string;
+    endTime: Date | string;
     location?: string;
     isActive: boolean;
     createdBy?: {
@@ -33,7 +34,7 @@ interface EventDetailPageProps {
       firstName?: string;
       lastName?: string;
       email: string;
-      checkedInAt: Date;
+      checkedInAt: Date | string;
     }>;
   };
   onBack: () => void;
@@ -42,25 +43,56 @@ interface EventDetailPageProps {
   userRole?: "member" | "admin" | "super_admin";
 }
 
-const categoryConfig = {
-  COMMUNITY_SERVICE: {
-    label: "Community Service",
-    color: "bg-red-100 text-red-700 border-red-200",
-    gradient: "from-red-500 to-red-600",
-    icon: "🤝",
-  },
-  GBM: {
-    label: "General Body Meeting",
-    color: "bg-green-100 text-green-700 border-green-200",
-    gradient: "from-green-500 to-green-600",
-    icon: "📢",
-  },
-  SOCIAL_AEX: {
-    label: "Workshop / Social",
-    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    gradient: "from-yellow-500 to-yellow-600",
-    icon: "🎓",
-  },
+/**
+ * Get category configuration for display
+ */
+const getCategoryConfig = (category: EventCategory) => {
+  const categoryData = EVENT_CATEGORIES.find((cat) => cat.value === category);
+  
+  // Map categories to Tailwind classes and icons
+  const configMap: Record<EventCategory, { gradient: string; color: string; icon: string }> = {
+    [EventCategory.GBM]: {
+      gradient: "from-green-500 to-green-600",
+      color: "bg-green-100 text-green-700 border-green-200",
+      icon: "",
+    },
+    [EventCategory.SOCIAL]: {
+      gradient: "from-yellow-500 to-yellow-600",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      icon: "",
+    },
+    [EventCategory.WORKSHOP]: {
+      gradient: "from-blue-500 to-blue-600",
+      color: "bg-blue-100 text-blue-700 border-blue-200",
+      icon: "",
+    },
+    [EventCategory.FUNDRAISER]: {
+      gradient: "from-red-500 to-red-600",
+      color: "bg-red-100 text-red-700 border-red-200",
+      icon: "",
+    },
+    [EventCategory.COMMUNITY_SERVICE]: {
+      gradient: "from-amber-700 to-amber-800",
+      color: "bg-amber-100 text-amber-700 border-amber-200",
+      icon: "",
+    },
+    [EventCategory.COMMITTEE_PARTICIPATION]: {
+      gradient: "from-purple-500 to-purple-600",
+      color: "bg-purple-100 text-purple-700 border-purple-200",
+      icon: "",
+    },
+  };
+  
+  const config = configMap[category] || {
+    gradient: "from-gray-500 to-gray-600",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    icon: "",
+  };
+  
+  return {
+    label: getEventCategoryLabel(category),
+    ...config,
+  };
 };
 
 export function EventDetailPage({
@@ -70,7 +102,7 @@ export function EventDetailPage({
   onEdit,
   userRole = "member",
 }: EventDetailPageProps) {
-  const config = categoryConfig[event.category];
+  const config = getCategoryConfig(event.category);
   const startDate = new Date(event.startTime);
   const endDate = new Date(event.endTime);
   const isPast = endDate < new Date();
@@ -120,9 +152,11 @@ export function EventDetailPage({
       <div
         className={`bg-gradient-to-r ${config.gradient} rounded-2xl p-8 text-white relative overflow-hidden`}
       >
-        <div className="absolute top-0 right-0 text-9xl opacity-10">
-          {config.icon}
-        </div>
+        {config.icon && (
+          <div className="absolute top-0 right-0 text-9xl opacity-10">
+            {config.icon}
+          </div>
+        )}
         <div className="relative z-10">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge className="bg-white bg-opacity-20 text-white border-white border-opacity-30">
@@ -205,8 +239,8 @@ export function EventDetailPage({
             </div>
           </motion.div>
 
-          {/* Attendees */}
-          {event.attendees && event.attendees.length > 0 && (
+          {/* Attendees - Only visible to admins */}
+          {canEdit && event.attendees && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -214,44 +248,52 @@ export function EventDetailPage({
               className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900">Attendees</h3>
+                <h3 className="text-gray-900">Attendee List</h3>
                 <Badge>{event.attendees.length}</Badge>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                {event.attendees.map((attendee) => (
-                  <div
-                    key={attendee.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Avatar>
-                      <AvatarFallback className="bg-[#00a651] text-white">
-                        {getInitials(
-                          attendee.firstName,
-                          attendee.lastName,
-                          attendee.email
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">
-                        {attendee.firstName && attendee.lastName
-                          ? `${attendee.firstName} ${attendee.lastName}`
-                          : attendee.email}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(attendee.checkedInAt).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          }
-                        )}
-                      </p>
+              {event.attendees.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                  {event.attendees.map((attendee) => (
+                    <div
+                      key={attendee.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Avatar>
+                        <AvatarFallback className="bg-[#00a651] text-white">
+                          {getInitials(
+                            attendee.firstName,
+                            attendee.lastName,
+                            attendee.email
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 truncate">
+                          {attendee.firstName && attendee.lastName
+                            ? `${attendee.firstName} ${attendee.lastName}`
+                            : attendee.email}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Checked in at{" "}
+                          {new Date(attendee.checkedInAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            }
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No attendees yet</p>
+                </div>
+              )}
             </motion.div>
           )}
         </div>

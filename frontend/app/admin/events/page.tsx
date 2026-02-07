@@ -66,6 +66,10 @@ export default function EventManagementPage() {
     router.push(`/events/${eventId}`);
   };
 
+  const handleViewQRCode = (eventId: string) => {
+    router.push(`/admin/events/${eventId}/qr`);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -84,6 +88,7 @@ export default function EventManagementPage() {
         onEditEvent={handleEditEvent}
         onDeleteEvent={handleDeleteEvent}
         onViewEvent={handleViewEvent}
+        onViewQRCode={handleViewQRCode}
       />
     </DashboardLayout>
   );

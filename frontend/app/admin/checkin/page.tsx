@@ -11,6 +11,8 @@ export default function ManualCheckInPage() {
   const router = useRouter();
   const [members, setMembers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,18 +24,62 @@ export default function ManualCheckInPage() {
           return;
         }
 
-        const [memberData, eventData] = await Promise.all([
+        const [memberData, eventData, adminData, meData] = await Promise.all([
           api.getAllMembers(token),
           api.getEvents(token),
+          api.getAdmins(token).catch(() => []),
+          api.getMe(token),
         ]);
+        setAdmins(adminData);
+        setCurrentUser(meData);
 
-        setMembers(memberData);
-        setEvents(eventData);
+        // Map backend member data to frontend format
+        const mappedMembers = memberData.map((member: any) => {
+          const name = [member.firstName, member.lastName]
+            .filter(Boolean)
+            .join(" ") || "Unknown Member";
+          
+          return {
+            id: member.id,
+            name: name,
+            email: member.email,
+            hasAttended: false, // This would need to be checked against attendance records
+          };
+        });
+
+        // Map backend event data to frontend format
+        // Filter to only show active events (or events that haven't ended yet)
+        const now = new Date();
+        const mappedEvents = eventData
+          .filter((event: any) => {
+            // Only show active events or events that haven't ended
+            if (event.isActive === false) return false;
+            const endTime = new Date(event.endTime);
+            // Optionally filter out past events (uncomment if needed):
+            // return endTime >= now;
+            return true; // Show all active events for now
+          })
+          .map((event: any) => {
+            // Map category directly - all categories are now supported
+            const eventType = event.category as "GBM" | "SOCIAL" | "WORKSHOP" | "FUNDRAISER" | "COMMUNITY_SERVICE" | "COMMITTEE_PARTICIPATION";
+            
+            return {
+              id: event.id,
+              name: event.name,
+              eventType: eventType,
+              date: event.startTime, // Use startTime as the date
+              location: event.location || "TBD",
+            };
+          });
+
+        setMembers(mappedMembers);
+        setEvents(mappedEvents);
       } catch (error) {
         console.error("Failed to fetch data:", error);
         toast.error("Failed to load data");
         setMembers([]);
         setEvents([]);
+        setAdmins([]);
       } finally {
         setLoading(false);
       }
@@ -84,6 +130,8 @@ export default function ManualCheckInPage() {
       <ManualCheckIn
         members={members}
         events={events}
+        admins={admins}
+        currentUser={currentUser}
         onCheckIn={handleCheckIn}
       />
     </DashboardLayout>

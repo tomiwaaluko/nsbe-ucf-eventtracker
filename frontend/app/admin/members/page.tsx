@@ -25,7 +25,37 @@ export default function MemberManagementPage() {
       }
 
       const memberData = await api.getAllMembers(token);
-      setMembers(memberData);
+      
+      // Map backend data to frontend interface
+      const mappedMembers = memberData.map((member: any) => {
+        // Combine firstName and lastName into name
+        const name = [member.firstName, member.lastName]
+          .filter(Boolean)
+          .join(" ") || "Unknown Member";
+        
+        // Map role: member -> MEMBER, admin -> OFFICER, super_admin -> ADMIN
+        let role: "MEMBER" | "OFFICER" | "ADMIN" = "MEMBER";
+        if (member.role === "admin") {
+          role = "OFFICER";
+        } else if (member.role === "super_admin") {
+          role = "ADMIN";
+        }
+        
+        return {
+          id: member.id,
+          name: name,
+          email: member.email,
+          role: role,
+          isActive: member.isActive ?? true,
+          workshopsAttended: member.workshopsAttended ?? 0,
+          gbmAttended: member.gbmAttended ?? 0,
+          communityServiceAttended: member.communityServiceAttended ?? 0,
+          totalEvents: member.totalEvents ?? 0,
+          joinedDate: member.createdAt || new Date().toISOString(),
+        };
+      });
+      
+      setMembers(mappedMembers);
     } catch (error) {
       console.error("Failed to fetch members:", error);
       toast.error("Failed to load members");
@@ -40,8 +70,22 @@ export default function MemberManagementPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
+      // Map frontend role to backend role if needed
       if (data.role) {
-        await api.updateMemberRole(token, memberId, data.role);
+        // Map: MEMBER -> member, OFFICER -> admin, ADMIN -> super_admin
+        let backendRole = "member";
+        if (data.role === "OFFICER") {
+          backendRole = "admin";
+        } else if (data.role === "ADMIN") {
+          backendRole = "super_admin";
+        } else if (data.role === "MEMBER") {
+          backendRole = "member";
+        } else {
+          // If it's already in backend format, use it as-is
+          backendRole = data.role;
+        }
+        
+        await api.updateMemberRole(token, memberId, backendRole);
         toast.success("Member role updated successfully");
         fetchMembers();
       }
@@ -60,9 +104,9 @@ export default function MemberManagementPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Note: This would need a corresponding API endpoint
-      // For now, just show a message
-      toast.info("Member status toggle not yet implemented in API");
+      await api.updateMemberStatus(token, memberId, isActive);
+      toast.success(`Member ${isActive ? "activated" : "deactivated"} successfully`);
+      fetchMembers(); // Refresh the member list
     } catch (error) {
       console.error("Failed to toggle member status:", error);
       toast.error("Failed to update member status");

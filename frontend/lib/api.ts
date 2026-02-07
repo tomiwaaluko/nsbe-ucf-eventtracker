@@ -18,6 +18,9 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+/** Get the API base URL (includes /api). Use for constructing fetch URLs. */
+export { getApiUrl };
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
@@ -95,6 +98,17 @@ export const api = {
     return response.json();
   },
 
+  getAdmins: async (token: string) => {
+    const response = await fetch(`${API_URL}/members/admins`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to fetch admins");
+    }
+    return response.json();
+  },
+
   updateMemberRole: async (token: string, memberId: string, role: string) => {
     const response = await fetch(`${API_URL}/members/${memberId}/role`, {
       method: "PUT",
@@ -104,6 +118,22 @@ export const api = {
       },
       body: JSON.stringify({ role }),
     });
+    return response.json();
+  },
+
+  updateMemberStatus: async (token: string, memberId: string, isActive: boolean) => {
+    const response = await fetch(`${API_URL}/members/${memberId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to update member status: ${response.statusText}`);
+    }
     return response.json();
   },
 
@@ -154,9 +184,65 @@ export const api = {
     return response.json();
   },
 
+  getEventQR: async (
+    token: string,
+    id: string,
+    format: "png" | "svg" | "dataurl" = "dataurl",
+    size: number = 512
+  ) => {
+    const params = new URLSearchParams();
+    params.set("format", format);
+    params.set("size", size.toString());
+
+    // Add timeout to prevent hanging (10 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/events/${id}/qr?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Failed to fetch QR code: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch {
+          // If not JSON, use the text as error message
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (format === "png" || format === "svg") {
+        return response.blob();
+      } else {
+        return response.json();
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('QR code request timed out. Please try again.');
+      }
+      throw error;
+    }
+  },
+
   // Attendance
   checkIn: async (token: string, data: { eventId: string; token: string }) => {
-    const response = await fetch(`${API_URL}/attendance/check-in`, {
+    const url = `${API_URL}/attendance/check-in`;
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -164,7 +250,23 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    return response.json();
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { message: errorText || response.statusText };
+      }
+      
+      const errorMessage = errorData.message || `Failed to check in: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result;
   },
 
   manualCheckIn: async (
