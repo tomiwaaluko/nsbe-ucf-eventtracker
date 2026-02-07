@@ -18,6 +18,9 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+/** Get the API base URL (includes /api). Use for constructing fetch URLs. */
+export { getApiUrl };
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
