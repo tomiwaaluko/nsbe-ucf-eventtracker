@@ -70,6 +70,26 @@ export class MembersService {
   }
 
   /**
+   * Get all members with role admin or super_admin (for dropdowns / manage admins).
+   * No DB changes - uses existing Member.role.
+   */
+  async getAdmins() {
+    return this.prisma.member.findMany({
+      where: {
+        role: { in: ['admin', 'super_admin'] },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+      orderBy: [{ role: 'asc' }, { email: 'asc' }],
+    });
+  }
+
+  /**
    * Update member active/inactive status
    * @param memberId The ID of the member to update
    * @param isActive The new active status

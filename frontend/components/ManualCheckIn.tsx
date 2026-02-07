@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -35,9 +35,19 @@ interface Event {
   location: string;
 }
 
+interface Admin {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role?: string;
+}
+
 interface ManualCheckInProps {
   members: Member[];
   events: Event[];
+  admins?: Admin[];
+  currentUser?: { id: string; email: string } | null;
   onCheckIn: (
     memberId: string,
     eventId: string,
@@ -48,13 +58,26 @@ interface ManualCheckInProps {
 export function ManualCheckIn({
   members,
   events,
+  admins = [],
+  currentUser,
   onCheckIn,
 }: ManualCheckInProps) {
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<string>("");
   const [officerName, setOfficerName] = useState("");
+  const [selectedAdminId, setSelectedAdminId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Default to current user if they're in the admins list
+  useEffect(() => {
+    if (admins.length > 0) {
+      const me = admins.find(
+        (a) => a.id === currentUser?.id || a.email === currentUser?.email
+      );
+      setSelectedAdminId(me?.id ?? admins[0]?.id ?? "");
+    }
+  }, [admins, currentUser]);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
@@ -128,10 +151,17 @@ export function ManualCheckIn({
     });
   };
 
+  const selectedAdmin = admins.find((a) => a.id === selectedAdminId);
+  const displayOfficerName =
+    selectedAdmin
+      ? [selectedAdmin.firstName, selectedAdmin.lastName].filter(Boolean).join(" ") || selectedAdmin.email
+      : officerName;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedEvent || !selectedMember || !officerName.trim()) {
+    const officer = admins.length > 0 ? displayOfficerName : officerName.trim();
+    if (!selectedEvent || !selectedMember || !officer) {
       setResult({
         success: false,
         message: "Please fill in all required fields",
@@ -146,7 +176,7 @@ export function ManualCheckIn({
       const response = await onCheckIn(
         selectedMember,
         selectedEvent,
-        officerName
+        officer
       );
       setResult(response);
 
@@ -354,7 +384,7 @@ export function ManualCheckIn({
                   </Card>
                 </motion.div>
 
-                {/* Officer Information */}
+                {/* Officer / Admin */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -367,26 +397,52 @@ export function ManualCheckIn({
                       </div>
                       <div>
                         <h3 className="text-white font-semibold">
-                          Step 3: Officer Info
+                          Step 3: Officer / Admin
                         </h3>
                         <p className="text-sm text-white/70">
-                          Enter your name for verification
+                          {admins.length > 0
+                            ? "Select yourself or the admin performing check-in (defaults to you)"
+                            : "Enter your name for verification"}
                         </p>
                       </div>
                     </div>
 
                     <div>
                       <Label htmlFor="officer" className="text-white/90">
-                        Officer Name <span className="text-red-300">*</span>
+                        Officer / Admin <span className="text-red-300">*</span>
                       </Label>
-                      <Input
-                        id="officer"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={officerName}
-                        onChange={(e) => setOfficerName(e.target.value)}
-                        className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                      />
+                      {admins.length > 0 ? (
+                        <Select
+                          value={selectedAdminId}
+                          onValueChange={setSelectedAdminId}
+                        >
+                          <SelectTrigger className="mt-1 bg-white/10 border-white/20 text-white">
+                            <SelectValue placeholder="Select admin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {admins.map((admin) => {
+                              const name =
+                                [admin.firstName, admin.lastName]
+                                  .filter(Boolean)
+                                  .join(" ") || admin.email;
+                              return (
+                                <SelectItem key={admin.id} value={admin.id}>
+                                  {name} ({admin.email})
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id="officer"
+                          type="text"
+                          placeholder="Enter your full name"
+                          value={officerName}
+                          onChange={(e) => setOfficerName(e.target.value)}
+                          className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        />
+                      )}
                     </div>
                   </Card>
                 </motion.div>
@@ -402,7 +458,7 @@ export function ManualCheckIn({
                     disabled={
                       !selectedEvent ||
                       !selectedMember ||
-                      !officerName ||
+                      (admins.length > 0 ? !selectedAdminId : !officerName.trim()) ||
                       isSubmitting
                     }
                     className="w-full bg-white/20 hover:bg-white/30 border border-white/20 backdrop-blur-sm text-white h-12 font-semibold disabled:opacity-50"

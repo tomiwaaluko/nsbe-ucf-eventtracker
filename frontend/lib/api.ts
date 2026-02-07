@@ -98,6 +98,17 @@ export const api = {
     return response.json();
   },
 
+  getAdmins: async (token: string) => {
+    const response = await fetch(`${API_URL}/members/admins`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to fetch admins");
+    }
+    return response.json();
+  },
+
   updateMemberRole: async (token: string, memberId: string, role: string) => {
     const response = await fetch(`${API_URL}/members/${memberId}/role`, {
       method: "PUT",

@@ -76,6 +76,15 @@ export class MembersController {
     );
   }
 
+  @Get('admins')
+  async getAdmins(@Req() req) {
+    const member = await this.membersService.findMe(req.user.id);
+    if (!member || !isAdmin(member.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
+    return this.membersService.getAdmins();
+  }
+
   @Get()
   async getAllMembers(
     @Req() req,
