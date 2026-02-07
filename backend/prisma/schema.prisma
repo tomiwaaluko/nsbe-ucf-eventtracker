@@ -23,6 +23,16 @@ model Member {
   email         String   @unique
   firstName     String?
   lastName      String?
+  photoUrl      String?
+
+  // Extended profile fields
+  major             String?
+  graduationYear    Int?
+  phoneNumber       String?
+  linkedInUrl       String?
+  bio               String?         @db.Text
+  discordUsername   String?
+
   role          String   @default("member") // member | admin | super_admin
   emailVerified Boolean  @default(false)
   isActive      Boolean  @default(true)
@@ -33,6 +43,8 @@ model Member {
   attendance    Attendance[]
   eventsCreated Event[]
   oauthAccounts OAuthAccount[]
+
+  @@index([email])
 }
 
 model Event {
