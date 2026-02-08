@@ -8,10 +8,10 @@ import {
   Palette,
   Link as LinkIcon,
   ArrowLeft,
-  Zap,
-  Settings as SettingsIcon,
+  Construction,
 } from "lucide-react";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
+import { ProfileSettings } from "./settings/ProfileSettings";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -26,7 +26,33 @@ const sora = Sora({
   variable: "--font-sora",
   display: "swap",
 });
-import { ProfileSettings } from "./settings/ProfileSettings";
+
+function WipPlaceholder({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-black/30 bg-gray-50 rounded-lg">
+      <Construction className="w-16 h-16 text-amber-500 mb-4" />
+      <h3 className={`text-xl font-bold text-black/70 mb-2 ${bricolage.className}`}>
+        {title}
+      </h3>
+      <p className={`text-sm text-black/60 text-center max-w-md ${sora.className}`}>
+        {description}
+      </p>
+      <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-100 border-2 border-amber-600/50 text-amber-800">
+        <Construction className="w-4 h-4" />
+        <span className={`text-sm font-bold uppercase ${bricolage.className}`}>
+          Under Construction
+        </span>
+      </div>
+    </div>
+  );
+}
+
 import { AccountSettings } from "./settings/AccountSettings";
 import { NotificationSettings } from "./settings/NotificationSettings";
 import { AppearanceSettings } from "./settings/AppearanceSettings";
@@ -61,30 +87,35 @@ export function Settings({ onBack, memberData }: SettingsProps) {
       label: "Profile",
       icon: User,
       description: "Manage your personal information",
+      wip: false,
     },
     {
       id: "account" as const,
       label: "Account",
       icon: Lock,
       description: "Security and account preferences",
+      wip: false,
     },
     {
       id: "notifications" as const,
       label: "Notifications",
       icon: Bell,
       description: "Email and push notification settings",
+      wip: true,
     },
     {
       id: "appearance" as const,
       label: "Appearance",
       icon: Palette,
       description: "Customize your experience",
+      wip: true,
     },
     {
       id: "connections" as const,
       label: "Connected Accounts",
       icon: LinkIcon,
       description: "Manage linked accounts",
+      wip: true,
     },
   ];
 
@@ -153,35 +184,17 @@ export function Settings({ onBack, memberData }: SettingsProps) {
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline uppercase tracking-wide">Back</span>
             </motion.button>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
-                <div className="relative w-12 h-12 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] flex items-center justify-center">
-                  <SettingsIcon className="w-6 h-6 text-black" />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1
-                    className={`text-4xl lg:text-5xl font-extrabold text-white ${bricolage.className} tracking-tight`}
-                  >
-                    Settings
-                  </h1>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ed1c24] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
-                    <Zap className="w-4 h-4 text-black" />
-                    <span
-                      className={`text-sm font-bold uppercase tracking-wider ${bricolage.className} text-black`}
-                    >
-                      Customize
-                    </span>
-                  </div>
-                </div>
-                <p
-                  className={`${sora.className} text-white/90 text-sm mt-1 hidden sm:block font-medium`}
-                >
-                  Manage your account settings and preferences
-                </p>
-              </div>
+            <div>
+              <h1
+                className={`text-4xl lg:text-5xl font-extrabold text-white ${bricolage.className} tracking-tight`}
+              >
+                Settings
+              </h1>
+              <p
+                className={`${sora.className} text-white/90 text-sm mt-1 hidden sm:block font-medium`}
+              >
+                Manage your account settings and preferences
+              </p>
             </div>
           </div>
         </motion.div>
@@ -211,13 +224,23 @@ export function Settings({ onBack, memberData }: SettingsProps) {
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 border-2 transition-all text-left font-bold ${
                         activeTab === tab.id
-                          ? "bg-[#00a651] text-white border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-                          : "text-black border-black hover:bg-black/5"
+                          ? tab.wip
+                            ? "bg-gray-200 text-black/70 border-black/40 shadow-[4px_4px_0_0_rgba(0,0,0,0.3)]"
+                            : "bg-[#00a651] text-white border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                          : tab.wip
+                            ? "text-black/60 border-black/40 hover:bg-gray-100"
+                            : "text-black border-black hover:bg-black/5"
                       }`}
                       style={{ fontFamily: "var(--font-bricolage)" }}
                     >
                       <Icon className="h-5 w-5 flex-shrink-0" />
                       <span className="font-medium">{tab.label}</span>
+                      {tab.wip && (
+                        <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 border border-amber-600/50 text-amber-800 text-[10px] font-bold uppercase">
+                          <Construction className="w-3 h-3" />
+                          WIP
+                        </span>
+                      )}
                     </motion.button>
                   );
                 })}
@@ -249,14 +272,23 @@ export function Settings({ onBack, memberData }: SettingsProps) {
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex flex-col items-center gap-2 px-4 py-3 rounded-xl transition-all ${
                           activeTab === tab.id
-                            ? "bg-white text-[#00a651] shadow-lg"
-                            : "text-white hover:bg-white/20"
+                            ? tab.wip
+                              ? "bg-white/60 text-black/70 shadow-lg"
+                              : "bg-white text-[#00a651] shadow-lg"
+                            : tab.wip
+                              ? "text-white/70 hover:bg-white/10"
+                              : "text-white hover:bg-white/20"
                         }`}
                       >
                         <Icon className="h-5 w-5" />
                         <span className="text-xs font-medium text-center">
                           {tab.label}
                         </span>
+                        {tab.wip && (
+                          <span className="text-[9px] font-bold uppercase text-amber-200">
+                            WIP
+                          </span>
+                        )}
                       </motion.button>
                     );
                   })}
@@ -323,9 +355,27 @@ export function Settings({ onBack, memberData }: SettingsProps) {
                   {activeTab === "account" && (
                     <AccountSettings memberData={memberData} />
                   )}
-                  {activeTab === "notifications" && <NotificationSettings />}
-                  {activeTab === "appearance" && <AppearanceSettings />}
-                  {activeTab === "connections" && <ConnectedAccounts />}
+                  {activeTab === "notifications" && (
+                    tabs.find((t) => t.id === "notifications")?.wip ? (
+                      <WipPlaceholder title="Notifications" description="Email and push notification settings will be available soon." />
+                    ) : (
+                      <NotificationSettings />
+                    )
+                  )}
+                  {activeTab === "appearance" && (
+                    tabs.find((t) => t.id === "appearance")?.wip ? (
+                      <WipPlaceholder title="Appearance" description="Theme and display customization coming soon." />
+                    ) : (
+                      <AppearanceSettings />
+                    )
+                  )}
+                  {activeTab === "connections" && (
+                    tabs.find((t) => t.id === "connections")?.wip ? (
+                      <WipPlaceholder title="Connected Accounts" description="Link your Google and Discord accounts - coming soon." />
+                    ) : (
+                      <ConnectedAccounts />
+                    )
+                  )}
                 </motion.div>
                 </div>
               </div>

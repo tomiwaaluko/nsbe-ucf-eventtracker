@@ -151,14 +151,14 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
         />
       </div>
 
-      {/* Main content with asymmetric layout */}
+      {/* Main content - on mobile: sign-in first (order-2), hero hidden or below; on desktop: hero left, sign-in right */}
       <div className="relative z-10 min-h-screen flex flex-col lg:grid lg:grid-cols-[1.2fr_0.9fr] items-center p-6 lg:p-12 gap-8 lg:gap-0">
-        {/* Left Side - Hero (Overlaps on diagonal) */}
+        {/* Left Side - Hero: hidden on mobile, show on desktop */}
         <motion.div
           initial={{ opacity: 0, x: -100, rotate: -2 }}
           animate={{ opacity: 1, x: 0, rotate: 0 }}
           transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative z-20 lg:-mr-20"
+          className="hidden lg:block relative z-20 lg:-mr-20"
         >
           {/* Diagonal accent bar */}
           <motion.div
@@ -331,7 +331,7 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
           </div>
         </motion.div>
 
-        {/* Right Side - Brutalist Login Card (Overlaps left) */}
+        {/* Login Card - order-first on mobile (top), right side on desktop */}
         <motion.div
           initial={{ opacity: 0, x: 100, rotate: 2 }}
           animate={{ opacity: 1, x: 0, rotate: 0 }}
@@ -340,7 +340,7 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
             ease: [0.25, 0.46, 0.45, 0.94],
             delay: 0.2,
           }}
-          className="relative z-30 w-full max-w-lg lg:-ml-12"
+          className="relative z-30 w-full max-w-lg order-first lg:order-none lg:-ml-12"
         >
           {/* Card shadow effect */}
           <div className="absolute inset-0 bg-black translate-x-4 translate-y-4 lg:block hidden" />

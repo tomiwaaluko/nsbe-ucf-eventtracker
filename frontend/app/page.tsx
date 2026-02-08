@@ -12,14 +12,9 @@ function HomeContent() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Check if user is already logged in
     const token = localStorage.getItem("token");
-    if (token) {
-      router.push("/dashboard");
-      return;
-    }
 
-    // Check for OAuth errors or account linking requirements
+    // Check for OAuth errors or account linking requirements (always run first)
     const error = searchParams.get("error");
     const linkRequired = searchParams.get("link_required");
     const email = searchParams.get("email");
@@ -31,7 +26,9 @@ function HomeContent() {
       toast.error("Authentication Error", {
         description: error,
       });
-    } else if (linkRequired) {
+      return;
+    }
+    if (linkRequired) {
       setErrorMessage(
         `Account linking required. Please sign in with your email/password account (${email || "your account"}) to link your ${provider} account.`
       );
@@ -39,7 +36,24 @@ function HomeContent() {
       toast.info("Account Linking Required", {
         description: `Please sign in with your existing account to link ${provider}.`,
       });
+      return;
     }
+
+    if (!token) return;
+
+    // Validate token before redirecting - stale/expired tokens can linger in localStorage
+    const validateAndRedirect = async () => {
+      try {
+        const { api } = await import("@/lib/api");
+        await api.getMe(token);
+        router.push("/dashboard");
+      } catch {
+        // Token invalid or expired - clear and show login
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    };
+    validateAndRedirect();
   }, [router, searchParams]);
 
   const handleAuthComplete = (userData: {

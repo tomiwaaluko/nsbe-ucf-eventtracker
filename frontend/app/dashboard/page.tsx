@@ -37,7 +37,7 @@ export default function DashboardPage() {
         const [userData, records, eventsData] = await Promise.all([
           api.getMe(token),
           api.getMyAttendance(token),
-          api.getEvents(token),
+          api.getEvents(token, true),
         ]);
 
         // Update localStorage with fresh data

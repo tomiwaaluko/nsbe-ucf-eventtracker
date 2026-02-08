@@ -5,14 +5,12 @@ import {
   Users,
   Award,
   TrendingUp,
-  ChevronLeft,
-  ChevronRight,
   Zap,
+  Construction,
 } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { ProgressCard } from "./ProgressCard";
 import { ProgressRing } from "./ProgressRing";
-import { AchievementBadge } from "./AchievementBadge";
 import { EventCard } from "./EventCard";
 import { Button } from "./ui/button";
 import { useState, useMemo } from "react";
@@ -65,8 +63,6 @@ export function Dashboard({
   onViewEvent,
   onNavigate,
 }: DashboardProps) {
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
-
   // Calculate progress using bucket logic (matching backend)
   // Bucket 1: Workshops & Socials (WORKSHOP + SOCIAL)
   // Bucket 2: Fundraiser & Community Service (FUNDRAISER + COMMUNITY_SERVICE)
@@ -111,83 +107,6 @@ export function Dashboard({
       target: 3,
     }, // Bucket 2: FUNDRAISER + COMMUNITY_SERVICE
   ];
-
-  // Activity heatmap data - generate from actual attendance records
-  const { allHeatmapData, months } = useMemo(() => {
-    // Create a Set of dates when user attended events
-    const attendedDates = new Set(
-      attendanceRecords.map((record) => {
-        const date = new Date(record.checkedInAt || record.checkInTime);
-        return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-      })
-    );
-
-    // Get date range from attendance records or use current semester
-    let startDate: Date;
-    let endDate: Date;
-    
-    if (attendanceRecords && attendanceRecords.length > 0) {
-      const dates = attendanceRecords
-        .map((record) => new Date(record.checkedInAt || record.checkInTime))
-        .filter((date) => !isNaN(date.getTime()));
-      
-      if (dates.length > 0) {
-        startDate = new Date(Math.min(...dates.map(d => d.getTime())));
-        endDate = new Date(Math.max(...dates.map(d => d.getTime())));
-      } else {
-        // Fallback to current semester
-        const now = new Date();
-        startDate = new Date(now.getFullYear(), 7, 1); // August
-        endDate = new Date(now.getFullYear(), 11, 31); // December
-      }
-    } else {
-      // No records - show current semester
-      const now = new Date();
-      startDate = new Date(now.getFullYear(), 7, 1); // August
-      endDate = new Date(now.getFullYear(), 11, 31); // December
-    }
-
-    // Generate months from start to end (or current month if end is in future)
-    const now = new Date();
-    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endMonth = endDate > currentMonth ? currentMonth : endDate;
-    
-    const monthData: Array<{ month: string; data: Array<{ day: number; hasEvent: number; date: string }> }> = [];
-    const monthNames: string[] = [];
-    
-    let date = new Date(startDate);
-    while (date <= endMonth) {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const monthName = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const data = [];
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = `${year}-${month + 1}-${day}`;
-        const hasEvent = attendedDates.has(dateKey) ? 1 : 0;
-        data.push({
-          day,
-          hasEvent,
-          date: `${date.toLocaleDateString("en-US", { month: "short" })} ${day}`,
-        });
-      }
-      
-      monthData.push({ month: monthName, data });
-      monthNames.push(monthName);
-      date.setMonth(date.getMonth() + 1);
-    }
-
-    // Limit to last 5 months for display
-    const limitedData = monthData.slice(-5);
-    const limitedMonths = monthNames.slice(-5);
-    
-    return { allHeatmapData: limitedData, months: limitedMonths };
-  }, [attendanceRecords]);
-
-  const getHeatmapColor = (hasEvent: number) => {
-    return hasEvent === 1 ? "#00a651" : "#e5e7eb";
-  };
 
   // Dynamic encouragement message based on total events
   const getEncouragementMessage = () => {
@@ -505,8 +424,8 @@ export function Dashboard({
           </motion.div>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Chart */}
+        <div className="grid grid-cols-1 gap-6">
           {/* Bar chart */}
           <motion.div
             initial={{ opacity: 0, y: 30, rotate: -1 }}
@@ -594,160 +513,13 @@ export function Dashboard({
             </ResponsiveContainer>
             </div>
           </motion.div>
-
-          {/* Activity Heatmap */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, rotate: 1 }}
-            animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
-            className="relative"
-          >
-            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
-            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4
-                  className={`text-black font-extrabold uppercase ${bricolage.className}`}
-                >
-                  My Event Activity
-                </h4>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCurrentMonthIndex(Math.max(0, currentMonthIndex - 1))
-                  }
-                  disabled={currentMonthIndex === 0}
-                  className="h-8 w-8 p-0 bg-black hover:bg-black/80 border-2 border-black transition-colors disabled:opacity-30 flex items-center justify-center"
-                >
-                  <ChevronLeft className="w-4 h-4 text-white" />
-                </button>
-                <span
-                  className={`text-sm font-bold min-w-[120px] text-center ${bricolage.className} text-black`}
-                >
-                  {months[currentMonthIndex]}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentMonthIndex(
-                      Math.min(months.length - 1, currentMonthIndex + 1)
-                    )
-                  }
-                  disabled={currentMonthIndex === months.length - 1}
-                  className="h-8 w-8 p-0 bg-black hover:bg-black/80 border-2 border-black transition-colors disabled:opacity-30 flex items-center justify-center"
-                >
-                  <ChevronRight className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-7 gap-x-0.5 gap-y-2">
-                {allHeatmapData[currentMonthIndex]?.data.map((item) => (
-                  <div
-                    key={item.day}
-                    className="w-10 h-10 border-2 border-black relative group cursor-pointer transition-all hover:scale-110"
-                    style={{
-                      backgroundColor: getHeatmapColor(item.hasEvent),
-                    }}
-                    title={`${item.date}: ${
-                      item.hasEvent ? "Event attended" : "No event"
-                    }`}
-                  >
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span
-                        className={`text-xs font-bold ${bricolage.className} ${
-                          item.hasEvent ? "text-white" : "text-black/60"
-                        }`}
-                      >
-                        {item.day}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-                <div className="flex items-center gap-4 pt-3 border-t-2 border-black">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black bg-white" />
-                    <span
-                      className={`text-xs font-medium ${sora.className} text-black/70`}
-                    >
-                      No event
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black bg-[#00a651]" />
-                    <span
-                      className={`text-xs font-medium ${sora.className} text-black/70`}
-                    >
-                      Event attended
-                    </span>
-                  </div>
-                </div>
-            </div>
-            </div>
-          </motion.div>
         </div>
 
-        {/* Achievements */}
-        <motion.div
-          initial={{ opacity: 0, y: 30, rotate: -1 }}
-          animate={{ opacity: 1, y: 0, rotate: 0 }}
-          transition={{ delay: 1.0, duration: 0.7, ease: "easeOut" }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
-          <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3
-                className={`text-black text-2xl font-extrabold uppercase ${bricolage.className} tracking-wide`}
-              >
-                Achievements
-              </h3>
-              <button
-                onClick={() => onNavigate("achievements")}
-                className={`text-black/70 hover:text-black font-bold transition-colors text-sm ${bricolage.className} uppercase tracking-wider`}
-              >
-                View All →
-              </button>
-            </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <AchievementBadge
-              title="1-1-1 Complete"
-              description="1 Workshop/Social + 1 Fundraiser/Comm. Serv. + 1 GBM"
-              unlocked={has111}
-              icon={<Award className="w-8 h-8" />}
-              color="#00a651"
-            />
-            <AchievementBadge
-              title="3-3-3 Complete"
-              description="3 Workshops/Socials + 3 Fundraisers/Comm. Serv. + 3 GBMs"
-              unlocked={has333}
-              icon={<Award className="w-8 h-8" />}
-              color="#ffb81c"
-            />
-            <AchievementBadge
-              title="First Event"
-              description="Attended your first NSBE event"
-              unlocked={memberData.totalEvents > 0}
-              icon={<Calendar className="w-8 h-8" />}
-              color="#ed1c24"
-            />
-            <AchievementBadge
-              title="Super Active"
-              description="Attended 10+ events"
-              unlocked={memberData.totalEvents >= 10}
-              icon={<TrendingUp className="w-8 h-8" />}
-              color="#00a651"
-            />
-          </div>
-          </div>
-        </motion.div>
-
-        {/* Upcoming events */}
+        {/* Upcoming events - moved up to be second main content block */}
         <motion.div
           initial={{ opacity: 0, y: 30, rotate: 1 }}
           animate={{ opacity: 1, y: 0, rotate: 0 }}
-          transition={{ delay: 1.1, duration: 0.7, ease: "easeOut" }}
+          transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
           className="relative"
         >
           <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
@@ -786,6 +558,36 @@ export function Dashboard({
                 </p>
               </div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Achievements - Under Construction, moved to bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 30, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ delay: 1.0, duration: 0.7, ease: "easeOut" }}
+          className="relative"
+        >
+          <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+          <div className="relative bg-gray-100 border-4 border-black/30 shadow-[8px_8px_0_0_rgba(0,0,0,0.3)] p-6 border-dashed">
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className={`text-black/70 text-2xl font-extrabold uppercase ${bricolage.className} tracking-wide`}
+              >
+                Achievements
+              </h3>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-amber-600/50 text-amber-800">
+                <Construction className="w-4 h-4" />
+                <span
+                  className={`text-xs font-bold uppercase ${bricolage.className}`}
+                >
+                  Under Construction
+                </span>
+              </div>
+            </div>
+            <p className={`${sora.className} text-black/60 text-sm`}>
+              Achievement tracking and badges coming soon. Your progress is already being tracked!
+            </p>
           </div>
         </motion.div>
       </div>

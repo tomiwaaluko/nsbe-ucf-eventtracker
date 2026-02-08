@@ -23,7 +23,7 @@ export default function Events() {
         return;
       }
 
-      const eventData = await api.getEvents(token);
+      const eventData = await api.getEvents(token, true);
       
       // Map backend event data to frontend format
       const mappedEvents = eventData.map((event: any) => ({

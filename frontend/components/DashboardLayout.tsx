@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
+import { TopBar } from "./TopBar";
 import { useEffect, useState } from "react";
 
 interface DashboardLayoutProps {
@@ -111,6 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-screen">
+      {/* Desktop: Sidebar (lg and up) */}
       <Sidebar
         currentPage={getCurrentPage()}
         onNavigate={handleNavigate}
@@ -119,8 +121,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onLogout={handleLogout}
       />
 
-      {/* Main content - children handle their own backgrounds */}
-      <main className="flex-1 overflow-y-auto">
+      {/* Mobile: Top bar with hamburger fixed at viewport top */}
+      <div className="lg:hidden">
+        <TopBar
+          currentPage={getCurrentPage()}
+          onNavigate={handleNavigate}
+          userRole={userData.role}
+          userName={userData.name}
+          onLogout={handleLogout}
+        />
+      </div>
+
+      {/* Main content: pt-14 on mobile for top bar, no extra padding on desktop */}
+      <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
         {children}
       </main>
     </div>

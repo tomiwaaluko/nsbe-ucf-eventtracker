@@ -138,8 +138,10 @@ export const api = {
   },
 
   // Events
-  getEvents: async (token: string) => {
-    const response = await fetch(`${API_URL}/events`, {
+  getEvents: async (token: string, activeOnly = false) => {
+    const url = new URL(`${API_URL}/events`);
+    if (activeOnly) url.searchParams.set('activeOnly', 'true');
+    const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.json();
