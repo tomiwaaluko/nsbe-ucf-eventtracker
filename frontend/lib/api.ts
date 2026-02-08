@@ -143,7 +143,7 @@ export const api = {
 
   getAdmins: async (token: string) => {
     const response = await fetch(`${API_URL}/members/admins`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     if (!response.ok) {
       const errorText = await response.text();
