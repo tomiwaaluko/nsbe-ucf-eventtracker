@@ -435,9 +435,19 @@ export class OAuthService {
   }
 
   /**
-   * Get redirect URL after OAuth callback
+   * Get redirect URL after OAuth callback.
+   * Uses redirectUri from frontend (sent with OAuth start) when provided,
+   * otherwise falls back to APP_BASE_URL. Fixes production redirect to localhost.
    */
-  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string, isAccountLinked?: boolean): string {
+  getRedirectUrl(
+    token?: string,
+    error?: string,
+    linkRequired?: boolean,
+    email?: string,
+    provider?: string,
+    isAccountLinked?: boolean,
+    redirectUri?: string,
+  ): string {
     const params = new URLSearchParams();
 
     if (token) {
@@ -452,7 +462,9 @@ export class OAuthService {
       if (provider) params.set('provider', provider);
     }
 
-    return `${this.appBaseUrl}/auth/callback?${params.toString()}`;
+    const base = redirectUri || `${this.appBaseUrl}/auth/callback`;
+    const separator = base.includes('?') ? '&' : '?';
+    return `${base}${separator}${params.toString()}`;
   }
 }
 

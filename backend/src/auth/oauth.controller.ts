@@ -71,19 +71,21 @@ export class OAuthController {
     @Query('error') error: string,
     @Res() res: Response,
   ) {
+    const redirectUri = state ? stateStore.get(state)?.redirectUri : undefined;
+
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Google OAuth error: ${error}`));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Google OAuth error: ${error}`, undefined, undefined, undefined, undefined, redirectUri));
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter', undefined, undefined, undefined, undefined, redirectUri));
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter', undefined, undefined, undefined, undefined, redirectUri));
       }
 
       // Remove used state
@@ -103,6 +105,8 @@ export class OAuthController {
             true,
             profile.email || undefined,
             'google',
+            undefined,
+            storedState.redirectUri,
           ),
         );
       }
@@ -110,12 +114,12 @@ export class OAuthController {
       // Generate JWT
       const token = this.oauthService.generateJWT(member);
 
-      // Redirect to frontend with token
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked));
+      // Redirect to frontend with token (use frontend's redirect_uri - fixes production localhost issue)
+      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, storedState.redirectUri));
     } catch (error: any) {
       console.error('Google OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
+        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`, undefined, undefined, undefined, undefined, redirectUri),
       );
     }
   }
@@ -159,19 +163,21 @@ export class OAuthController {
     @Query('error') error: string,
     @Res() res: Response,
   ) {
+    const redirectUri = state ? stateStore.get(state)?.redirectUri : undefined;
+
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Discord OAuth error: ${error}`));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Discord OAuth error: ${error}`, undefined, undefined, undefined, undefined, redirectUri));
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter', undefined, undefined, undefined, undefined, redirectUri));
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter', undefined, undefined, undefined, undefined, redirectUri));
       }
 
       // Remove used state
@@ -191,6 +197,8 @@ export class OAuthController {
             true,
             profile.email || undefined,
             'discord',
+            undefined,
+            storedState.redirectUri,
           ),
         );
       }
@@ -198,12 +206,12 @@ export class OAuthController {
       // Generate JWT
       const token = this.oauthService.generateJWT(member);
 
-      // Redirect to frontend with token
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked));
+      // Redirect to frontend with token (use frontend's redirect_uri - fixes production localhost issue)
+      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked, storedState.redirectUri));
     } catch (error: any) {
       console.error('Discord OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
+        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`, undefined, undefined, undefined, undefined, redirectUri),
       );
     }
   }
