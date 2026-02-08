@@ -11,7 +11,7 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getOAuthRedirectBase } from "@/lib/api";
 
 interface SignUpProps {
   onSignUp: (data: {
@@ -481,7 +481,7 @@ export function SignUp({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const oauthUrl = api.getOAuthUrl("google", window.location.origin + "/auth/callback");
+                  const oauthUrl = api.getOAuthUrl("google", getOAuthRedirectBase() + "/auth/callback");
                   window.location.href = oauthUrl;
                 }}
                 disabled={isLoading}
@@ -513,7 +513,7 @@ export function SignUp({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const oauthUrl = api.getOAuthUrl("discord", window.location.origin + "/auth/callback");
+                  const oauthUrl = api.getOAuthUrl("discord", getOAuthRedirectBase() + "/auth/callback");
                   window.location.href = oauthUrl;
                 }}
                 disabled={isLoading}

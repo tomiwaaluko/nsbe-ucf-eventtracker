@@ -7,7 +7,7 @@ import { Onboarding } from "./Onboarding";
 import { SuccessPage } from "./SuccessPage";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
+import { api, getOAuthRedirectBase } from "@/lib/api";
 
 interface AuthFlowProps {
   onAuthComplete: (userData: {
@@ -119,7 +119,7 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
             first_name: data.firstName,
             last_name: data.lastName,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getOAuthRedirectBase()}/auth/callback`,
         },
       });
 
@@ -176,7 +176,7 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getOAuthRedirectBase()}/reset-password`,
       });
 
       if (error) throw error;

@@ -21,6 +21,17 @@ const API_URL = getApiUrl();
 /** Get the API base URL (includes /api). Use for constructing fetch URLs. */
 export { getApiUrl };
 
+/** OAuth redirect base: NEXT_PUBLIC_APP_URL when set, else window.location.origin. No hardcoded localhost. */
+export function getOAuthRedirectBase(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+}
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {

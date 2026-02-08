@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
-import { api } from "@/lib/api";
+import { api, getOAuthRedirectBase } from "@/lib/api";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -581,7 +581,7 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   }}
                   type="button"
                   onClick={() => {
-                    const oauthUrl = api.getOAuthUrl("google", window.location.origin + "/auth/callback");
+                    const oauthUrl = api.getOAuthUrl("google", getOAuthRedirectBase() + "/auth/callback");
                     window.location.href = oauthUrl;
                   }}
                   disabled={isLoading}
@@ -628,7 +628,7 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   }}
                   type="button"
                   onClick={() => {
-                    const oauthUrl = api.getOAuthUrl("discord", window.location.origin + "/auth/callback");
+                    const oauthUrl = api.getOAuthUrl("discord", getOAuthRedirectBase() + "/auth/callback");
                     window.location.href = oauthUrl;
                   }}
                   disabled={isLoading}
