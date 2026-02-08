@@ -18,8 +18,21 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+/** API key for backend requests (must match backend API_KEY). */
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "";
+
+/** Headers including API key for backend requests. */
+function apiHeaders(extra?: HeadersInit): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (API_KEY) headers["X-API-Key"] = API_KEY;
+  return { ...headers, ...(extra as Record<string, string>) };
+}
+
 /** Get the API base URL (includes /api). Use for constructing fetch URLs. */
 export { getApiUrl };
+
+/** Headers with API key - export for use in components that call fetch directly. */
+export { apiHeaders };
 
 /** OAuth redirect base: NEXT_PUBLIC_APP_URL when set, else window.location.origin. No hardcoded localhost. */
 export function getOAuthRedirectBase(): string {
@@ -37,7 +50,7 @@ export const api = {
   login: async (credentials: { email: string; password: string }) => {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(credentials),
     });
     return response.json();
@@ -58,10 +71,10 @@ export const api = {
   ) => {
     const response = await fetch(`${API_URL}/auth/oauth/link`, {
       method: "POST",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
     return response.json();
@@ -70,7 +83,7 @@ export const api = {
   // Members
   getMe: async (token: string) => {
     const response = await fetch(`${API_URL}/members/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     if (!response.ok) {
       const errorText = await response.text();
@@ -86,10 +99,10 @@ export const api = {
   ) => {
     const response = await fetch(`${API_URL}/members/me`, {
       method: "PUT",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
     return response.json();
@@ -98,7 +111,7 @@ export const api = {
   deleteAccount: async (token: string) => {
     const response = await fetch(`${API_URL}/members/me`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     if (!response.ok) {
       const errorText = await response.text();
@@ -116,14 +129,14 @@ export const api = {
 
   searchMembers: async (token: string, query: string) => {
     const response = await fetch(`${API_URL}/members?query=${query}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
 
   getAllMembers: async (token: string) => {
     const response = await fetch(`${API_URL}/members`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -142,10 +155,10 @@ export const api = {
   updateMemberRole: async (token: string, memberId: string, role: string) => {
     const response = await fetch(`${API_URL}/members/${memberId}/role`, {
       method: "PUT",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify({ role }),
     });
     return response.json();
@@ -154,10 +167,10 @@ export const api = {
   updateMemberStatus: async (token: string, memberId: string, isActive: boolean) => {
     const response = await fetch(`${API_URL}/members/${memberId}/status`, {
       method: "PUT",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify({ isActive }),
     });
     if (!response.ok) {
@@ -172,14 +185,14 @@ export const api = {
     const url = new URL(`${API_URL}/events`);
     if (activeOnly) url.searchParams.set('activeOnly', 'true');
     const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
 
   getEvent: async (token: string, id: string) => {
     const response = await fetch(`${API_URL}/events/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -187,10 +200,10 @@ export const api = {
   createEvent: async (token: string, data: any) => {
     const response = await fetch(`${API_URL}/events`, {
       method: "POST",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
     return response.json();
@@ -211,7 +224,7 @@ export const api = {
   deleteEvent: async (token: string, id: string) => {
     const response = await fetch(`${API_URL}/events/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -276,10 +289,10 @@ export const api = {
     
     const response = await fetch(url, {
       method: "POST",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
 
@@ -307,10 +320,10 @@ export const api = {
   ) => {
     const response = await fetch(`${API_URL}/attendance/manual`, {
       method: "POST",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
     return response.json();
@@ -325,14 +338,14 @@ export const api = {
 
   getEventAttendance: async (token: string, eventId: string) => {
     const response = await fetch(`${API_URL}/attendance/events/${eventId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
 
   getAllAttendance: async (token: string) => {
     const response = await fetch(`${API_URL}/attendance`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -347,7 +360,7 @@ export const api = {
 
   get111Leaderboard: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/leaderboard/111`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -361,7 +374,7 @@ export const api = {
 
   getAdminStats: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/admin`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },

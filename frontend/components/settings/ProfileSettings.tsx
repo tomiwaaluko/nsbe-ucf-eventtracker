@@ -5,7 +5,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { User, Upload, X, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { getApiUrl } from "@/lib/api";
+import { getApiUrl, apiHeaders } from "@/lib/api";
 
 interface ProfileSettingsProps {
   memberData: {
@@ -62,9 +62,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     const fetchMemberData = async () => {
       try {
         const response = await fetch(`${getApiUrl()}/members/me`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
+          headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
         });
 
         if (response.ok) {
@@ -128,9 +126,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
       const response = await fetch(`${getApiUrl()}/members/me/photo`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
         body: formData,
       });
 
@@ -164,9 +160,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     try {
       const response = await fetch(`${getApiUrl()}/members/me/photo`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
       });
 
       if (!response.ok) {
@@ -224,10 +218,10 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     try {
       const response = await fetch(`${getApiUrl()}/members/me`, {
         method: 'PUT',
-        headers: {
+        headers: apiHeaders({
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }),
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,

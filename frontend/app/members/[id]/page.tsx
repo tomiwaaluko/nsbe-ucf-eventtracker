@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Trophy, Calendar, CheckCircle2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { getApiUrl } from '@/lib/api';
+import { getApiUrl, apiHeaders } from '@/lib/api';
 
 interface MemberProfile {
   id: string;
@@ -53,9 +53,7 @@ export default function MemberProfilePage() {
     const fetchProfile = async () => {
       try {
         const response = await fetch(`${getApiUrl()}/members/${params.id}/profile`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
+          headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
         });
 
         if (!response.ok) {

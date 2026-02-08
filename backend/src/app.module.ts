@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,6 +8,7 @@ import { MembersModule } from './members/members.module';
 import { EventsModule } from './events/events.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { StatsModule } from './stats/stats.module';
+import { ApiKeyMiddleware } from './common/api-key.middleware';
 
 @Module({
   imports: [
@@ -22,4 +23,8 @@ import { StatsModule } from './stats/stats.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ApiKeyMiddleware).forRoutes('*');
+  }
+}

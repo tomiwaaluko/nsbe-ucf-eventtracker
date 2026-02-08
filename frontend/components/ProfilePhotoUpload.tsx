@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Camera, Trash2, Upload } from 'lucide-react';
-import { getApiUrl } from '@/lib/api';
+import { getApiUrl, apiHeaders } from '@/lib/api';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -47,9 +47,7 @@ export function ProfilePhotoUpload({
 
       const response = await fetch(`${getApiUrl()}/members/me/photo`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
         body: formData,
       });
 
@@ -79,9 +77,7 @@ export function ProfilePhotoUpload({
     try {
       const response = await fetch(`${getApiUrl()}/members/me/photo`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: apiHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` }),
       });
 
       if (!response.ok) {
