@@ -212,10 +212,10 @@ export const api = {
   updateEvent: async (token: string, id: string, data: any) => {
     const response = await fetch(`${API_URL}/events/${id}`, {
       method: "PUT",
-      headers: {
+      headers: apiHeaders({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      },
+      }),
       body: JSON.stringify(data),
     });
     return response.json();
@@ -247,7 +247,7 @@ export const api = {
       const response = await fetch(
         `${API_URL}/events/${id}/qr?${params.toString()}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: apiHeaders({ Authorization: `Bearer ${token}` }),
           signal: controller.signal,
         }
       );
@@ -331,7 +331,7 @@ export const api = {
 
   getMyAttendance: async (token: string) => {
     const response = await fetch(`${API_URL}/attendance/my`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -353,7 +353,7 @@ export const api = {
   // Stats
   getMyStats: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
@@ -367,7 +367,7 @@ export const api = {
 
   get333Leaderboard: async (token: string) => {
     const response = await fetch(`${API_URL}/stats/leaderboard/333`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response.json();
   },
