@@ -282,9 +282,10 @@ export class StatsService {
     // Get total events
     const totalEvents = await this.prisma.event.count();
 
-    // Get upcoming events
+    // Get upcoming events (active only)
     const upcomingEvents = await this.prisma.event.count({
       where: {
+        isActive: true,
         startTime: {
           gte: new Date(),
         },

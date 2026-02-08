@@ -42,8 +42,14 @@ export class EventsController {
   async findAll(
     @Query('semester') semester?: string,
     @Query('category') category?: EventCategory,
+    @Query('activeOnly') activeOnly?: string,
   ) {
-    return this.eventsService.findAll({ semester, category });
+    const activeOnlyBool = activeOnly === 'true' || activeOnly === '1';
+    return this.eventsService.findAll({
+      semester,
+      category,
+      activeOnly: activeOnlyBool,
+    });
   }
 
   @Get(':id')

@@ -22,9 +22,18 @@ export class EventsService {
     });
   }
 
-  async findAll(filter?: { semester?: string; category?: EventCategory }) {
+  async findAll(filter?: {
+    semester?: string;
+    category?: EventCategory;
+    activeOnly?: boolean;
+  }) {
+    const where: Record<string, unknown> = {};
+    if (filter?.semester) where.semester = filter.semester;
+    if (filter?.category) where.category = filter.category;
+    if (filter?.activeOnly) where.isActive = true;
+
     return this.prisma.event.findMany({
-      where: filter,
+      where,
       orderBy: { startTime: 'desc' },
       include: {
         createdBy: {
@@ -66,13 +75,25 @@ export class EventsService {
         ...dto,
         ...(dto.startTime && { startTime: new Date(dto.startTime) }),
         ...(dto.endTime && { endTime: new Date(dto.endTime) }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
     });
   }
 
+  /**
+   * Soft delete: marks event as inactive instead of removing it.
+   * Attendance records are preserved and still count toward member achievements.
+   */
   async remove(id: string) {
-    return this.prisma.event.delete({
+    const event = await this.prisma.event.findUnique({
       where: { id },
+    });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    return this.prisma.event.update({
+      where: { id },
+      data: { isActive: false },
     });
   }
 
