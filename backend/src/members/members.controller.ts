@@ -19,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
+import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -28,6 +29,7 @@ import { StorageService } from '../storage/storage.service';
 export class MembersController {
   constructor(
     private readonly membersService: MembersService,
+    private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
   ) {}
@@ -40,6 +42,14 @@ export class MembersController {
   @Put('me')
   async updateMe(@Req() req, @Body() dto: UpdateMemberDto) {
     return this.membersService.updateMe(req.user.id, dto);
+  }
+
+  @Delete('me')
+  async deleteMe(@Req() req) {
+    const userId = req.user.id;
+    await this.membersService.deleteMe(userId);
+    await this.authService.deleteSupabaseUser(userId);
+    return { message: 'Account deleted successfully' };
   }
 
   @Put(':id/role')

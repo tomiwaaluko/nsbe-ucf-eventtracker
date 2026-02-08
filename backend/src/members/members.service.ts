@@ -249,6 +249,28 @@ export class MembersService {
   }
 
   /**
+   * Permanently delete the current user's account and all associated data.
+   * Caller is responsible for deleting the Supabase auth user afterward.
+   */
+  async deleteMe(userId: string): Promise<void> {
+    // Unlink events created by this member
+    await this.prisma.event.updateMany({
+      where: { createdById: userId },
+      data: { createdById: null },
+    });
+
+    // Delete attendance records
+    await this.prisma.attendance.deleteMany({
+      where: { memberId: userId },
+    });
+
+    // Delete member (OAuthAccount cascades via schema)
+    await this.prisma.member.delete({
+      where: { id: userId },
+    });
+  }
+
+  /**
    * Update member's profile photo
    * @param memberId The ID of the member to update
    * @param photoUrl The new photo URL (or null to remove photo)

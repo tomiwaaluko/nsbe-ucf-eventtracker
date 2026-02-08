@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -9,18 +10,22 @@ import {
   Shield,
   AlertTriangle,
   Loader2,
-  CheckCircle2,
   Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 
 interface AccountSettingsProps {
   memberData: {
     email: string;
+    id?: string;
+    hasPassword?: boolean;
   };
 }
 
 export function AccountSettings({ memberData }: AccountSettingsProps) {
+  const router = useRouter();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -73,21 +78,56 @@ export function AccountSettings({ memberData }: AccountSettingsProps) {
       return;
     }
 
+    if (!memberData.email) {
+      toast.error("Email required", { description: "Could not determine your email." });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: memberData.email,
+        password: passwordData.currentPassword,
+      });
+
+      if (signInError) {
+        setErrors({ currentPassword: "Current password is incorrect" });
+        toast.error("Invalid password", {
+          description: "The current password you entered is incorrect.",
+        });
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (updateError) {
+        toast.error("Failed to update password", {
+          description: updateError.message,
+        });
+        return;
+      }
+
       setShowChangePassword(false);
       setPasswordData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
+      setErrors({});
       toast.success("Password changed!", {
         description: "Your password has been updated successfully.",
       });
-    }, 1500);
+    } catch (err: any) {
+      toast.error("Something went wrong", {
+        description: err?.message || "Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -98,17 +138,31 @@ export function AccountSettings({ memberData }: AccountSettingsProps) {
       return;
     }
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Not signed in", { description: "Please sign in and try again." });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Account deletion initiated", {
-        description: "You will receive a confirmation email shortly.",
-      });
+    try {
+      await api.deleteAccount(token);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setShowDeleteConfirm(false);
       setDeleteConfirmText("");
-    }, 1500);
+      toast.success("Account deleted", {
+        description: "Your account has been permanently deleted.",
+      });
+      router.push("/");
+    } catch (err: any) {
+      toast.error("Failed to delete account", {
+        description: err?.message || "Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getPasswordStrength = (password: string) => {
@@ -132,9 +186,12 @@ export function AccountSettings({ memberData }: AccountSettingsProps) {
     "bg-[#00843D]",
   ];
 
+  const canChangePassword = memberData.hasPassword !== false;
+
   return (
     <div className="space-y-6">
-      {/* Change Password Section */}
+      {/* Change Password Section - only for users with password auth */}
+      {canChangePassword && (
       <div>
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -315,6 +372,7 @@ export function AccountSettings({ memberData }: AccountSettingsProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Two-Factor Authentication Section */}
       <div className="border-t border-gray-200 pt-6">

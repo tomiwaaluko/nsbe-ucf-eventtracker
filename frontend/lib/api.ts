@@ -84,6 +84,25 @@ export const api = {
     return response.json();
   },
 
+  deleteAccount: async (token: string) => {
+    const response = await fetch(`${API_URL}/members/me`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      let msg = "Failed to delete account";
+      try {
+        const err = JSON.parse(errorText);
+        msg = err.message || msg;
+      } catch {
+        if (errorText) msg = errorText;
+      }
+      throw new Error(msg);
+    }
+    return response.json();
+  },
+
   searchMembers: async (token: string, query: string) => {
     const response = await fetch(`${API_URL}/members?query=${query}`, {
       headers: { Authorization: `Bearer ${token}` },

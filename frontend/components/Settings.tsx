@@ -68,6 +68,7 @@ interface SettingsProps {
     major?: string;
     graduationYear?: number;
     profilePhoto?: string;
+    hasPassword?: boolean;
   };
 }
 
