@@ -67,3 +67,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ensure toasts have solid background (fixes see-through on prod) */
+[data-sonner-toast] {
+  background: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+[data-sonner-toast][data-type="success"] {
+  background: hsl(var(--popover)) !important;
+}
+[data-sonner-toast][data-type="error"] {
+  background: hsl(var(--popover)) !important;
+}
+[data-sonner-toast][data-type="info"] {
+  background: hsl(var(--popover)) !important;
+}
