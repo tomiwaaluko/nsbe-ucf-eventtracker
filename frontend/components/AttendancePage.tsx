@@ -10,6 +10,8 @@ import {
   Camera,
   X,
   Zap,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
@@ -74,6 +76,11 @@ export function AttendancePage({
     event?: any;
   } | null>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomMin, setZoomMin] = useState(1);
+  const [zoomMax, setZoomMax] = useState(4);
+  const [supportsHardwareZoom, setSupportsHardwareZoom] = useState(false);
+  const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +127,74 @@ export function AttendancePage({
     }
   }, [isCameraActive]);
 
+  // Detect hardware zoom support and store the camera track after camera starts
+  const initZoom = () => {
+    const videoEl = document.querySelector("#qr-reader video") as HTMLVideoElement | null;
+    if (!videoEl || !videoEl.srcObject) return;
+    const stream = videoEl.srcObject as MediaStream;
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+    cameraTrackRef.current = track;
+
+    const capabilities = track.getCapabilities() as any;
+    if (capabilities && "zoom" in capabilities) {
+      setSupportsHardwareZoom(true);
+      setZoomMin(capabilities.zoom.min ?? 1);
+      setZoomMax(Math.min(capabilities.zoom.max ?? 4, 8));
+      setZoomLevel(capabilities.zoom.min ?? 1);
+    } else {
+      // CSS transform fallback: zoom only the video element visually
+      setSupportsHardwareZoom(false);
+      setZoomMin(1);
+      setZoomMax(4);
+      setZoomLevel(1);
+    }
+  };
+
+  const applyZoom = async (level: number) => {
+    const track = cameraTrackRef.current;
+    if (track) {
+      const capabilities = track.getCapabilities() as any;
+      if (capabilities && "zoom" in capabilities) {
+        // Hardware zoom — zooms the actual camera sensor, works great on mobile
+        try {
+          await track.applyConstraints({ advanced: [{ zoom: level } as any] });
+        } catch (e) {
+          // fall through to CSS zoom
+        }
+        setZoomLevel(level);
+        return;
+      }
+    }
+    // CSS transform fallback — only zooms the video display, overflow is hidden by container
+    const videoEl = document.querySelector("#qr-reader video") as HTMLVideoElement | null;
+    if (videoEl) {
+      videoEl.style.transform = `scale(${level})`;
+      videoEl.style.transformOrigin = "center center";
+      videoEl.style.transition = "transform 0.15s ease";
+    }
+    setZoomLevel(level);
+  };
+
+  const handleZoomIn = () => {
+    const step = supportsHardwareZoom ? (zoomMax - zoomMin) / 8 : 0.5;
+    const next = Math.min(+(zoomLevel + step).toFixed(2), zoomMax);
+    applyZoom(next);
+  };
+
+  const handleZoomOut = () => {
+    const step = supportsHardwareZoom ? (zoomMax - zoomMin) / 8 : 0.5;
+    const next = Math.max(+(zoomLevel - step).toFixed(2), zoomMin);
+    applyZoom(next);
+  };
+
+  const resetZoom = () => {
+    applyZoom(zoomMin);
+    cameraTrackRef.current = null;
+    setSupportsHardwareZoom(false);
+    setZoomLevel(1);
+  };
+
   const startCamera = async () => {
     try {
       setScanError("");
@@ -148,7 +223,7 @@ export function AttendancePage({
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
           },
-          async (decodedText: string, decodedResult: any) => {
+          async (decodedText: string, _decodedResult: any) => {
             try {
               // Stop camera immediately
               await stopCamera();
@@ -208,10 +283,13 @@ export function AttendancePage({
               setIsCheckingIn(false);
             }
           },
-          (errorMessage: string) => {
+          (_errorMessage: string) => {
             // Handle scan errors silently (they happen frequently while scanning)
           }
         );
+
+        // Init zoom after camera stream is established
+        setTimeout(initZoom, 500);
       } else {
         throw new Error("No cameras found on this device");
       }
@@ -249,6 +327,7 @@ export function AttendancePage({
     } catch (err) {
       // Ignore errors when stopping camera
     } finally {
+      resetZoom();
       setIsCameraActive(false);
     }
   };
@@ -613,7 +692,37 @@ export function AttendancePage({
                     ></div>
                   </div>
 
-                  <div className="mt-6 relative">
+                  {/* Zoom controls */}
+                  <div className="mt-5 flex items-center justify-center gap-3">
+                    <button
+                      onClick={handleZoomOut}
+                      disabled={zoomLevel <= zoomMin}
+                      aria-label="Zoom out"
+                      className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                    >
+                      <ZoomOut className="w-5 h-5 text-black" />
+                    </button>
+                    <div className="flex flex-col items-center min-w-[56px]">
+                      <span className={`text-black font-extrabold text-lg leading-none ${bricolage.className}`}>
+                        {supportsHardwareZoom
+                          ? `${zoomLevel.toFixed(1)}x`
+                          : `${zoomLevel.toFixed(1)}x`}
+                      </span>
+                      <span className={`text-black/50 text-[10px] uppercase font-bold tracking-wide mt-0.5 ${bricolage.className}`}>
+                        {supportsHardwareZoom ? "optical" : "digital"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleZoomIn}
+                      disabled={zoomLevel >= zoomMax}
+                      aria-label="Zoom in"
+                      className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                    >
+                      <ZoomIn className="w-5 h-5 text-black" />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 relative">
                     <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
                     <div className="relative bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-4">
                       <p

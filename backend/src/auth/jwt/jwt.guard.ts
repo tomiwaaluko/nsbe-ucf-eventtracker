@@ -40,8 +40,16 @@ export class JwtAuthGuard implements CanActivate {
 
       const payload = jwt.verify(token, jwtSecret) as JwtPayload;
 
+      // Extract name from Supabase user_metadata if present
+      const metadata = payload.user_metadata
+        ? {
+            firstName: payload.user_metadata.first_name || payload.user_metadata.firstName,
+            lastName: payload.user_metadata.last_name || payload.user_metadata.lastName,
+          }
+        : undefined;
+
       // Sync user with database - this ensures the Supabase user exists in Prisma
-      await this.authService.findOrCreateMember(payload.sub, payload.email);
+      await this.authService.findOrCreateMember(payload.sub, payload.email, metadata);
 
       request.user = {
         ...payload,

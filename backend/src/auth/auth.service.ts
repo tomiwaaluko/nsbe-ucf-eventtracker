@@ -30,23 +30,46 @@ export class AuthService {
     }
   }
 
-  async findOrCreateMember(userId: string, email: string) {
+  async findOrCreateMember(
+    userId: string,
+    email: string,
+    metadata?: { firstName?: string; lastName?: string },
+  ) {
     const existingMember = await this.prisma.member.findUnique({
       where: { email },
     });
 
     if (existingMember) {
-      if (existingMember.id !== userId) {
+      const needsIdUpdate = existingMember.id !== userId;
+      const needsNameUpdate =
+        metadata &&
+        ((!existingMember.firstName && metadata.firstName) ||
+          (!existingMember.lastName && metadata.lastName));
+
+      if (needsIdUpdate || needsNameUpdate) {
         return this.prisma.member.update({
           where: { email },
-          data: { id: userId, role: existingMember.role },
+          data: {
+            id: userId,
+            role: existingMember.role,
+            ...(needsNameUpdate && {
+              firstName: existingMember.firstName || metadata?.firstName || null,
+              lastName: existingMember.lastName || metadata?.lastName || null,
+            }),
+          },
         });
       }
       return existingMember;
     }
 
     return this.prisma.member.create({
-      data: { id: userId, email, role: 'member' },
+      data: {
+        id: userId,
+        email,
+        role: 'member',
+        firstName: metadata?.firstName || null,
+        lastName: metadata?.lastName || null,
+      },
     });
   }
 
