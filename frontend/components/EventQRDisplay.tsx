@@ -151,7 +151,8 @@ export function EventQRDisplay({
         </Button>
 
         <div className="flex flex-col items-center max-w-2xl">
-          <h1 className="text-4xl font-bold mb-4 text-center">{event.name}</h1>
+          <h1 className="text-4xl font-bold mb-2 text-center text-black">{event.name}</h1>
+          <p className="text-gray-500 text-center mb-4">Scan the QR code in the app in the check-in section</p>
           <div className="text-lg text-gray-600 mb-8 text-center space-y-2">
             <div className="flex items-center justify-center gap-2">
               <Calendar className="w-5 h-5" />
@@ -194,7 +195,7 @@ export function EventQRDisplay({
           )}
 
           <p className="mt-8 text-gray-600 text-center max-w-md">
-            Scan this QR code with the NSBE UCF app to check in
+            Scan the QR code in the app in the check-in section — do not use your phone camera
           </p>
         </div>
       </motion.div>
@@ -205,8 +206,9 @@ export function EventQRDisplay({
     <Card className="p-6 max-w-2xl mx-auto">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold mb-2">Event QR Code</h2>
+          <h2 className="text-2xl font-bold mb-2 text-black">Event QR Code</h2>
           <p className="text-gray-600">{event.name}</p>
+          <p className="text-sm text-gray-500 mt-1">Scan the QR code in the app in the check-in section</p>
         </div>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose}>

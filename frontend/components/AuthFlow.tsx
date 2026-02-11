@@ -62,6 +62,18 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
             description: "You have successfully signed in.",
           });
 
+          // If name missing from backend, backfill from Supabase metadata
+          if (!memberData.firstName && data.user?.user_metadata?.first_name) {
+            try {
+              await api.updateMe(data.session.access_token, {
+                firstName: data.user.user_metadata.first_name,
+                lastName: data.user.user_metadata.last_name || undefined,
+              });
+            } catch (nameErr) {
+              console.warn("Could not backfill name:", nameErr);
+            }
+          }
+
           // Pass complete user data including role
           const userData = {
             email: memberData.email || email,
@@ -136,6 +148,16 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
       // Store token if session created (auto-confirm disabled)
       if (authData.session) {
         localStorage.setItem("token", authData.session.access_token);
+
+        // Save first/last name to backend member record
+        try {
+          await api.updateMe(authData.session.access_token, {
+            firstName: data.firstName,
+            lastName: data.lastName,
+          });
+        } catch (nameErr) {
+          console.warn("Could not save name to profile:", nameErr);
+        }
 
         toast.success("Account created successfully!", {
           description: "Welcome to NSBE UCF Event Tracker!",

@@ -94,7 +94,7 @@ export default function EventDetail() {
   };
 
   const handleCheckIn = (eventId: string) => {
-    router.push("/checkin");
+    router.push("/attendance");
   };
 
   const handleEdit = (eventId: string) => {

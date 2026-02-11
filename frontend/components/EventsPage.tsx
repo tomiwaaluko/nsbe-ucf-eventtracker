@@ -58,31 +58,32 @@ export function EventsPage({
       categoryFilter === "all" || event.category === categoryFilter;
 
     let matchesTime = true;
-    const now = new Date();
+    const filterNow = new Date();
     const eventStart = new Date(event.startTime);
     const eventEnd = new Date(event.endTime);
 
     if (timeFilter === "upcoming") {
-      matchesTime = eventStart > now;
+      matchesTime = eventStart > filterNow;
     } else if (timeFilter === "today") {
-      matchesTime = eventStart.toDateString() === now.toDateString();
+      matchesTime = eventStart.toDateString() === filterNow.toDateString();
     } else if (timeFilter === "past") {
-      matchesTime = eventEnd < now;
+      matchesTime = eventEnd < filterNow;
     }
 
     return matchesSearch && matchesCategory && matchesTime;
   });
 
   // Group events by time
-  const upcomingEvents = filteredEvents.filter(
-    (e) => new Date(e.startTime) > new Date()
-  );
-  const pastEvents = filteredEvents.filter(
-    (e) => new Date(e.endTime) < new Date()
-  );
-  const todayEvents = filteredEvents.filter(
-    (e) => new Date(e.startTime).toDateString() === new Date().toDateString()
-  );
+  const now = new Date();
+  const upcomingEvents = filteredEvents
+    .filter((e) => new Date(e.startTime) > now)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const pastEvents = filteredEvents
+    .filter((e) => new Date(e.endTime) < now)
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  const todayEvents = filteredEvents
+    .filter((e) => new Date(e.startTime).toDateString() === now.toDateString())
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   return (
     <div
