@@ -195,7 +195,7 @@ export function EventQRDisplay({
           )}
 
           <p className="mt-8 text-gray-600 text-center max-w-md">
-            Scan the QR code in the app in the check-in section — do not use your phone camera
+            Scan the QR code in the app in the check-in section
           </p>
         </div>
       </motion.div>
