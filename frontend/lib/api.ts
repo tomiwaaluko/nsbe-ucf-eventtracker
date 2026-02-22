@@ -34,6 +34,39 @@ export { getApiUrl };
 /** Headers with API key - export for use in components that call fetch directly. */
 export { apiHeaders };
 
+/** Session expiry event for handling 401 responses */
+let sessionExpiredCallback: (() => void) | null = null;
+
+export function onSessionExpired(callback: () => void) {
+  sessionExpiredCallback = callback;
+}
+
+function handleResponse(response: Response): Promise<any> {
+  if (response.status === 401) {
+    // Session expired - trigger callback
+    if (sessionExpiredCallback) {
+      sessionExpiredCallback();
+    }
+    throw new Error("Session expired");
+  }
+
+  if (!response.ok) {
+    return response.text().then((text) => {
+      let errorMessage = response.statusText;
+      try {
+        const json = JSON.parse(text);
+        errorMessage = json.message || errorMessage;
+      } catch (e) {
+        // Use text as-is if not JSON
+        if (text) errorMessage = text;
+      }
+      throw new Error(errorMessage);
+    });
+  }
+
+  return response.json();
+}
+
 /** OAuth redirect base: NEXT_PUBLIC_APP_URL when set, else window.location.origin. No hardcoded localhost. */
 export function getOAuthRedirectBase(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -187,14 +220,14 @@ export const api = {
     const response = await fetch(url.toString(), {
       headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   getEvent: async (token: string, id: string) => {
     const response = await fetch(`${API_URL}/events/${id}`, {
       headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   createEvent: async (token: string, data: any) => {
@@ -376,6 +409,200 @@ export const api = {
     const response = await fetch(`${API_URL}/stats/admin`, {
       headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
+    return response.json();
+  },
+
+  // Global Leaderboard
+  getGlobalLeaderboard: async (
+    token: string,
+    semester?: string,
+    limit?: number,
+  ) => {
+    const params = new URLSearchParams();
+    if (semester) params.append('semester', semester);
+    if (limit) params.append('limit', limit.toString());
+    const url = `${API_URL}/stats/leaderboard${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getMyLeaderboardPosition: async (token: string, semester?: string) => {
+    const url = semester
+      ? `${API_URL}/stats/leaderboard/me?semester=${encodeURIComponent(semester)}`
+      : `${API_URL}/stats/leaderboard/me`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getTopMembers: async (token: string, limit: number = 10, semester?: string) => {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    if (semester) params.append('semester', semester);
+    const url = `${API_URL}/stats/leaderboard/top?${params.toString()}`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getLeaderboardStats: async (token: string, semester?: string) => {
+    const url = semester
+      ? `${API_URL}/stats/leaderboard/stats?semester=${encodeURIComponent(semester)}`
+      : `${API_URL}/stats/leaderboard/stats`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  // Friends
+  getFriends: async (token: string) => {
+    const response = await fetch(`${API_URL}/friends`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getFriendRequestsReceived: async (token: string) => {
+    const response = await fetch(`${API_URL}/friends/requests/received`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getFriendRequestsSent: async (token: string) => {
+    const response = await fetch(`${API_URL}/friends/requests/sent`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getMemberDirectory: async (token: string, search?: string) => {
+    const url = search
+      ? `${API_URL}/friends/directory?search=${encodeURIComponent(search)}`
+      : `${API_URL}/friends/directory`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to fetch member directory');
+    }
+    return response.json();
+  },
+
+  getFriendshipStatus: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/status/${userId}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to fetch friendship status');
+    }
+    return response.json();
+  },
+
+  sendFriendRequest: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/request/${userId}`, {
+      method: 'POST',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  acceptFriendRequest: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/accept/${userId}`, {
+      method: 'POST',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  declineFriendRequest: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/decline/${userId}`, {
+      method: 'DELETE',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  cancelFriendRequest: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/cancel/${userId}`, {
+      method: 'DELETE',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  unfriend: async (token: string, userId: string) => {
+    const response = await fetch(`${API_URL}/friends/${userId}`, {
+      method: 'DELETE',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  // Event Interest (Plan to Attend)
+  markPlanToAttend: async (token: string, eventId: string) => {
+    const response = await fetch(`${API_URL}/event-interest/${eventId}`, {
+      method: 'POST',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  unmarkPlanToAttend: async (token: string, eventId: string) => {
+    const response = await fetch(`${API_URL}/event-interest/${eventId}`, {
+      method: 'DELETE',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getMyPlannedEvents: async (token: string) => {
+    const response = await fetch(`${API_URL}/event-interest/my`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getEventPlanners: async (token: string, eventId: string) => {
+    const response = await fetch(`${API_URL}/event-interest/event/${eventId}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to fetch event planners');
+    }
+    return response.json();
+  },
+
+  checkIfPlanning: async (token: string, eventId: string) => {
+    const response = await fetch(`${API_URL}/event-interest/check/${eventId}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to check planning status');
+    }
+    return response.json();
+  },
+
+  getEventPlanningStats: async (token: string, semester?: string) => {
+    const url = semester
+      ? `${API_URL}/event-interest/stats?semester=${semester}`
+      : `${API_URL}/event-interest/stats`;
+    const response = await fetch(url, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to fetch planning stats');
+    }
     return response.json();
   },
 };

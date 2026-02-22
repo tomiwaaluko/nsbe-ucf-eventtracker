@@ -33,15 +33,22 @@ export class AttendanceService {
       throw new BadRequestException('Event is not currently running');
     }
 
-    const attendance = await this.prisma.attendance.upsert({
+    // Check if already checked in
+    const existingAttendance = await this.prisma.attendance.findUnique({
       where: {
         memberId_eventId: {
           memberId,
           eventId: dto.eventId,
         },
       },
-      update: {},
-      create: {
+    });
+
+    if (existingAttendance) {
+      throw new BadRequestException('You have already checked into this event');
+    }
+
+    const attendance = await this.prisma.attendance.create({
+      data: {
         memberId,
         eventId: dto.eventId,
         checkInMethod: 'qr',

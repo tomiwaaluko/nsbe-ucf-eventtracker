@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Zap,
   Construction,
+  CalendarPlus,
 } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { ProgressCard } from "./ProgressCard";
@@ -52,16 +53,20 @@ interface DashboardProps {
   };
   attendanceRecords: any[];
   upcomingEvents: any[];
+  plannedEvents?: any[];
   onViewEvent: (eventId: string) => void;
   onNavigate: (page: string) => void;
+  onTogglePlan?: (eventId: string, currentlyPlanning: boolean) => void;
 }
 
 export function Dashboard({
   memberData,
   attendanceRecords,
   upcomingEvents,
+  plannedEvents = [],
   onViewEvent,
   onNavigate,
+  onTogglePlan,
 }: DashboardProps) {
   // Calculate progress using bucket logic (matching backend)
   // Bucket 1: Workshops & Socials (WORKSHOP + SOCIAL)
@@ -560,6 +565,58 @@ export function Dashboard({
             )}
           </div>
         </motion.div>
+
+        {/* My Plans - Events user is planning to attend */}
+        {plannedEvents && plannedEvents.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, rotate: 1 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 1.0, duration: 0.7, ease: "easeOut" }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
+            <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <h3
+                    className={`text-black text-2xl font-extrabold uppercase ${bricolage.className} tracking-wide`}
+                  >
+                    My Plans
+                  </h3>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#00a651] border-2 border-black">
+                    <CalendarPlus className="w-4 h-4 text-white" />
+                    <span
+                      className={`text-xs font-bold uppercase ${bricolage.className} text-white`}
+                    >
+                      {plannedEvents.length} Event{plannedEvents.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {plannedEvents.slice(0, 3).map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onViewDetails={onViewEvent}
+                    onTogglePlan={onTogglePlan}
+                    showCheckIn={false}
+                  />
+                ))}
+              </div>
+              {plannedEvents.length > 3 && (
+                <div className="mt-4 pt-4 border-t-2 border-black/10 text-center">
+                  <button
+                    onClick={() => onNavigate("events")}
+                    className={`text-black/70 hover:text-black font-bold transition-colors text-sm ${bricolage.className} uppercase tracking-wider`}
+                  >
+                    View All {plannedEvents.length} Planned Events →
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* Achievements - Under Construction, moved to bottom */}
         <motion.div

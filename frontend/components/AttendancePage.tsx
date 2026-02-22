@@ -12,9 +12,11 @@ import {
   Zap,
   ZoomIn,
   ZoomOut,
+  RefreshCw,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
+import { CheckInSuccessModal } from "./CheckInSuccessModal";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -83,6 +85,42 @@ export function AttendancePage({
   const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
+
+  // Camera flip functionality
+  const [cameras, setCameras] = useState<any[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState<number>(0);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Get available cameras on mount
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          setCameras(devices);
+
+          // Check localStorage for preferred camera
+          const preferredCameraId = localStorage.getItem("preferredCameraId");
+          if (preferredCameraId) {
+            const index = devices.findIndex((d) => d.id === preferredCameraId);
+            if (index !== -1) {
+              setCurrentCameraIndex(index);
+            } else {
+              // Default to back camera (usually last in array)
+              setCurrentCameraIndex(devices.length > 1 ? devices.length - 1 : 0);
+            }
+          } else {
+            // Default to back camera (usually last in array)
+            setCurrentCameraIndex(devices.length > 1 ? devices.length - 1 : 0);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to get cameras:", error);
+      }
+    };
+
+    getCameras();
+  }, []);
 
   // Cleanup camera on unmount or when camera is turned off
   useEffect(() => {
@@ -209,12 +247,12 @@ export function AttendancePage({
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
 
-      // Get available cameras
-      const devices = await Html5Qrcode.getCameras();
+      if (cameras.length > 0) {
+        // Use the currently selected camera
+        const cameraId = cameras[currentCameraIndex].id;
 
-      if (devices && devices.length > 0) {
-        // Use the first camera (or back camera on mobile)
-        const cameraId = devices.length > 1 ? devices[1].id : devices[0].id;
+        // Save preferred camera to localStorage
+        localStorage.setItem("preferredCameraId", cameraId);
 
         await scanner.start(
           cameraId,
@@ -261,23 +299,38 @@ export function AttendancePage({
 
               const result = await onCheckIn(payload.eventId, payload.token);
 
-              setCheckInResult(result);
-
               if (result.success) {
                 // Clear error on success
                 setScanError("");
-                // Auto-clear success message after 5 seconds
-                setTimeout(() => {
-                  setCheckInResult(null);
-                }, 5000);
+                setCheckInResult(result);
+
+                // Show success modal
+                setShowSuccessModal(true);
               } else {
-                setScanError(result.message);
+                // Enhanced error messages
+                let errorMessage = result.message;
+                if (errorMessage.toLowerCase().includes("already checked in")) {
+                  errorMessage = "You've already checked into this event";
+                } else if (errorMessage.toLowerCase().includes("not active") || errorMessage.toLowerCase().includes("not started")) {
+                  errorMessage = "This event is not currently active for check-in";
+                } else if (errorMessage.toLowerCase().includes("time window") || errorMessage.toLowerCase().includes("ended")) {
+                  errorMessage = "Check-in is only available during the event";
+                } else if (errorMessage.toLowerCase().includes("invalid") || errorMessage.toLowerCase().includes("token")) {
+                  errorMessage = "Invalid QR code or expired check-in token";
+                }
+
+                setScanError(errorMessage);
+                setCheckInResult({
+                  success: false,
+                  message: errorMessage,
+                });
               }
             } catch (error: any) {
-              setScanError(error.message || "Failed to check in. Please try again.");
+              const errorMessage = error.message || "Failed to check in. Please try again.";
+              setScanError(errorMessage);
               setCheckInResult({
                 success: false,
-                message: error.message || "Failed to check in. Please try again.",
+                message: errorMessage,
               });
             } finally {
               setIsCheckingIn(false);
@@ -300,6 +353,25 @@ export function AttendancePage({
       );
       setIsCameraActive(false);
     }
+  };
+
+  // Flip camera function
+  const flipCamera = async () => {
+    if (cameras.length <= 1) {
+      return; // Only one camera available
+    }
+
+    // Stop current scanner
+    await stopCamera();
+
+    // Switch to next camera
+    const nextIndex = (currentCameraIndex + 1) % cameras.length;
+    setCurrentCameraIndex(nextIndex);
+
+    // Small delay before starting with new camera
+    setTimeout(() => {
+      startCamera();
+    }, 300);
   };
 
   const stopCamera = async () => {
@@ -657,16 +729,29 @@ export function AttendancePage({
                         </p>
                       </div>
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={stopCamera}
-                      className="px-4 py-2 bg-[#ed1c24] text-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transition-all flex items-center gap-1 font-bold uppercase text-sm hover:bg-[#c91a1f]"
-                      style={{ fontFamily: "var(--font-bricolage)" }}
-                    >
-                      <X className="w-4 h-4" />
-                      Close
-                    </motion.button>
+                    <div className="flex items-center gap-2">
+                      {cameras.length > 1 && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={flipCamera}
+                          className="p-2 bg-white text-black border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transition-all hover:bg-black/5"
+                          title="Flip camera"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </motion.button>
+                      )}
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={stopCamera}
+                        className="px-4 py-2 bg-[#ed1c24] text-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] transition-all flex items-center gap-1 font-bold uppercase text-sm hover:bg-[#c91a1f]"
+                        style={{ fontFamily: "var(--font-bricolage)" }}
+                      >
+                        <X className="w-4 h-4" />
+                        Close
+                      </motion.button>
+                    </div>
                   </div>
 
                   <div className="relative">
@@ -692,34 +777,45 @@ export function AttendancePage({
                     ></div>
                   </div>
 
-                  {/* Zoom controls */}
-                  <div className="mt-5 flex items-center justify-center gap-3">
-                    <button
-                      onClick={handleZoomOut}
-                      disabled={zoomLevel <= zoomMin}
-                      aria-label="Zoom out"
-                      className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
-                    >
-                      <ZoomOut className="w-5 h-5 text-black" />
-                    </button>
-                    <div className="flex flex-col items-center min-w-[56px]">
-                      <span className={`text-black font-extrabold text-lg leading-none ${bricolage.className}`}>
-                        {supportsHardwareZoom
-                          ? `${zoomLevel.toFixed(1)}x`
-                          : `${zoomLevel.toFixed(1)}x`}
-                      </span>
-                      <span className={`text-black/50 text-[10px] uppercase font-bold tracking-wide mt-0.5 ${bricolage.className}`}>
-                        {supportsHardwareZoom ? "optical" : "digital"}
-                      </span>
+                  {/* Camera info and Zoom controls */}
+                  <div className="mt-5 space-y-3">
+                    {cameras.length > 0 && (
+                      <p
+                        className={`text-sm text-black/70 text-center ${sora.className} font-medium`}
+                      >
+                        Using: {cameras[currentCameraIndex]?.label || "Camera"}
+                        {cameras.length > 1 && " • Tap flip to switch"}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel <= zoomMin}
+                        aria-label="Zoom out"
+                        className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                      >
+                        <ZoomOut className="w-5 h-5 text-black" />
+                      </button>
+                      <div className="flex flex-col items-center min-w-[56px]">
+                        <span className={`text-black font-extrabold text-lg leading-none ${bricolage.className}`}>
+                          {supportsHardwareZoom
+                            ? `${zoomLevel.toFixed(1)}x`
+                            : `${zoomLevel.toFixed(1)}x`}
+                        </span>
+                        <span className={`text-black/50 text-[10px] uppercase font-bold tracking-wide mt-0.5 ${bricolage.className}`}>
+                          {supportsHardwareZoom ? "optical" : "digital"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel >= zoomMax}
+                        aria-label="Zoom in"
+                        className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                      >
+                        <ZoomIn className="w-5 h-5 text-black" />
+                      </button>
                     </div>
-                    <button
-                      onClick={handleZoomIn}
-                      disabled={zoomLevel >= zoomMax}
-                      aria-label="Zoom in"
-                      className="w-11 h-11 flex items-center justify-center border-2 border-black bg-white font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all"
-                    >
-                      <ZoomIn className="w-5 h-5 text-black" />
-                    </button>
                   </div>
 
                   <div className="mt-4 relative">
@@ -831,6 +927,29 @@ export function AttendancePage({
             </div>
           </motion.div>
         )}
+
+        {/* Success Modal */}
+        <CheckInSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => {
+            setShowSuccessModal(false);
+            setCheckInResult(null);
+            // Optionally restart scanner after modal closes
+            // setTimeout(() => {
+            //   if (!isCameraActive) {
+            //     startCamera();
+            //   }
+            // }, 500);
+          }}
+          checkInData={
+            checkInResult?.success && checkInResult?.event
+              ? {
+                  event: checkInResult.event,
+                  checkedInAt: new Date().toISOString(),
+                }
+              : null
+          }
+        />
       </div>
     </div>
   );

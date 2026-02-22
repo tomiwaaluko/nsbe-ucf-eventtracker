@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards, Param } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 
@@ -29,6 +29,58 @@ export class StatsController {
       semester = 'Fall 2024'; // default
     }
     return this.statsService.get333Leaderboard(semester);
+  }
+
+  /**
+   * GET /stats/leaderboard/me - Get my leaderboard position
+   */
+  @Get('leaderboard/me')
+  async getMyLeaderboardPosition(@Req() req, @Query('semester') semester?: string) {
+    return this.statsService.getMemberLeaderboardPosition(req.user.id, semester);
+  }
+
+  /**
+   * GET /stats/leaderboard/top - Get top N members
+   */
+  @Get('leaderboard/top')
+  async getTopMembers(
+    @Query('limit') limit?: string,
+    @Query('semester') semester?: string,
+  ) {
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    return this.statsService.getTopMembers(limitNumber, semester);
+  }
+
+  /**
+   * GET /stats/leaderboard/stats - Get leaderboard statistics
+   */
+  @Get('leaderboard/stats')
+  async getLeaderboardStats(@Query('semester') semester?: string) {
+    return this.statsService.getLeaderboardStats(semester);
+  }
+
+  /**
+   * GET /stats/leaderboard - Get global leaderboard
+   * Query params: semester (optional), limit (optional)
+   */
+  @Get('leaderboard')
+  async getGlobalLeaderboard(
+    @Query('semester') semester?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNumber = limit ? parseInt(limit, 10) : undefined;
+    return this.statsService.getGlobalLeaderboard(semester, limitNumber);
+  }
+
+  /**
+   * GET /stats/leaderboard/:memberId - Get specific member's position
+   */
+  @Get('leaderboard/:memberId')
+  async getMemberPosition(
+    @Param('memberId') memberId: string,
+    @Query('semester') semester?: string,
+  ) {
+    return this.statsService.getMemberLeaderboardPosition(memberId, semester);
   }
 
   @Get('admin')

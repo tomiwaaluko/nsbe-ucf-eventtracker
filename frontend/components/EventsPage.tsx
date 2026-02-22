@@ -32,6 +32,7 @@ interface EventsPageProps {
   events: any[];
   onViewDetails: (eventId: string) => void;
   onCheckIn?: (eventId: string) => void;
+  onTogglePlan?: (eventId: string, currentlyPlanning: boolean) => void;
   onCreateEvent?: () => void;
   userRole?: "member" | "admin" | "super_admin";
 }
@@ -40,6 +41,7 @@ export function EventsPage({
   events,
   onViewDetails,
   onCheckIn,
+  onTogglePlan,
   onCreateEvent,
   userRole = "member",
 }: EventsPageProps) {
@@ -359,6 +361,7 @@ export function EventsPage({
                         event={event}
                         onViewDetails={onViewDetails}
                         onCheckIn={onCheckIn}
+                        onTogglePlan={onTogglePlan}
                         showCheckIn={true}
                       />
                     </motion.div>
@@ -397,6 +400,7 @@ export function EventsPage({
                           event={event}
                           onViewDetails={onViewDetails}
                           onCheckIn={onCheckIn}
+                          onTogglePlan={onTogglePlan}
                           showCheckIn={true}
                         />
                       </motion.div>
@@ -435,6 +439,7 @@ export function EventsPage({
                           event={event}
                           onViewDetails={onViewDetails}
                           onCheckIn={onCheckIn}
+                          onTogglePlan={onTogglePlan}
                           showCheckIn={false}
                         />
                       </motion.div>

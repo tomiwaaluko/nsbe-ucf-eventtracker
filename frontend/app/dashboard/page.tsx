@@ -20,6 +20,7 @@ export default function DashboardPage() {
   });
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [plannedEvents, setPlannedEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,10 +35,11 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         // Fetch all data in parallel
-        const [userData, records, eventsData] = await Promise.all([
+        const [userData, records, eventsData, myPlans] = await Promise.all([
           api.getMe(token),
           api.getMyAttendance(token),
           api.getEvents(token, true),
+          api.getMyPlannedEvents(token),
         ]);
 
         // Update localStorage with fresh data
@@ -110,6 +112,21 @@ export default function DashboardPage() {
 
         setUpcomingEvents(upcoming);
 
+        // Process planned events
+        const planned = (Array.isArray(myPlans) ? myPlans : []).map((plan: any) => ({
+          id: plan.event.id,
+          name: plan.event.name,
+          description: plan.event.description || undefined,
+          category: plan.event.category,
+          startTime: plan.event.startTime,
+          endTime: plan.event.endTime,
+          location: plan.event.location || undefined,
+          isActive: plan.event.isActive ?? true,
+          isPlanning: true,
+          plannedCount: plan.plannedCount || 0,
+        }));
+        setPlannedEvents(planned);
+
         // Update component state with calculated statistics (using bucket names)
         setMemberData({
           name: `${updatedUser.firstName} ${updatedUser.lastName}`.trim() || "User",
@@ -161,6 +178,27 @@ export default function DashboardPage() {
     router.push(`/${page}`);
   };
 
+  const handleTogglePlan = async (eventId: string, currentlyPlanning: boolean) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      if (currentlyPlanning) {
+        await api.unmarkPlanToAttend(token, eventId);
+        toast.success("Removed from your plans");
+        // Remove from planned events
+        setPlannedEvents((prev) => prev.filter((event) => event.id !== eventId));
+      } else {
+        await api.markPlanToAttend(token, eventId);
+        toast.success("Added to your plans!");
+        // Refresh to get updated data (optional, or add it to state)
+      }
+    } catch (error: any) {
+      console.error("Failed to update plan status:", error);
+      toast.error(error.message || "Failed to update your plans");
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -177,8 +215,10 @@ export default function DashboardPage() {
         memberData={memberData}
         attendanceRecords={attendanceRecords}
         upcomingEvents={upcomingEvents}
+        plannedEvents={plannedEvents}
         onViewEvent={handleViewEvent}
         onNavigate={handleNavigate}
+        onTogglePlan={handleTogglePlan}
       />
     </DashboardLayout>
   );
