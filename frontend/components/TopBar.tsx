@@ -65,6 +65,13 @@ const menuItems = [
     section: "main",
   },
   {
+    id: "friends",
+    label: "Friends",
+    icon: Users,
+    roles: ["member", "admin", "super_admin"],
+    section: "main",
+  },
+  {
     id: "achievements",
     label: "Achievements",
     icon: Award,

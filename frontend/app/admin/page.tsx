@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [planningStats, setPlanningStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function AdminPage() {
         }
 
         // Fetch all data needed for graphs
+        // Fetch planning stats separately with error handling
         const [adminStats, allAttendance, allEvents, allMembers] = await Promise.all([
           api.getAdminStats(token),
           api.getAllAttendance(token),
@@ -44,6 +46,15 @@ export default function AdminPage() {
         setAttendanceRecords(Array.isArray(allAttendance) ? allAttendance : []);
         setEvents(Array.isArray(allEvents) ? allEvents : []);
         setMembers(Array.isArray(allMembers) ? allMembers : []);
+
+        // Try to fetch planning stats (optional, won't break dashboard if it fails)
+        try {
+          const eventPlanningStats = await api.getEventPlanningStats(token);
+          setPlanningStats(Array.isArray(eventPlanningStats) ? eventPlanningStats : []);
+        } catch (planningError) {
+          console.warn("Failed to fetch planning stats (non-critical):", planningError);
+          setPlanningStats([]);
+        }
       } catch (error) {
         console.error("Failed to fetch admin data:", error);
         // Fallback to empty data if API fails
@@ -60,6 +71,7 @@ export default function AdminPage() {
         setAttendanceRecords([]);
         setEvents([]);
         setMembers([]);
+        setPlanningStats([]);
       } finally {
         setLoading(false);
       }
@@ -98,6 +110,7 @@ export default function AdminPage() {
         attendanceRecords={attendanceRecords}
         events={events}
         members={members}
+        planningStats={planningStats}
         onNavigate={handleNavigate}
       />
     </DashboardLayout>

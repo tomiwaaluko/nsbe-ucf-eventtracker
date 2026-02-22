@@ -379,4 +379,160 @@ export class StatsService {
       membersWithThreeThreeThree,
     };
   }
+
+  /**
+   * Get global leaderboard ranked by total event attendance
+   * @param semester Optional semester filter (e.g., "Fall 2024")
+   * @param limit Optional limit for top N members (default: all)
+   */
+  async getGlobalLeaderboard(semester?: string, limit?: number) {
+    // Query all members with their attendance count
+    const members = await this.prisma.member.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        major: true,
+        graduationYear: true,
+        attendance: {
+          where: semester
+            ? {
+                event: {
+                  semester,
+                },
+              }
+            : undefined,
+          select: {
+            id: true, // Just need to count
+          },
+        },
+      },
+    });
+
+    // Map to leaderboard entries with event counts
+    const leaderboardData = members.map((member) => ({
+      memberId: member.id,
+      firstName: member.firstName || 'Unknown',
+      lastName: member.lastName || 'User',
+      photoUrl: member.photoUrl,
+      major: member.major,
+      graduationYear: member.graduationYear,
+      totalEventsAttended: member.attendance.length,
+    }));
+
+    // Sort by event count descending (highest first)
+    leaderboardData.sort((a, b) => b.totalEventsAttended - a.totalEventsAttended);
+
+    // Apply limit if specified
+    const limitedData = limit ? leaderboardData.slice(0, limit) : leaderboardData;
+
+    // Assign ranks (handle ties - same count = same rank)
+    let currentRank = 1;
+    let previousCount = -1;
+
+    const rankedData = limitedData.map((entry, index) => {
+      if (entry.totalEventsAttended !== previousCount) {
+        currentRank = index + 1;
+      }
+      previousCount = entry.totalEventsAttended;
+
+      // Calculate percentile (top X%)
+      const percentile = ((index + 1) / leaderboardData.length) * 100;
+
+      return {
+        rank: currentRank,
+        ...entry,
+        percentile: Math.round(percentile),
+      };
+    });
+
+    return {
+      semester: semester || 'All Time',
+      totalMembers: leaderboardData.length,
+      leaderboard: rankedData,
+    };
+  }
+
+  /**
+   * Get leaderboard position for a specific member
+   */
+  async getMemberLeaderboardPosition(memberId: string, semester?: string) {
+    // Get full leaderboard (cached in production)
+    const fullLeaderboard = await this.getGlobalLeaderboard(semester);
+
+    // Find member's position
+    const memberEntry = fullLeaderboard.leaderboard.find(
+      (entry) => entry.memberId === memberId,
+    );
+
+    if (!memberEntry) {
+      // Member has no attendance
+      return {
+        rank: null,
+        totalEventsAttended: 0,
+        percentile: 100,
+        totalMembers: fullLeaderboard.totalMembers,
+      };
+    }
+
+    return {
+      rank: memberEntry.rank,
+      totalEventsAttended: memberEntry.totalEventsAttended,
+      percentile: memberEntry.percentile,
+      totalMembers: fullLeaderboard.totalMembers,
+      aboveCount: memberEntry.rank - 1, // How many members above you
+    };
+  }
+
+  /**
+   * Get top N members on leaderboard
+   */
+  async getTopMembers(limit: number = 10, semester?: string) {
+    const leaderboard = await this.getGlobalLeaderboard(semester, limit);
+    return {
+      semester: leaderboard.semester,
+      topMembers: leaderboard.leaderboard,
+    };
+  }
+
+  /**
+   * Get leaderboard statistics
+   */
+  async getLeaderboardStats(semester?: string) {
+    const leaderboard = await this.getGlobalLeaderboard(semester);
+
+    if (leaderboard.leaderboard.length === 0) {
+      return {
+        totalMembers: 0,
+        averageAttendance: 0,
+        medianAttendance: 0,
+        topAttendance: 0,
+      };
+    }
+
+    const attendanceCounts = leaderboard.leaderboard.map(
+      (e) => e.totalEventsAttended,
+    );
+
+    const sum = attendanceCounts.reduce((acc, val) => acc + val, 0);
+    const average = sum / attendanceCounts.length;
+
+    // Calculate median
+    const sorted = [...attendanceCounts].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median =
+      sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+
+    return {
+      semester: leaderboard.semester,
+      totalMembers: leaderboard.totalMembers,
+      averageAttendance: Math.round(average * 10) / 10, // 1 decimal
+      medianAttendance: median,
+      topAttendance: attendanceCounts[0] || 0,
+    };
+  }
 }

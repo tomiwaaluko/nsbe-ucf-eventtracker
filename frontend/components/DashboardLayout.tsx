@@ -3,7 +3,9 @@
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
+import { SessionExpiredModal } from "./SessionExpiredModal";
 import { useEffect, useState } from "react";
+import { onSessionExpired } from "@/lib/api";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,8 +32,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const [userData, setUserData] = useState(getUserData);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
+    // Set up session expired callback
+    onSessionExpired(() => {
+      setSessionExpired(true);
+    });
+
     // Check authentication
     const token = localStorage.getItem("token");
     if (!token) {
@@ -73,6 +81,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       events: "events",
       attendance: "attendance",
       checkin: "attendance",
+      friends: "friends",
+      leaderboard: "leaderboard",
       achievements: "achievements",
       settings: "settings",
     };
@@ -96,6 +106,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       dashboard: "/dashboard",
       events: "/events",
       attendance: "/attendance",
+      friends: "/friends",
+      leaderboard: "/leaderboard",
       achievements: "/achievements",
       settings: "/settings",
     };
@@ -105,6 +117,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/");
+  };
+
+  const handleSessionExpiredSignIn = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     router.push("/");
@@ -136,6 +154,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
         {children}
       </main>
+
+      {/* Session Expired Modal */}
+      <SessionExpiredModal
+        isOpen={sessionExpired}
+        onSignIn={handleSessionExpiredSignIn}
+      />
     </div>
   );
 }

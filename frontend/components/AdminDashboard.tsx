@@ -39,6 +39,7 @@ interface AdminDashboardProps {
   attendanceRecords: any[];
   events: any[];
   members: any[];
+  planningStats?: any[];
   onNavigate: (page: string) => void;
 }
 
@@ -47,6 +48,7 @@ export function AdminDashboard({
   attendanceRecords,
   events,
   members,
+  planningStats = [],
   onNavigate,
 }: AdminDashboardProps) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
@@ -651,6 +653,84 @@ export function AdminDashboard({
             )}
           </div>
         </motion.div>
+
+        {/* Expected vs Actual Attendance - Planning Stats */}
+        {planningStats && planningStats.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-white">
+                Expected vs Actual Attendance
+              </h4>
+              <span className="text-xs text-white/70 px-3 py-1 bg-white/10 rounded-full">
+                {planningStats.length} events with planning data
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-white">
+                <thead className="text-sm text-white/70 border-b border-white/20">
+                  <tr>
+                    <th className="pb-3 pr-4 font-medium">Event</th>
+                    <th className="pb-3 pr-4 font-medium">Date</th>
+                    <th className="pb-3 pr-4 font-medium">Category</th>
+                    <th className="pb-3 pr-4 font-medium text-center">Expected</th>
+                    <th className="pb-3 pr-4 font-medium text-center">Actual</th>
+                    <th className="pb-3 font-medium text-center">Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {planningStats.slice(0, 10).map((stat: any, index: number) => {
+                    const rate = stat.attendanceRate || 0;
+                    const rateColor =
+                      rate >= 80
+                        ? "text-green-400"
+                        : rate >= 50
+                        ? "text-yellow-400"
+                        : "text-red-400";
+                    return (
+                      <tr
+                        key={stat.eventId || index}
+                        className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                      >
+                        <td className="py-3 pr-4 font-medium">{stat.eventName}</td>
+                        <td className="py-3 pr-4 text-white/70">
+                          {new Date(stat.startTime).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span className="text-xs px-2 py-1 rounded bg-white/10">
+                            {stat.category}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-center">{stat.expectedAttendance}</td>
+                        <td className="py-3 pr-4 text-center">{stat.actualAttendance}</td>
+                        <td className={`py-3 text-center font-semibold ${rateColor}`}>
+                          {rate.toFixed(0)}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {planningStats.length > 10 && (
+              <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                <button
+                  onClick={() => onNavigate("admin-events")}
+                  className="text-white/70 hover:text-white text-sm transition-colors"
+                >
+                  View all {planningStats.length} events →
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Quick Actions */}
         <motion.div

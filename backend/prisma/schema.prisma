@@ -18,6 +18,19 @@ enum EventCategory {
   COMMITTEE_PARTICIPATION
 }
 
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+enum EventInterestStatus {
+  PLANNING
+  CANCELLED
+  ATTENDED
+}
+
 model Member {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -40,9 +53,12 @@ model Member {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  attendance    Attendance[]
-  eventsCreated Event[]
-  oauthAccounts OAuthAccount[]
+  attendance     Attendance[]
+  eventsCreated  Event[]
+  oauthAccounts  OAuthAccount[]
+  friendships    Friendship[] @relation("UserFriendships")
+  friendOf       Friendship[] @relation("FriendFriendships")
+  eventInterests EventInterest[]
 
   @@index([email])
 }
@@ -62,7 +78,8 @@ model Event {
   createdById String?
   createdBy   Member?        @relation(fields: [createdById], references: [id])
 
-  attendance  Attendance[]
+  attendance     Attendance[]
+  eventInterests EventInterest[]
 }
 
 model Attendance {
@@ -96,4 +113,40 @@ model OAuthAccount {
   @@unique([provider, providerUserId])
   @@index([userId])
   @@index([provider, providerEmail])
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  userId      String
+  friendId    String
+  status      FriendshipStatus @default(PENDING)
+  requesterId String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user   Member @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend Member @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId, status])
+  @@index([friendId, status])
+  @@index([requesterId])
+  @@map("friendships")
+}
+
+model EventInterest {
+  id        String              @id @default(uuid())
+  memberId  String
+  eventId   String
+  status    EventInterestStatus @default(PLANNING)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, eventId])
+  @@index([eventId, status])
+  @@index([memberId, status])
+  @@map("event_interests")
 }
