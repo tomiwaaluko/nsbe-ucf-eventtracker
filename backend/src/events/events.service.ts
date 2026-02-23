@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventCategory } from '@prisma/client';
@@ -8,10 +9,13 @@ import QRCode from 'qrcode'; // lmk if this needs to be reverted to import * as 
 
 @Injectable()
 export class EventsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async create(dto: CreateEventDto, creatorId: string) {
-    return this.prisma.event.create({
+    const event = await this.prisma.event.create({
       data: {
         ...dto,
         startTime: new Date(dto.startTime),
@@ -20,6 +24,9 @@ export class EventsService {
         createdById: creatorId,
       },
     });
+    // Invalidate events cache
+    this.cache.delPattern('events:');
+    return event;
   }
 
   async findAll(filter?: {
@@ -27,27 +34,36 @@ export class EventsService {
     category?: EventCategory;
     activeOnly?: boolean;
   }) {
-    const where: Record<string, unknown> = {};
-    if (filter?.semester) where.semester = filter.semester;
-    if (filter?.category) where.category = filter.category;
-    if (filter?.activeOnly) where.isActive = true;
+    // Cache events list for 2 minutes
+    const cacheKey = `events:${filter?.semester || 'all'}:${filter?.category || 'all'}:${filter?.activeOnly || 'all'}`;
 
-    return this.prisma.event.findMany({
-      where,
-      orderBy: { startTime: 'desc' },
-      include: {
-        createdBy: {
-          select: { email: true, firstName: true, lastName: true },
-        },
-        attendance: {
-          select: {
-            id: true,
-            memberId: true,
-            checkedInAt: true,
+    return this.cache.wrap(
+      cacheKey,
+      async () => {
+        const where: Record<string, unknown> = {};
+        if (filter?.semester) where.semester = filter.semester;
+        if (filter?.category) where.category = filter.category;
+        if (filter?.activeOnly) where.isActive = true;
+
+        return this.prisma.event.findMany({
+          where,
+          orderBy: { startTime: 'desc' },
+          include: {
+            createdBy: {
+              select: { email: true, firstName: true, lastName: true },
+            },
+            attendance: {
+              select: {
+                id: true,
+                memberId: true,
+                checkedInAt: true,
+              },
+            },
           },
-        },
+        });
       },
-    });
+      120, // 2 minutes
+    );
   }
 
   async findOne(id: string) {
@@ -69,7 +85,7 @@ export class EventsService {
   }
 
   async update(id: string, dto: UpdateEventDto) {
-    return this.prisma.event.update({
+    const event = await this.prisma.event.update({
       where: { id },
       data: {
         ...dto,
@@ -78,6 +94,9 @@ export class EventsService {
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
     });
+    // Invalidate events cache
+    this.cache.delPattern('events:');
+    return event;
   }
 
   /**
@@ -91,10 +110,13 @@ export class EventsService {
     if (!event) {
       throw new NotFoundException('Event not found');
     }
-    return this.prisma.event.update({
+    const result = await this.prisma.event.update({
       where: { id },
       data: { isActive: false },
     });
+    // Invalidate events cache
+    this.cache.delPattern('events:');
+    return result;
   }
 
   async generateEventQRCode(

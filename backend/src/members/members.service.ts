@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory } from '@prisma/client';
@@ -24,36 +25,49 @@ function getEventBucket(category: EventCategory): string {
 
 @Injectable()
 export class MembersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async findMe(userId: string) {
-    const member = await this.prisma.member.findUnique({
-      where: { id: userId },
-      include: {
-        oauthAccounts: {
-          select: { provider: true },
-        },
+    // Cache JWT user lookups for 5 minutes to reduce DB load on every request
+    return this.cache.wrap(
+      `user:${userId}`,
+      async () => {
+        const member = await this.prisma.member.findUnique({
+          where: { id: userId },
+          include: {
+            oauthAccounts: {
+              select: { provider: true },
+            },
+          },
+        });
+
+        if (!member) {
+          return null;
+        }
+
+        // Transform response to include auth methods without exposing password hash
+        const { passwordHash, oauthAccounts, ...memberData } = member;
+        return {
+          ...memberData,
+          hasPassword: !!passwordHash,
+          oauthProviders: oauthAccounts.map((oa) => oa.provider),
+        };
       },
-    });
-
-    if (!member) {
-      return null;
-    }
-
-    // Transform response to include auth methods without exposing password hash
-    const { passwordHash, oauthAccounts, ...memberData } = member;
-    return {
-      ...memberData,
-      hasPassword: !!passwordHash,
-      oauthProviders: oauthAccounts.map((oa) => oa.provider),
-    };
+      300, // 5 minutes
+    );
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
-    return this.prisma.member.update({
+    const result = await this.prisma.member.update({
       where: { id: userId },
       data: dto,
     });
+    // Invalidate user cache on update
+    this.cache.del(`user:${userId}`);
+    return result;
   }
 
   async search(query: string) {
@@ -116,66 +130,73 @@ export class MembersService {
    * @param semester Optional semester filter (if not provided, shows all-time statistics)
    */
   async getAllMembers(semester?: string): Promise<any[]> {
-    // Get all members with their attendance records
-    const members = await this.prisma.member.findMany({
-      include: {
-        attendance: {
-          where: semester
-            ? {
-                event: {
-                  semester: semester,
-                },
-              }
-            : undefined,
+    // Cache member list for 3 minutes
+    return this.cache.wrap(
+      `members:all:${semester || 'all'}`,
+      async () => {
+        // Get all members with their attendance records
+        const members = await this.prisma.member.findMany({
           include: {
-            event: true,
+            attendance: {
+              where: semester
+                ? {
+                    event: {
+                      semester: semester,
+                    },
+                  }
+                : undefined,
+              include: {
+                event: true,
+              },
+            },
           },
-        },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
+
+        // Calculate statistics for each member
+        return members.map((member) => {
+          const bucketCounts = {
+            workshops_socials: 0,
+            fundraiser_community_service: 0,
+            gbm: 0,
+          };
+
+          let totalEvents = 0;
+
+          // Count events by bucket
+          for (const attendance of member.attendance) {
+            const bucket = getEventBucket(attendance.event.category);
+            // Only count categories that are part of achievement buckets
+            // COMMITTEE_PARTICIPATION is excluded
+            if (
+              attendance.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+            ) {
+              bucketCounts[bucket]++;
+              totalEvents++;
+            }
+          }
+
+          return {
+            id: member.id,
+            email: member.email,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            role: member.role,
+            isActive: member.isActive,
+            createdAt: member.createdAt,
+            updatedAt: member.updatedAt,
+            // Statistics
+            workshopsAttended: bucketCounts.workshops_socials,
+            gbmAttended: bucketCounts.gbm,
+            communityServiceAttended: bucketCounts.fundraiser_community_service,
+            totalEvents,
+          };
+        });
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // Calculate statistics for each member
-    return members.map((member) => {
-      const bucketCounts = {
-        workshops_socials: 0,
-        fundraiser_community_service: 0,
-        gbm: 0,
-      };
-
-      let totalEvents = 0;
-
-      // Count events by bucket
-      for (const attendance of member.attendance) {
-        const bucket = getEventBucket(attendance.event.category);
-        // Only count categories that are part of achievement buckets
-        // COMMITTEE_PARTICIPATION is excluded
-        if (
-          attendance.event.category !== EventCategory.COMMITTEE_PARTICIPATION
-        ) {
-          bucketCounts[bucket]++;
-          totalEvents++;
-        }
-      }
-
-      return {
-        id: member.id,
-        email: member.email,
-        firstName: member.firstName,
-        lastName: member.lastName,
-        role: member.role,
-        isActive: member.isActive,
-        createdAt: member.createdAt,
-        updatedAt: member.updatedAt,
-        // Statistics
-        workshopsAttended: bucketCounts.workshops_socials,
-        gbmAttended: bucketCounts.gbm,
-        communityServiceAttended: bucketCounts.fundraiser_community_service,
-        totalEvents,
-      };
-    });
+      180, // 3 minutes
+    );
   }
 
   /**

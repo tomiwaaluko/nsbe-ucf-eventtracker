@@ -43,6 +43,7 @@
     "jose": "^6.1.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+    "node-cache": "^5.1.2",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"

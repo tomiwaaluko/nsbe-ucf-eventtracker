@@ -15,6 +15,7 @@ import {
   Shield,
   Settings,
   Construction,
+  Trophy,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -68,6 +69,13 @@ const menuItems = [
     id: "friends",
     label: "Friends",
     icon: Users,
+    roles: ["member", "admin", "super_admin"],
+    section: "main",
+  },
+  {
+    id: "leaderboard",
+    label: "Leaderboard",
+    icon: Trophy,
     roles: ["member", "admin", "super_admin"],
     section: "main",
   },

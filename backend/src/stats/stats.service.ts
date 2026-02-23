@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 import { EventCategory } from '@prisma/client';
 
 /**
@@ -46,7 +47,10 @@ export interface MemberProgress {
 
 @Injectable()
 export class StatsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async getMemberProgress(
     memberId: string,
@@ -120,7 +124,11 @@ export class StatsService {
   }
 
   async get111Leaderboard(semester: string) {
-    const members = await this.prisma.member.findMany({
+    // Cache 111 leaderboard for 5 minutes
+    return this.cache.wrap(
+      `leaderboard:111:${semester}`,
+      async () => {
+        const members = await this.prisma.member.findMany({
       include: {
         attendance: {
           where: {
@@ -184,81 +192,91 @@ export class StatsService {
         return a.completed111At.getTime() - b.completed111At.getTime();
       });
 
-    return leaderboard.map((m, index) => ({
-      ...m,
-      rank: index + 1,
-    }));
+        return leaderboard.map((m, index) => ({
+          ...m,
+          rank: index + 1,
+        }));
+      },
+      300, // 5 minutes
+    );
   }
 
   async get333Leaderboard(semester: string) {
-    const members = await this.prisma.member.findMany({
-      include: {
-        attendance: {
-          where: {
-            event: {
-              semester,
+    // Cache 333 leaderboard for 5 minutes
+    return this.cache.wrap(
+      `leaderboard:333:${semester}`,
+      async () => {
+        const members = await this.prisma.member.findMany({
+          include: {
+            attendance: {
+              where: {
+                event: {
+                  semester,
+                },
+              },
+              include: {
+                event: true,
+              },
+              orderBy: {
+                checkedInAt: 'asc',
+              },
             },
           },
-          include: {
-            event: true,
-          },
-          orderBy: {
-            checkedInAt: 'asc',
-          },
-        },
+        });
+
+        const leaderboard = members
+          .map((member) => {
+            const bucketCounts = {
+              [EventBucket.WORKSHOPS_SOCIALS]: 0,
+              [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
+              [EventBucket.GBM]: 0,
+            };
+
+            let completed333At: Date | undefined;
+
+            for (const record of member.attendance) {
+              const bucket = getEventBucket(record.event.category);
+              // Only count categories that are part of achievement buckets
+              if (
+                record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+              ) {
+                bucketCounts[bucket]++;
+              }
+
+              // Check if 333 requirement met (3 from each bucket)
+              if (
+                !completed333At &&
+                bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
+                bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
+                bucketCounts[EventBucket.GBM] >= 3
+              ) {
+                completed333At = record.checkedInAt;
+              }
+            }
+
+            return {
+              memberId: member.id,
+              email: member.email,
+              firstName: member.firstName,
+              lastName: member.lastName,
+              completed333At,
+              hasCompleted: !!completed333At,
+            };
+          })
+          .filter((m) => m.hasCompleted)
+          .sort((a, b) => {
+            if (!a.completed333At) return 1;
+            if (!b.completed333At) return -1;
+            return a.completed333At.getTime() - b.completed333At.getTime();
+          });
+
+        return leaderboard.map((m, index) => ({
+          ...m,
+          rank: index + 1,
+        }));
       },
-    });
-
-    const leaderboard = members
-      .map((member) => {
-        const bucketCounts = {
-          [EventBucket.WORKSHOPS_SOCIALS]: 0,
-          [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
-          [EventBucket.GBM]: 0,
-        };
-
-        let completed333At: Date | undefined;
-
-        for (const record of member.attendance) {
-          const bucket = getEventBucket(record.event.category);
-          // Only count categories that are part of achievement buckets
-          if (
-            record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
-          ) {
-            bucketCounts[bucket]++;
-          }
-
-          // Check if 333 requirement met (3 from each bucket)
-          if (
-            !completed333At &&
-            bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
-            bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
-            bucketCounts[EventBucket.GBM] >= 3
-          ) {
-            completed333At = record.checkedInAt;
-          }
-        }
-
-        return {
-          memberId: member.id,
-          email: member.email,
-          firstName: member.firstName,
-          lastName: member.lastName,
-          completed333At,
-          hasCompleted: !!completed333At,
-        };
-      })
-      .filter((m) => m.hasCompleted)
-      .sort((a, b) => {
-        if (!a.completed333At) return 1;
-        if (!b.completed333At) return -1;
-        return a.completed333At.getTime() - b.completed333At.getTime();
-      });
-
-    return leaderboard.map((m, index) => ({
-      ...m,
-      rank: index + 1,
-    }));
+      300, // 5 minutes
+    );
   }
 
   async getAdminStats(semester: string) {
@@ -386,75 +404,84 @@ export class StatsService {
    * @param limit Optional limit for top N members (default: all)
    */
   async getGlobalLeaderboard(semester?: string, limit?: number) {
-    // Query all members with their attendance count
-    const members = await this.prisma.member.findMany({
-      where: {
-        isActive: true,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-        major: true,
-        graduationYear: true,
-        attendance: {
-          where: semester
-            ? {
-                event: {
-                  semester,
-                },
-              }
-            : undefined,
-          select: {
-            id: true, // Just need to count
+    // Cache leaderboard for 5 minutes - it's an expensive query
+    const cacheKey = `leaderboard:${semester || 'all'}:${limit || 'all'}`;
+
+    return this.cache.wrap(
+      cacheKey,
+      async () => {
+        // Query all members with their attendance count
+        const members = await this.prisma.member.findMany({
+          where: {
+            isActive: true,
           },
-        },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+            major: true,
+            graduationYear: true,
+            attendance: {
+              where: semester
+                ? {
+                    event: {
+                      semester,
+                    },
+                  }
+                : undefined,
+              select: {
+                id: true, // Just need to count
+              },
+            },
+          },
+        });
+
+        // Map to leaderboard entries with event counts
+        const leaderboardData = members.map((member) => ({
+          memberId: member.id,
+          firstName: member.firstName || 'Unknown',
+          lastName: member.lastName || 'User',
+          photoUrl: member.photoUrl,
+          major: member.major,
+          graduationYear: member.graduationYear,
+          totalEventsAttended: member.attendance.length,
+        }));
+
+        // Sort by event count descending (highest first)
+        leaderboardData.sort((a, b) => b.totalEventsAttended - a.totalEventsAttended);
+
+        // Apply limit if specified
+        const limitedData = limit ? leaderboardData.slice(0, limit) : leaderboardData;
+
+        // Assign ranks (handle ties - same count = same rank)
+        let currentRank = 1;
+        let previousCount = -1;
+
+        const rankedData = limitedData.map((entry, index) => {
+          if (entry.totalEventsAttended !== previousCount) {
+            currentRank = index + 1;
+          }
+          previousCount = entry.totalEventsAttended;
+
+          // Calculate percentile (top X%)
+          const percentile = ((index + 1) / leaderboardData.length) * 100;
+
+          return {
+            rank: currentRank,
+            ...entry,
+            percentile: Math.round(percentile),
+          };
+        });
+
+        return {
+          semester: semester || 'All Time',
+          totalMembers: leaderboardData.length,
+          leaderboard: rankedData,
+        };
       },
-    });
-
-    // Map to leaderboard entries with event counts
-    const leaderboardData = members.map((member) => ({
-      memberId: member.id,
-      firstName: member.firstName || 'Unknown',
-      lastName: member.lastName || 'User',
-      photoUrl: member.photoUrl,
-      major: member.major,
-      graduationYear: member.graduationYear,
-      totalEventsAttended: member.attendance.length,
-    }));
-
-    // Sort by event count descending (highest first)
-    leaderboardData.sort((a, b) => b.totalEventsAttended - a.totalEventsAttended);
-
-    // Apply limit if specified
-    const limitedData = limit ? leaderboardData.slice(0, limit) : leaderboardData;
-
-    // Assign ranks (handle ties - same count = same rank)
-    let currentRank = 1;
-    let previousCount = -1;
-
-    const rankedData = limitedData.map((entry, index) => {
-      if (entry.totalEventsAttended !== previousCount) {
-        currentRank = index + 1;
-      }
-      previousCount = entry.totalEventsAttended;
-
-      // Calculate percentile (top X%)
-      const percentile = ((index + 1) / leaderboardData.length) * 100;
-
-      return {
-        rank: currentRank,
-        ...entry,
-        percentile: Math.round(percentile),
-      };
-    });
-
-    return {
-      semester: semester || 'All Time',
-      totalMembers: leaderboardData.length,
-      leaderboard: rankedData,
-    };
+      300, // 5 minutes
+    );
   }
 
   /**

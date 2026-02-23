@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { CacheModule } from './cache/cache.module';
 import { AuthModule } from './auth/auth.module';
 import { MembersModule } from './members/members.module';
 import { EventsModule } from './events/events.module';
@@ -15,6 +16,7 @@ import { ApiKeyMiddleware } from './common/api-key.middleware';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule, // Global cache available to all modules
     PrismaModule,
     AuthModule,
     MembersModule,

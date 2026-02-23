@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { ManualCheckInDto } from './dto/manual-check-in.dto';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   async checkIn(memberId: string, dto: CheckInDto) {
     const event = await this.prisma.event.findUnique({
@@ -67,6 +71,11 @@ export class AttendanceService {
       },
     });
 
+    // Invalidate related caches (leaderboard, user stats, member lists)
+    this.cache.delPattern('leaderboard:');
+    this.cache.delPattern('members:');
+    this.cache.del(`user:${memberId}`);
+
     return {
       ...attendance,
       event: attendance.event,
@@ -74,7 +83,7 @@ export class AttendanceService {
   }
 
   async manualCheckIn(adminId: string, dto: ManualCheckInDto) {
-    return this.prisma.attendance.upsert({
+    const result = await this.prisma.attendance.upsert({
       where: {
         memberId_eventId: {
           memberId: dto.memberId,
@@ -88,6 +97,13 @@ export class AttendanceService {
         checkInMethod: 'manual',
       },
     });
+
+    // Invalidate related caches
+    this.cache.delPattern('leaderboard:');
+    this.cache.delPattern('members:');
+    this.cache.del(`user:${dto.memberId}`);
+
+    return result;
   }
 
   async getEventAttendance(eventId: string) {
