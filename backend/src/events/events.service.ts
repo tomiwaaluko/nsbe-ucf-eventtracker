@@ -14,13 +14,55 @@ export class EventsService {
     private cache: CacheService,
   ) {}
 
+  /**
+   * Generate a random 6-character alphanumeric code for check-in
+   * Format: Uppercase letters and digits (e.g., "A3B9C2")
+   */
+  private generateCheckInCode(): string {
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude ambiguous chars: 0, O, 1, I
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return code;
+  }
+
+  /**
+   * Generate a unique check-in code, ensuring no duplicates
+   */
+  private async generateUniqueCheckInCode(): Promise<string> {
+    let code = this.generateCheckInCode();
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    // Check for uniqueness
+    while (attempts < maxAttempts) {
+      const existing = await this.prisma.event.findUnique({
+        where: { checkInCode: code },
+      });
+
+      if (!existing) {
+        return code;
+      }
+
+      // Collision detected, generate new code
+      code = this.generateCheckInCode();
+      attempts++;
+    }
+
+    throw new Error('Failed to generate unique check-in code after maximum attempts');
+  }
+
   async create(dto: CreateEventDto, creatorId: string) {
+    const checkInCode = await this.generateUniqueCheckInCode();
+
     const event = await this.prisma.event.create({
       data: {
         ...dto,
         startTime: new Date(dto.startTime),
         endTime: new Date(dto.endTime),
         qrSecret: randomUUID(),
+        checkInCode,
         createdById: creatorId,
       },
     });

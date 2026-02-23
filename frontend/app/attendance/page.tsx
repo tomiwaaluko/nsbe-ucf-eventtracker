@@ -14,7 +14,7 @@ export default function Attendance() {
   ): Promise<{ success: boolean; message: string; event?: any }> => {
     try {
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         return {
           success: false,
@@ -40,11 +40,43 @@ export default function Attendance() {
     }
   };
 
+  const handleCheckInWithCode = async (
+    code: string
+  ): Promise<{ success: boolean; message: string; event?: any }> => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return {
+          success: false,
+          message: "Please log in to check in to events.",
+        };
+      }
+
+      const data = await api.checkInWithCode(token, code);
+
+      // Backend returns attendance record with event included
+      const result = {
+        success: true,
+        message: "Successfully checked in!",
+        event: data.event,
+      };
+      return result;
+    } catch (error: any) {
+      const errorResult = {
+        success: false,
+        message: error.message || "Failed to check in. Please try again.",
+      };
+      return errorResult;
+    }
+  };
+
   return (
     <DashboardLayout>
       <AttendancePage
         upcomingEvents={upcomingEvents}
         onCheckIn={handleCheckIn}
+        onCheckInWithCode={handleCheckInWithCode}
       />
     </DashboardLayout>
   );

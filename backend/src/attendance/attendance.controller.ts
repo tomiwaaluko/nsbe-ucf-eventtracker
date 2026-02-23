@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CheckInDto } from './dto/check-in.dto';
+import { CheckInWithCodeDto } from './dto/check-in-code.dto';
 import { ManualCheckInDto } from './dto/manual-check-in.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { MembersService } from '../members/members.service';
@@ -27,6 +28,11 @@ export class AttendanceController {
   @Post('check-in')
   async checkIn(@Req() req, @Body() dto: CheckInDto) {
     return this.attendanceService.checkIn(req.user.id, dto);
+  }
+
+  @Post('check-in-code')
+  async checkInWithCode(@Req() req, @Body() dto: CheckInWithCodeDto) {
+    return this.attendanceService.checkInWithCode(req.user.id, dto);
   }
 
   @Post('manual')

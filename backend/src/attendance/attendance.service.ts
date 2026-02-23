@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { CheckInDto } from './dto/check-in.dto';
+import { CheckInWithCodeDto } from './dto/check-in-code.dto';
 import { ManualCheckInDto } from './dto/manual-check-in.dto';
 
 @Injectable()
@@ -56,6 +57,70 @@ export class AttendanceService {
         memberId,
         eventId: dto.eventId,
         checkInMethod: 'qr',
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            category: true,
+          },
+        },
+      },
+    });
+
+    // Invalidate related caches (leaderboard, user stats, member lists)
+    this.cache.delPattern('leaderboard:');
+    this.cache.delPattern('members:');
+    this.cache.del(`user:${memberId}`);
+
+    return {
+      ...attendance,
+      event: attendance.event,
+    };
+  }
+
+  async checkInWithCode(memberId: string, dto: CheckInWithCodeDto) {
+    // Find event by check-in code
+    const event = await this.prisma.event.findUnique({
+      where: { checkInCode: dto.code.toUpperCase() },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Invalid check-in code');
+    }
+
+    if (!event.isActive) {
+      throw new BadRequestException('Event is not active');
+    }
+
+    const now = new Date();
+    if (now < event.startTime || now > event.endTime) {
+      throw new BadRequestException('Event is not currently running');
+    }
+
+    // Check if already checked in
+    const existingAttendance = await this.prisma.attendance.findUnique({
+      where: {
+        memberId_eventId: {
+          memberId,
+          eventId: event.id,
+        },
+      },
+    });
+
+    if (existingAttendance) {
+      throw new BadRequestException('You have already checked into this event');
+    }
+
+    const attendance = await this.prisma.attendance.create({
+      data: {
+        memberId,
+        eventId: event.id,
+        checkInMethod: 'code',
       },
       include: {
         event: {

@@ -27,6 +27,7 @@ interface Event {
   endTime: Date | string;
   location?: string;
   isActive: boolean;
+  checkInCode?: string;
 }
 
 interface EventQRDisplayProps {
@@ -194,8 +195,17 @@ export function EventQRDisplay({
             </div>
           )}
 
+          {event.checkInCode && (
+            <div className="mt-8 bg-[#00a651] text-white rounded-xl p-6 shadow-lg">
+              <p className="text-lg mb-2 opacity-90 text-center">Or use Check-In Code:</p>
+              <p className="text-5xl font-bold tracking-widest text-center font-mono">
+                {event.checkInCode}
+              </p>
+            </div>
+          )}
+
           <p className="mt-8 text-gray-600 text-center max-w-md">
-            Scan the QR code in the app in the check-in section
+            Scan the QR code or enter the check-in code in the app
           </p>
         </div>
       </motion.div>
@@ -274,12 +284,27 @@ export function EventQRDisplay({
               </div>
             </div>
 
+            {event.checkInCode && (
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold mb-2">Check-In Code</h3>
+                <div className="bg-[#00a651] text-white rounded-lg p-4">
+                  <p className="text-sm mb-1 opacity-90">Enter this code:</p>
+                  <p className="text-3xl font-bold tracking-widest text-center font-mono">
+                    {event.checkInCode}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Members can enter this code instead of scanning the QR code
+                </p>
+              </div>
+            )}
+
             <div className="pt-4 border-t">
               <h3 className="font-semibold mb-2">Instructions</h3>
               <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
                 <li>Open the NSBE UCF app</li>
                 <li>Navigate to "Check In"</li>
-                <li>Scan this QR code</li>
+                <li>Scan the QR code OR enter the check-in code</li>
                 <li>Confirm attendance</li>
               </ol>
             </div>

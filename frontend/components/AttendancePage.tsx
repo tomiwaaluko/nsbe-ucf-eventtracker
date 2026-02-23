@@ -46,6 +46,9 @@ interface AttendancePageProps {
     eventId: string,
     qrSecret: string
   ) => Promise<{ success: boolean; message: string; event?: any }>;
+  onCheckInWithCode?: (
+    code: string
+  ) => Promise<{ success: boolean; message: string; event?: any }>;
 }
 
 const categoryConfig = {
@@ -69,6 +72,7 @@ const categoryConfig = {
 export function AttendancePage({
   upcomingEvents,
   onCheckIn,
+  onCheckInWithCode,
 }: AttendancePageProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -78,6 +82,8 @@ export function AttendancePage({
     event?: any;
   } | null>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [checkInCode, setCheckInCode] = useState("");
+  const [isCodeCheckIn, setIsCodeCheckIn] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomMin, setZoomMin] = useState(1);
   const [zoomMax, setZoomMax] = useState(4);
@@ -90,6 +96,26 @@ export function AttendancePage({
   const [cameras, setCameras] = useState<any[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState<number>(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+
+  // Helper function to determine if camera is front-facing
+  const isFrontCamera = (camera: any): boolean => {
+    const label = camera.label?.toLowerCase() || "";
+    return label.includes("front") || label.includes("user") || label.includes("facing user");
+  };
+
+  // Helper function to determine if camera is back-facing
+  const isBackCamera = (camera: any): boolean => {
+    const label = camera.label?.toLowerCase() || "";
+    return (
+      label.includes("back") ||
+      label.includes("rear") ||
+      label.includes("environment") ||
+      label.includes("facing back") ||
+      // On iOS, cameras without "front" in the label are usually back cameras
+      (!label.includes("front") && !label.includes("user"))
+    );
+  };
 
   // Get available cameras on mount
   useEffect(() => {
@@ -99,20 +125,24 @@ export function AttendancePage({
         if (devices && devices.length > 0) {
           setCameras(devices);
 
-          // Check localStorage for preferred camera
-          const preferredCameraId = localStorage.getItem("preferredCameraId");
-          if (preferredCameraId) {
-            const index = devices.findIndex((d) => d.id === preferredCameraId);
-            if (index !== -1) {
-              setCurrentCameraIndex(index);
-            } else {
-              // Default to back camera (usually last in array)
-              setCurrentCameraIndex(devices.length > 1 ? devices.length - 1 : 0);
-            }
+          // Check localStorage for preferred facing mode
+          const preferredFacingMode = localStorage.getItem("preferredCameraFacing") as "user" | "environment" | null;
+          const targetFacing = preferredFacingMode || "environment";
+          setFacingMode(targetFacing);
+
+          // Find the first camera matching the preferred facing mode
+          let targetIndex = 0;
+          if (targetFacing === "user") {
+            // Look for front camera
+            targetIndex = devices.findIndex(isFrontCamera);
+            if (targetIndex === -1) targetIndex = 0;
           } else {
-            // Default to back camera (usually last in array)
-            setCurrentCameraIndex(devices.length > 1 ? devices.length - 1 : 0);
+            // Look for back camera (prefer the first back camera, usually the main wide camera)
+            targetIndex = devices.findIndex(isBackCamera);
+            if (targetIndex === -1) targetIndex = devices.length - 1;
           }
+
+          setCurrentCameraIndex(targetIndex);
         }
       } catch (error) {
         console.error("Failed to get cameras:", error);
@@ -251,8 +281,8 @@ export function AttendancePage({
         // Use the currently selected camera
         const cameraId = cameras[currentCameraIndex].id;
 
-        // Save preferred camera to localStorage
-        localStorage.setItem("preferredCameraId", cameraId);
+        // Save preferred facing mode to localStorage
+        localStorage.setItem("preferredCameraFacing", facingMode);
 
         await scanner.start(
           cameraId,
@@ -355,7 +385,7 @@ export function AttendancePage({
     }
   };
 
-  // Flip camera function
+  // Flip camera function - toggles between front and back
   const flipCamera = async () => {
     if (cameras.length <= 1) {
       return; // Only one camera available
@@ -364,9 +394,32 @@ export function AttendancePage({
     // Stop current scanner
     await stopCamera();
 
-    // Switch to next camera
-    const nextIndex = (currentCameraIndex + 1) % cameras.length;
-    setCurrentCameraIndex(nextIndex);
+    // Toggle facing mode
+    const newFacingMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(newFacingMode);
+
+    // Save preference
+    localStorage.setItem("preferredCameraFacing", newFacingMode);
+
+    // Find camera with the new facing mode
+    let targetIndex = 0;
+    if (newFacingMode === "user") {
+      // Switch to front camera
+      targetIndex = cameras.findIndex(isFrontCamera);
+      if (targetIndex === -1) {
+        // No front camera found, use first camera
+        targetIndex = 0;
+      }
+    } else {
+      // Switch to back camera (prefer first back camera - usually the main wide camera)
+      targetIndex = cameras.findIndex(isBackCamera);
+      if (targetIndex === -1) {
+        // No back camera found, use last camera
+        targetIndex = cameras.length - 1;
+      }
+    }
+
+    setCurrentCameraIndex(targetIndex);
 
     // Small delay before starting with new camera
     setTimeout(() => {
@@ -679,6 +732,77 @@ export function AttendancePage({
                     Open Camera to Scan
                   </motion.button>
 
+                  {onCheckInWithCode && (
+                    <>
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t-2 border-black/20" />
+                        </div>
+                        <div className="relative flex justify-center">
+                          <span
+                            className={`bg-white px-4 text-sm font-bold uppercase text-black/70 ${bricolage.className}`}
+                          >
+                            Or
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label
+                          className={`block text-sm font-bold text-black uppercase ${bricolage.className}`}
+                        >
+                          Enter Check-In Code
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={checkInCode}
+                            onChange={(e) => setCheckInCode(e.target.value.toUpperCase())}
+                            placeholder="ABC123"
+                            maxLength={6}
+                            className="flex-1 px-4 py-3 border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] text-lg font-mono uppercase font-bold focus:outline-none focus:shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all"
+                            disabled={isCodeCheckIn}
+                          />
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={async () => {
+                              if (checkInCode.length !== 6) {
+                                setScanError("Please enter a 6-character code");
+                                return;
+                              }
+
+                              setIsCodeCheckIn(true);
+                              setCheckInResult(null);
+                              setScanError("");
+
+                              const result = await onCheckInWithCode(checkInCode);
+
+                              if (result.success) {
+                                setCheckInResult(result);
+                                setShowSuccessModal(true);
+                                setCheckInCode("");
+                              } else {
+                                setScanError(result.message);
+                                setCheckInResult(result);
+                              }
+
+                              setIsCodeCheckIn(false);
+                            }}
+                            disabled={isCodeCheckIn || checkInCode.length !== 6}
+                            className="px-6 py-3 bg-[#ffb81c] border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase hover:bg-[#e6a61a] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                            style={{ fontFamily: "var(--font-bricolage)" }}
+                          >
+                            {isCodeCheckIn ? "..." : "Check In"}
+                          </motion.button>
+                        </div>
+                        <p className={`text-xs text-black/60 ${sora.className}`}>
+                          Enter the 6-character code from the event organizer
+                        </p>
+                      </div>
+                    </>
+                  )}
+
                   {activeEvents.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -783,7 +907,7 @@ export function AttendancePage({
                       <p
                         className={`text-sm text-black/70 text-center ${sora.className} font-medium`}
                       >
-                        Using: {cameras[currentCameraIndex]?.label || "Camera"}
+                        Using: {facingMode === "environment" ? "Back Camera" : "Front Camera"}
                         {cameras.length > 1 && " • Tap flip to switch"}
                       </p>
                     )}

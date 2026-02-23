@@ -347,6 +347,36 @@ export const api = {
     return result;
   },
 
+  checkInWithCode: async (token: string, code: string) => {
+    const url = `${API_URL}/attendance/check-in-code`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: apiHeaders({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify({ code: code.toUpperCase() }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { message: errorText || response.statusText };
+      }
+
+      const errorMessage = errorData.message || `Failed to check in: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result;
+  },
+
   manualCheckIn: async (
     token: string,
     data: { eventId: string; memberId: string }

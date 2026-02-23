@@ -74,6 +74,7 @@ model Event {
   endTime     DateTime
   location    String?
   qrSecret    String
+  checkInCode String?        @unique
   isActive    Boolean        @default(true)
 
   createdById String?
@@ -88,7 +89,7 @@ model Attendance {
   memberId      String
   eventId       String
   checkedInAt   DateTime @default(now())
-  checkInMethod String   @default("qr") // qr | manual | exception
+  checkInMethod String   @default("qr") // qr | code | manual | exception
 
   member Member @relation(fields: [memberId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
