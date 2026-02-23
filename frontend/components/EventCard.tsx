@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
-import { Calendar, Clock, MapPin, Users, Tag, Check, CalendarPlus, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Users } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { getEventCategoryLabel, EventCategory } from "@/lib/constants/event-categories";
-import { useState } from "react";
 
 interface Event {
   id: string;
@@ -15,16 +14,12 @@ interface Event {
   location?: string;
   attendeeCount?: number;
   isActive: boolean;
-  isPlanning?: boolean;
-  plannedCount?: number;
-  friendsPlanning?: Array<{ firstName: string; lastName: string }>;
 }
 
 interface EventCardProps {
   event: Event;
   onViewDetails: (eventId: string) => void;
   onCheckIn?: (eventId: string) => void;
-  onTogglePlan?: (eventId: string, currentlyPlanning: boolean) => void;
   showCheckIn?: boolean;
 }
 
@@ -65,11 +60,8 @@ export function EventCard({
   event,
   onViewDetails,
   onCheckIn,
-  onTogglePlan,
   showCheckIn = false,
 }: EventCardProps) {
-  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
-
   const config = categoryConfig[event.category] || {
     label: getEventCategoryLabel(event.category),
     color: "bg-gray-100 text-gray-700 border-gray-200",
@@ -162,67 +154,6 @@ export function EventCard({
           </div>
         )}
       </div>
-
-      {/* Plan to Attend Section */}
-      {!isPast && onTogglePlan && (
-        <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-600">
-                {event.plannedCount || 0} planning
-              </span>
-              {event.friendsPlanning && event.friendsPlanning.length > 0 && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                  {event.friendsPlanning.length} friend{event.friendsPlanning.length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-            <Button
-              variant={event.isPlanning ? "default" : "outline"}
-              size="sm"
-              onClick={async () => {
-                setIsLoadingPlan(true);
-                try {
-                  await onTogglePlan(event.id, event.isPlanning || false);
-                } finally {
-                  setIsLoadingPlan(false);
-                }
-              }}
-              disabled={isLoadingPlan}
-              className={event.isPlanning ? "bg-[#00a651] hover:bg-[#008a44] text-white" : ""}
-            >
-              {isLoadingPlan ? (
-                <>
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  Loading...
-                </>
-              ) : event.isPlanning ? (
-                <>
-                  <Check className="w-3 h-3 mr-1" />
-                  Planning
-                </>
-              ) : (
-                <>
-                  <CalendarPlus className="w-3 h-3 mr-1" />
-                  Plan to Go
-                </>
-              )}
-            </Button>
-          </div>
-          {event.friendsPlanning && event.friendsPlanning.length > 0 && (
-            <div className="mt-2 text-xs text-gray-500">
-              {event.friendsPlanning.slice(0, 3).map((friend, i) => (
-                <span key={i}>
-                  {friend.firstName} {friend.lastName}
-                  {i < Math.min(2, event.friendsPlanning!.length - 1) ? ", " : ""}
-                </span>
-              ))}
-              {event.friendsPlanning.length > 3 && ` +${event.friendsPlanning.length - 3} more`}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Actions */}
       <div className="flex gap-2 mt-4 flex-shrink-0">

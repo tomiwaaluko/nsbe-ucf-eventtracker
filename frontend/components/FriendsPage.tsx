@@ -229,7 +229,7 @@ export function FriendsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02, rotate: 0.5 }}
-            className="relative h-full"
+            className="relative h-full max-w-full"
           >
             <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
             <div className="relative bg-white border-4 border-black p-5 shadow-[6px_6px_0_0_rgba(0,0,0,1)] h-full flex flex-col">
@@ -382,7 +382,7 @@ export function FriendsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02, rotate: 0.5 }}
-            className="relative h-full"
+            className="relative h-full max-w-full"
           >
             <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
             <div className="relative bg-white border-4 border-black p-5 shadow-[6px_6px_0_0_rgba(0,0,0,1)] h-full flex flex-col">
@@ -463,7 +463,7 @@ export function FriendsPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative"
+        className="relative max-w-full"
       >
         <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
         <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
@@ -478,10 +478,10 @@ export function FriendsPage() {
               requester ? (
                 <div
                   key={requester.id}
-                  className="flex items-center justify-between p-4 border-2 border-black bg-black/5"
+                  className="flex items-center justify-between gap-3 p-4 border-2 border-black bg-black/5"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
                       <div className="relative w-12 h-12 bg-[#00a651] border-2 border-black flex items-center justify-center overflow-hidden">
                         {requester.photoUrl ? (
@@ -502,16 +502,16 @@ export function FriendsPage() {
                         )}
                       </div>
                     </div>
-                    <div>
-                      <p className={`font-extrabold text-black ${bricolage.className}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className={`font-extrabold text-black ${bricolage.className} truncate`}>
                         {requester.firstName} {requester.lastName}
                       </p>
-                      <p className={`text-sm text-black font-medium ${sora.className}`}>
+                      <p className={`text-sm text-black font-medium ${sora.className} truncate`}>
                         {requester.major || "No major listed"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <Button
                       size="sm"
                       onClick={() => handleAcceptRequest(requester.id)}
@@ -546,7 +546,7 @@ export function FriendsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="relative"
+        className="relative max-w-full"
       >
         <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
         <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
@@ -561,10 +561,10 @@ export function FriendsPage() {
               recipient ? (
                 <div
                   key={recipient.id}
-                  className="flex items-center justify-between p-4 border-2 border-black bg-black/5"
+                  className="flex items-center justify-between gap-3 p-4 border-2 border-black bg-black/5"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
                       <div className="relative w-12 h-12 bg-[#ffb81c] border-2 border-black flex items-center justify-center overflow-hidden">
                         {recipient.photoUrl ? (
@@ -585,8 +585,8 @@ export function FriendsPage() {
                         )}
                       </div>
                     </div>
-                    <div>
-                      <p className={`font-extrabold text-black ${bricolage.className}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className={`font-extrabold text-black ${bricolage.className} truncate`}>
                         {recipient.firstName} {recipient.lastName}
                       </p>
                       <p className={`text-sm text-black font-medium ${sora.className}`}>
@@ -617,12 +617,12 @@ export function FriendsPage() {
 
   return (
     <DashboardLayout>
-      <div className={`${bricolage.variable} ${sora.variable} space-y-6 p-4 lg:p-8`}>
+      <div className={`${bricolage.variable} ${sora.variable} space-y-6 p-4 lg:p-8 overflow-x-hidden max-w-full`}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative"
+          className="relative max-w-full"
         >
           <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
           <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8">
@@ -640,7 +640,7 @@ export function FriendsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative"
+          className="relative max-w-full"
         >
           <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
           <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
@@ -659,15 +659,15 @@ export function FriendsPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center justify-center gap-2 px-4 py-4 border-r-4 last:border-r-0 border-black transition-all ${
+                    className={`relative flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 border-r-4 last:border-r-0 border-black transition-all min-w-0 ${
                       activeTab === tab.id
                         ? "bg-[#00a651] text-white"
                         : "bg-white text-black hover:bg-black/5"
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                     <span
-                      className={`font-bold text-sm md:text-base ${bricolage.className}`}
+                      className={`font-bold text-xs sm:text-sm md:text-base ${bricolage.className} truncate`}
                     >
                       {tab.label}
                     </span>

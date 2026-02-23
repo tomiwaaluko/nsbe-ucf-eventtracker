@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content: pt-14 on mobile for top bar, no extra padding on desktop */}
-      <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0">
         {children}
       </main>
 

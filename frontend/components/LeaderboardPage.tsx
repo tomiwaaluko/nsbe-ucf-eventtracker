@@ -167,13 +167,13 @@ export function LeaderboardPage() {
 
   return (
     <DashboardLayout>
-      <div className={`${bricolage.variable} ${sora.variable} space-y-6 p-4 lg:p-8`}>
+      <div className={`${bricolage.variable} ${sora.variable} space-y-6 p-4 lg:p-8 overflow-x-hidden max-w-full`}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30, rotate: -1 }}
           animate={{ opacity: 1, y: 0, rotate: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative"
+          className="relative max-w-full"
         >
           <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
           <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
@@ -261,7 +261,7 @@ export function LeaderboardPage() {
                 y: -4,
                 transition: { duration: 0.2 },
               }}
-              className="relative"
+              className="relative max-w-full"
             >
               <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
               <div
@@ -301,7 +301,7 @@ export function LeaderboardPage() {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
-            className="relative"
+            className="relative max-w-full"
           >
             <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
             <div className="relative bg-[#00a651] border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
@@ -337,7 +337,7 @@ export function LeaderboardPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.7 }}
-          className="relative"
+          className="relative max-w-full"
         >
           <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
           <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-6">
@@ -359,7 +359,7 @@ export function LeaderboardPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.05 * entry.rank }}
                     whileHover={{ x: 4, y: -2, transition: { duration: 0.2 } }}
-                    className="relative"
+                    className="relative max-w-full"
                   >
                     <div
                       className={`absolute inset-0 ${
@@ -373,18 +373,18 @@ export function LeaderboardPage() {
                           : "bg-white shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
                       }`}
                     >
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                         {/* Rank */}
-                        <div className="flex items-center justify-center w-12">
+                        <div className="flex items-center justify-center w-8 sm:w-12 flex-shrink-0">
                           {getRankIcon(entry.rank) || (
-                            <span className={`text-xl font-extrabold text-black ${bricolage.className}`}>
+                            <span className={`text-lg sm:text-xl font-extrabold text-black ${bricolage.className}`}>
                               {entry.rank}
                             </span>
                           )}
                         </div>
 
                         {/* Avatar */}
-                        <Avatar className="h-12 w-12 border-2 border-black">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-black flex-shrink-0">
                           <AvatarImage src={entry.photoUrl} />
                           <AvatarFallback className={`bg-[#00a651] text-white font-bold ${bricolage.className}`}>
                             {getInitials(entry.firstName, entry.lastName)}
@@ -392,26 +392,26 @@ export function LeaderboardPage() {
                         </Avatar>
 
                         {/* User Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className={`font-extrabold text-black ${bricolage.className}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className={`font-extrabold text-black text-sm sm:text-base ${bricolage.className} truncate`}>
                               {entry.firstName} {entry.lastName}
                             </p>
                             {entry.isCurrentUser && (
-                              <Badge className="bg-[#00a651] border-2 border-black text-white hover:bg-[#00a651]">
+                              <Badge className="bg-[#00a651] border-2 border-black text-white hover:bg-[#00a651] flex-shrink-0">
                                 You
                               </Badge>
                             )}
                           </div>
-                          <p className={`text-sm text-black/60 ${sora.className}`}>
+                          <p className={`text-xs sm:text-sm text-black/60 ${sora.className} truncate`}>
                             {entry.major || "No major listed"}
                             {entry.graduationYear && ` • Class of ${entry.graduationYear}`}
                           </p>
                         </div>
 
                         {/* Events Count */}
-                        <div className="text-right mr-4">
-                          <p className={`text-3xl font-extrabold text-black ${bricolage.className}`}>
+                        <div className="text-right ml-2 sm:mr-4 flex-shrink-0">
+                          <p className={`text-2xl sm:text-3xl font-extrabold text-black ${bricolage.className}`}>
                             {entry.totalEventsAttended}
                           </p>
                           <p className={`text-xs text-black/60 uppercase ${bricolage.className}`}>
@@ -420,7 +420,7 @@ export function LeaderboardPage() {
                         </div>
 
                         {/* Badge */}
-                        <div className="w-24">{getRankBadge(entry.rank)}</div>
+                        <div className="w-16 sm:w-24 flex-shrink-0 hidden sm:block">{getRankBadge(entry.rank)}</div>
                       </div>
                     </div>
                   </motion.div>

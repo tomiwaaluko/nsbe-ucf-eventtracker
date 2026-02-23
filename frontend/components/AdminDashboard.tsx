@@ -31,15 +31,10 @@ interface AdminDashboardProps {
     activeMembers: number;
     totalEvents: number;
     upcomingEvents: number;
-    totalAttendance: number;
-    averageAttendance: number;
-    membersWithOneOneOne: number;
-    membersWithThreeThreeThree: number;
   };
   attendanceRecords: any[];
   events: any[];
   members: any[];
-  planningStats?: any[];
   onNavigate: (page: string) => void;
 }
 
@@ -48,7 +43,6 @@ export function AdminDashboard({
   attendanceRecords,
   events,
   members,
-  planningStats = [],
   onNavigate,
 }: AdminDashboardProps) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
@@ -251,27 +245,6 @@ export function AdminDashboard({
     });
   }, [events, attendanceRecords]);
 
-  const progressStats = [
-    {
-      label: "1-1-1 Achievement",
-      value: stats.membersWithOneOneOne,
-      total: stats.activeMembers,
-      percentage: stats.activeMembers > 0
-        ? ((stats.membersWithOneOneOne / stats.activeMembers) * 100).toFixed(1)
-        : "0.0",
-      color: "#00a651",
-    },
-    {
-      label: "3-3-3 Achievement",
-      value: stats.membersWithThreeThreeThree,
-      total: stats.activeMembers,
-      percentage: stats.activeMembers > 0
-        ? ((stats.membersWithThreeThreeThree / stats.activeMembers) * 100).toFixed(1)
-        : "0.0",
-      color: "#ffb81c",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#00a651] via-[#008a44] to-[#006830] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -294,7 +267,7 @@ export function AdminDashboard({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
           <StatsCard
             title="Total Members"
@@ -310,53 +283,6 @@ export function AdminDashboard({
             color="#ffb81c"
             subtitle={`${stats.upcomingEvents} upcoming`}
           />
-          <StatsCard
-            title="Total Attendance"
-            value={stats.totalAttendance}
-            icon={<UserCheck className="w-6 h-6" />}
-            color="#ed1c24"
-            subtitle="This semester"
-          />
-          <StatsCard
-            title="Avg. Attendance"
-            value={stats.averageAttendance}
-            icon={<Activity className="w-6 h-6" />}
-            color="#00a651"
-            subtitle="Per event"
-          />
-        </motion.div>
-
-        {/* Achievement Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
-        >
-          <h3 className="text-xl font-semibold text-white mb-6">
-            Member Achievement Progress
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {progressStats.map((stat, index) => (
-              <div key={index} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/90">{stat.label}</span>
-                  <span className="text-sm text-white font-semibold">
-                    {stat.value} / {stat.total} ({stat.percentage}%)
-                  </span>
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-3">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${stat.percentage}%` }}
-                    transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
-                    className="h-3 rounded-full"
-                    style={{ backgroundColor: stat.color }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
         </motion.div>
 
         {/* Charts */}
@@ -653,84 +579,6 @@ export function AdminDashboard({
             )}
           </div>
         </motion.div>
-
-        {/* Expected vs Actual Attendance - Planning Stats */}
-        {planningStats && planningStats.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-white">
-                Expected vs Actual Attendance
-              </h4>
-              <span className="text-xs text-white/70 px-3 py-1 bg-white/10 rounded-full">
-                {planningStats.length} events with planning data
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-white">
-                <thead className="text-sm text-white/70 border-b border-white/20">
-                  <tr>
-                    <th className="pb-3 pr-4 font-medium">Event</th>
-                    <th className="pb-3 pr-4 font-medium">Date</th>
-                    <th className="pb-3 pr-4 font-medium">Category</th>
-                    <th className="pb-3 pr-4 font-medium text-center">Expected</th>
-                    <th className="pb-3 pr-4 font-medium text-center">Actual</th>
-                    <th className="pb-3 font-medium text-center">Rate</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {planningStats.slice(0, 10).map((stat: any, index: number) => {
-                    const rate = stat.attendanceRate || 0;
-                    const rateColor =
-                      rate >= 80
-                        ? "text-green-400"
-                        : rate >= 50
-                        ? "text-yellow-400"
-                        : "text-red-400";
-                    return (
-                      <tr
-                        key={stat.eventId || index}
-                        className="border-b border-white/10 hover:bg-white/5 transition-colors"
-                      >
-                        <td className="py-3 pr-4 font-medium">{stat.eventName}</td>
-                        <td className="py-3 pr-4 text-white/70">
-                          {new Date(stat.startTime).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className="text-xs px-2 py-1 rounded bg-white/10">
-                            {stat.category}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4 text-center">{stat.expectedAttendance}</td>
-                        <td className="py-3 pr-4 text-center">{stat.actualAttendance}</td>
-                        <td className={`py-3 text-center font-semibold ${rateColor}`}>
-                          {rate.toFixed(0)}%
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {planningStats.length > 10 && (
-              <div className="mt-4 pt-4 border-t border-white/10 text-center">
-                <button
-                  onClick={() => onNavigate("admin-events")}
-                  className="text-white/70 hover:text-white text-sm transition-colors"
-                >
-                  View all {planningStats.length} events →
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
 
         {/* Quick Actions */}
         <motion.div

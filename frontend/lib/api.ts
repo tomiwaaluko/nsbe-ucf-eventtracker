@@ -591,18 +591,4 @@ export const api = {
     }
     return response.json();
   },
-
-  getEventPlanningStats: async (token: string, semester?: string) => {
-    const url = semester
-      ? `${API_URL}/event-interest/stats?semester=${semester}`
-      : `${API_URL}/event-interest/stats`;
-    const response = await fetch(url, {
-      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Failed to fetch planning stats');
-    }
-    return response.json();
-  },
 };

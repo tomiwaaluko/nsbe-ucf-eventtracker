@@ -25,48 +25,19 @@ export default function Events() {
 
       const eventData = await api.getEvents(token, true);
 
-      // For each event, fetch planning data
-      const eventsWithPlanning = await Promise.all(
-        eventData.map(async (event: any) => {
-          try {
-            const [planningCheck, planners] = await Promise.all([
-              api.checkIfPlanning(token, event.id),
-              api.getEventPlanners(token, event.id),
-            ]);
+      // Map events to simplified format (no planning data)
+      const simplifiedEvents = eventData.map((event: any) => ({
+        id: event.id,
+        name: event.name,
+        description: event.description || undefined,
+        category: event.category,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        location: event.location || undefined,
+        isActive: event.isActive ?? true,
+      }));
 
-            return {
-              id: event.id,
-              name: event.name,
-              description: event.description || undefined,
-              category: event.category,
-              startTime: event.startTime,
-              endTime: event.endTime,
-              location: event.location || undefined,
-              isActive: event.isActive ?? true,
-              isPlanning: planningCheck.isPlanning,
-              plannedCount: planners.totalPlanning || 0,
-              friendsPlanning: planners.friendsPlanning || [],
-            };
-          } catch (error) {
-            // If planning data fails, just return event without it
-            console.error(`Failed to fetch planning data for event ${event.id}:`, error);
-            return {
-              id: event.id,
-              name: event.name,
-              description: event.description || undefined,
-              category: event.category,
-              startTime: event.startTime,
-              endTime: event.endTime,
-              location: event.location || undefined,
-              isActive: event.isActive ?? true,
-              isPlanning: false,
-              plannedCount: 0,
-            };
-          }
-        })
-      );
-
-      setEvents(eventsWithPlanning);
+      setEvents(simplifiedEvents);
     } catch (error) {
       console.error("Failed to fetch events:", error);
       setEvents([]);
@@ -89,25 +60,6 @@ export default function Events() {
     router.push("/admin/events");
   };
 
-  const handleTogglePlan = async (eventId: string, currentlyPlanning: boolean) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      if (currentlyPlanning) {
-        await api.unmarkPlanToAttend(token, eventId);
-      } else {
-        await api.markPlanToAttend(token, eventId);
-      }
-
-      // Refresh events to update planning status
-      await fetchEvents();
-    } catch (error: any) {
-      console.error("Failed to update plan status:", error);
-      alert(error.message || "Failed to update your plans");
-    }
-  };
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -124,7 +76,6 @@ export default function Events() {
         events={events}
         onViewDetails={handleViewDetails}
         onCheckIn={handleCheckIn}
-        onTogglePlan={handleTogglePlan}
         onCreateEvent={handleCreateEvent}
         userRole="member"
       />

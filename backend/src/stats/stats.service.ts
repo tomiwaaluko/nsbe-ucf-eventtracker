@@ -310,91 +310,11 @@ export class StatsService {
       },
     });
 
-    // Get total attendance for the semester
-    const totalAttendance = await this.prisma.attendance.count({
-      where: {
-        event: {
-          semester,
-        },
-      },
-    });
-
-    // Calculate average attendance per event
-    const eventsInSemester = await this.prisma.event.count({
-      where: {
-        semester,
-      },
-    });
-    const averageAttendance =
-      eventsInSemester > 0 ? Math.round(totalAttendance / eventsInSemester) : 0;
-
-    // Get members with achievements
-    const members = await this.prisma.member.findMany({
-      include: {
-        attendance: {
-          where: {
-            event: {
-              semester,
-            },
-          },
-          include: {
-            event: true,
-          },
-          orderBy: {
-            checkedInAt: 'asc',
-          },
-        },
-      },
-    });
-
-    let membersWithOneOneOne = 0;
-    let membersWithThreeThreeThree = 0;
-
-    for (const member of members) {
-      const bucketCounts = {
-        [EventBucket.WORKSHOPS_SOCIALS]: 0,
-        [EventBucket.FUNDRAISER_COMMUNITY_SERVICE]: 0,
-        [EventBucket.GBM]: 0,
-      };
-
-      for (const record of member.attendance) {
-        const bucket = getEventBucket(record.event.category);
-        // Only count categories that are part of achievement buckets
-        if (
-          record.event.category !== EventCategory.COMMITTEE_PARTICIPATION
-        ) {
-          bucketCounts[bucket]++;
-        }
-      }
-
-      // Check 111 achievement (1 from each bucket)
-      if (
-        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 1 &&
-        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 1 &&
-        bucketCounts[EventBucket.GBM] >= 1
-      ) {
-        membersWithOneOneOne++;
-      }
-
-      // Check 333 achievement (3 from each bucket)
-      if (
-        bucketCounts[EventBucket.WORKSHOPS_SOCIALS] >= 3 &&
-        bucketCounts[EventBucket.FUNDRAISER_COMMUNITY_SERVICE] >= 3 &&
-        bucketCounts[EventBucket.GBM] >= 3
-      ) {
-        membersWithThreeThreeThree++;
-      }
-    }
-
     return {
       totalMembers,
       activeMembers,
       totalEvents,
       upcomingEvents,
-      totalAttendance,
-      averageAttendance,
-      membersWithOneOneOne,
-      membersWithThreeThreeThree,
     };
   }
 
