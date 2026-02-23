@@ -178,27 +178,6 @@ export default function DashboardPage() {
     router.push(`/${page}`);
   };
 
-  const handleTogglePlan = async (eventId: string, currentlyPlanning: boolean) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      if (currentlyPlanning) {
-        await api.unmarkPlanToAttend(token, eventId);
-        toast.success("Removed from your plans");
-        // Remove from planned events
-        setPlannedEvents((prev) => prev.filter((event) => event.id !== eventId));
-      } else {
-        await api.markPlanToAttend(token, eventId);
-        toast.success("Added to your plans!");
-        // Refresh to get updated data (optional, or add it to state)
-      }
-    } catch (error: any) {
-      console.error("Failed to update plan status:", error);
-      toast.error(error.message || "Failed to update your plans");
-    }
-  };
-
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -218,7 +197,6 @@ export default function DashboardPage() {
         plannedEvents={plannedEvents}
         onViewEvent={handleViewEvent}
         onNavigate={handleNavigate}
-        onTogglePlan={handleTogglePlan}
       />
     </DashboardLayout>
   );

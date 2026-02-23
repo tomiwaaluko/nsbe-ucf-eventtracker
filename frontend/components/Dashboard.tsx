@@ -56,7 +56,6 @@ interface DashboardProps {
   plannedEvents?: any[];
   onViewEvent: (eventId: string) => void;
   onNavigate: (page: string) => void;
-  onTogglePlan?: (eventId: string, currentlyPlanning: boolean) => void;
 }
 
 export function Dashboard({
@@ -66,7 +65,6 @@ export function Dashboard({
   plannedEvents = [],
   onViewEvent,
   onNavigate,
-  onTogglePlan,
 }: DashboardProps) {
   // Calculate progress using bucket logic (matching backend)
   // Bucket 1: Workshops & Socials (WORKSHOP + SOCIAL)
@@ -599,7 +597,6 @@ export function Dashboard({
                     key={event.id}
                     event={event}
                     onViewDetails={onViewEvent}
-                    onTogglePlan={onTogglePlan}
                     showCheckIn={false}
                   />
                 ))}
