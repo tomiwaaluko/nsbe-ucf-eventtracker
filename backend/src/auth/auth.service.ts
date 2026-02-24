@@ -136,8 +136,10 @@ export class AuthService {
     }
 
     // Send password reset email via Supabase
+    // Supabase will redirect to auth/callback first, which will then redirect to reset-password
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const { error } = await this.supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${this.configService.get<string>('FRONTEND_URL')}/reset-password`,
+      redirectTo: `${frontendUrl}/auth/callback`,
     });
 
     if (error) {

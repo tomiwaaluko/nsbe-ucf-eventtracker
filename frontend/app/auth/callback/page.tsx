@@ -11,6 +11,16 @@ function CallbackContent() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Check for password recovery in URL hash
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get("type");
+
+      if (type === "recovery") {
+        // Password reset flow - redirect to reset-password page with hash intact
+        router.push(`/reset-password${window.location.hash}`);
+        return;
+      }
+
       const token = searchParams.get("token");
       const error = searchParams.get("error");
       const linkRequired = searchParams.get("link_required");
