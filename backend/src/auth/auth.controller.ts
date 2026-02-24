@@ -2,7 +2,7 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 
-class CheckDuplicateDto {
+export class CheckDuplicateDto {
   @IsString()
   @IsNotEmpty()
   firstName: string;
@@ -16,7 +16,7 @@ class CheckDuplicateDto {
   email: string;
 }
 
-class RequestPasswordResetDto {
+export class RequestPasswordResetDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
