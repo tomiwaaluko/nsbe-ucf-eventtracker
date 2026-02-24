@@ -2,46 +2,124 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface ForgotPasswordProps {
-  onSubmit: (email: string) => void;
   onNavigate: (page: "login") => void;
-  isLoading?: boolean;
 }
 
-export function ForgotPassword({
-  onSubmit,
-  onNavigate,
-  isLoading = false,
-}: ForgotPasswordProps) {
+export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [touched, setTouched] = useState(false);
 
   const validateEmail = (email: string) => {
-    if (!email) return "Email is required";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Please enter a valid email";
-    return "";
+    return emailRegex.test(email);
   };
 
   const handleBlur = () => {
     setTouched(true);
-    setError(validateEmail(email));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const emailError = validateEmail(email);
-    setError(emailError);
-    setTouched(true);
-
-    if (!emailError) {
-      onSubmit(email);
+    if (email && !validateEmail(email)) {
+      setError("Please enter a valid email address");
+    } else if (email) {
+      setError("");
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+
+    if (!email) {
+      setError("Email is required");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await api.forgotPassword(email);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send password reset email. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">N</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">NSBE UCF</h1>
+                <p className="text-sm text-gray-600">Event Tracker</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Success Card */}
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Check Your Email!
+            </h2>
+            <p className="text-gray-600 mb-6">
+              We've sent password reset instructions to <strong>{email}</strong>.
+              Please check your inbox and follow the link to reset your password.
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-700">
+                <strong>Didn't receive the email?</strong>
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                Check your spam folder or contact support if you need assistance.
+              </p>
+            </div>
+            <Button
+              onClick={() => onNavigate("login")}
+              className="w-full bg-[#00843D] hover:bg-[#006830] text-white h-11"
+            >
+              Back to Sign In
+            </Button>
+          </div>
+
+          {/* Help Text */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Need help?{" "}
+              <a
+                href="mailto:support@nsbeucf.org"
+                className="text-[#00843D] hover:underline"
+              >
+                Contact Support
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -78,6 +156,16 @@ export function ForgotPassword({
               instructions to reset your password.
             </p>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">

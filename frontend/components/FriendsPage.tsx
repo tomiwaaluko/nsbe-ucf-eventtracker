@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { DashboardLayout } from "./DashboardLayout";
 import { Input } from "./ui/input";
@@ -57,6 +58,7 @@ interface FriendRequest {
 }
 
 export function FriendsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [directory, setDirectory] = useState<Member[]>([]);
@@ -253,11 +255,24 @@ export function FriendsPage() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={`font-extrabold text-lg text-black truncate ${bricolage.className}`}
-                  >
-                    {member.firstName} {member.lastName}
-                  </p>
+                  {(member.friendshipStatus === "FRIENDS" || member.friendshipStatus === "SELF") ? (
+                    <button
+                      onClick={() => router.push(`/members/${member.id}`)}
+                      className="text-left w-full group"
+                    >
+                      <p
+                        className={`font-extrabold text-lg text-black truncate group-hover:text-[#00a651] transition-colors ${bricolage.className}`}
+                      >
+                        {member.firstName} {member.lastName}
+                      </p>
+                    </button>
+                  ) : (
+                    <p
+                      className={`font-extrabold text-lg text-black truncate ${bricolage.className}`}
+                    >
+                      {member.firstName} {member.lastName}
+                    </p>
+                  )}
                   {member.major && (
                     <p
                       className={`text-sm text-black font-medium truncate ${sora.className}`}
@@ -406,11 +421,16 @@ export function FriendsPage() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={`font-extrabold text-lg text-black truncate ${bricolage.className}`}
+                  <button
+                    onClick={() => router.push(`/members/${friend.id}`)}
+                    className="text-left w-full group"
                   >
-                    {friend.firstName} {friend.lastName}
-                  </p>
+                    <p
+                      className={`font-extrabold text-lg text-black truncate group-hover:text-[#00a651] transition-colors ${bricolage.className}`}
+                    >
+                      {friend.firstName} {friend.lastName}
+                    </p>
+                  </button>
                   {friend.major && (
                     <p
                       className={`text-sm text-black font-medium truncate ${sora.className}`}

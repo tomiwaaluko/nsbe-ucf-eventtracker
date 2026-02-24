@@ -283,18 +283,14 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     case "forgot-password":
       return (
         <ForgotPassword
-          onSubmit={handleForgotPassword}
           onNavigate={(page) => setCurrentPage(page)}
-          isLoading={isLoading}
         />
       );
 
     case "reset-password":
       return (
         <ResetPassword
-          onSubmit={handleResetPassword}
-          token={resetToken}
-          isLoading={isLoading}
+          onNavigate={(page) => setCurrentPage(page)}
         />
       );
 

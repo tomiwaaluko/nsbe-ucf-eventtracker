@@ -1,22 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Eye, EyeOff, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface ResetPasswordProps {
-  onSubmit: (password: string, token: string) => void;
-  token: string;
-  isLoading?: boolean;
+  onNavigate: (page: "login") => void;
 }
 
-export function ResetPassword({ onSubmit, token, isLoading = false }: ResetPasswordProps) {
+export function ResetPassword({ onNavigate }: ResetPasswordProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const [touched, setTouched] = useState<{ password?: boolean; confirmPassword?: boolean }>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState(false);
+
+  useEffect(() => {
+    // Check if we have a valid recovery token
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get("access_token");
+    const type = hashParams.get("type");
+
+    if (!accessToken || type !== "recovery") {
+      setTokenError(true);
+    }
+  }, []);
 
   const validatePassword = (password: string) => {
     if (!password) return "Password is required";
@@ -64,19 +82,121 @@ export function ResetPassword({ onSubmit, token, isLoading = false }: ResetPassw
     { label: "One number", met: /(?=.*\d)/.test(password) },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const passwordError = validatePassword(password);
     const confirmPasswordError = validateConfirmPassword(confirmPassword);
-    
+
     setErrors({ password: passwordError, confirmPassword: confirmPasswordError });
     setTouched({ password: true, confirmPassword: true });
 
     if (!passwordError && !confirmPasswordError) {
-      onSubmit(password, token);
+      setIsLoading(true);
+
+      try {
+        const { error } = await supabase.auth.updateUser({
+          password: password,
+        });
+
+        if (error) throw error;
+
+        setSuccess(true);
+
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          onNavigate("login");
+        }, 3000);
+      } catch (err: any) {
+        setErrors({
+          password: err.message || "Failed to reset password. Please try again."
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
+
+  if (tokenError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">N</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">NSBE UCF</h1>
+                <p className="text-sm text-gray-600">Event Tracker</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Card */}
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <Lock className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Invalid Reset Link
+            </h2>
+            <p className="text-gray-600 mb-6">
+              This password reset link is invalid or has expired. Please request a new password reset email.
+            </p>
+            <Button
+              onClick={() => onNavigate("login")}
+              className="w-full bg-[#00843D] hover:bg-[#006830] text-white h-11"
+            >
+              Back to Sign In
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">N</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">NSBE UCF</h1>
+                <p className="text-sm text-gray-600">Event Tracker</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Success Card */}
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Password Reset Successful!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Your password has been successfully updated.
+            </p>
+            <p className="text-sm text-gray-500">
+              Redirecting you to sign in...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -255,9 +375,13 @@ export function ResetPassword({ onSubmit, token, isLoading = false }: ResetPassw
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Remember your password?{" "}
-            <a href="#" className="text-[#00843D] hover:underline">
+            <button
+              onClick={() => onNavigate("login")}
+              className="text-[#00843D] hover:underline"
+              disabled={isLoading}
+            >
               Sign In
-            </a>
+            </button>
           </p>
         </div>
       </div>

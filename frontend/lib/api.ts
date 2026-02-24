@@ -113,6 +113,28 @@ export const api = {
     return response.json();
   },
 
+  checkDuplicateUser: async (data: { firstName: string; lastName: string; email: string }) => {
+    const response = await fetch(`${API_URL}/auth/check-duplicate`, {
+      method: "POST",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  forgotPassword: async (email: string) => {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to send password reset email");
+    }
+    return response.json();
+  },
+
   // Members
   getMe: async (token: string) => {
     const response = await fetch(`${API_URL}/members/me`, {

@@ -29,9 +29,9 @@ export function StatsCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <h3 className="text-gray-900 mb-2">{value}</h3>
-          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+          <p className="text-sm text-black mb-1">{title}</p>
+          <h3 className="text-black mb-2">{value}</h3>
+          {subtitle && <p className="text-xs text-black">{subtitle}</p>}
           {trend && (
             <div className="flex items-center gap-1 mt-2">
               {trend.isPositive ? (
@@ -46,7 +46,7 @@ export function StatsCard({
               >
                 {trend.value}%
               </span>
-              <span className="text-xs text-gray-500">vs last semester</span>
+              <span className="text-xs text-black">vs last semester</span>
             </div>
           )}
         </div>

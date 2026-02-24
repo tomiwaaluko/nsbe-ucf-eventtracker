@@ -1,8 +1,23 @@
 import { motion } from "framer-motion";
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Zap } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { getEventCategoryLabel, EventCategory } from "@/lib/constants/event-categories";
+import { Bricolage_Grotesque, Sora } from "next/font/google";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 interface Event {
   id: string;
@@ -23,36 +38,36 @@ interface EventCardProps {
   showCheckIn?: boolean;
 }
 
-const categoryConfig: Record<string, { label: string; color: string; icon: string }> = {
+const categoryConfig: Record<string, { label: string; bgColor: string; badgeColor: string }> = {
   GBM: {
     label: "General Body Meeting",
-    color: "bg-green-100 text-green-700 border-green-200",
-    icon: "",
+    bgColor: "#00a651",
+    badgeColor: "bg-[#00a651]",
   },
   SOCIAL: {
     label: "Social",
-    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    icon: "",
+    bgColor: "#ffb81c",
+    badgeColor: "bg-[#ffb81c]",
   },
   WORKSHOP: {
     label: "Workshop",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-    icon: "",
+    bgColor: "#00a651",
+    badgeColor: "bg-[#00a651]",
   },
   FUNDRAISER: {
     label: "Fundraiser",
-    color: "bg-red-100 text-red-700 border-red-200",
-    icon: "",
+    bgColor: "#ed1c24",
+    badgeColor: "bg-[#ed1c24]",
   },
   COMMUNITY_SERVICE: {
     label: "Community Service",
-    color: "bg-orange-100 text-orange-700 border-orange-200",
-    icon: "",
+    bgColor: "#ed1c24",
+    badgeColor: "bg-[#ed1c24]",
   },
   COMMITTEE_PARTICIPATION: {
     label: "Committee Participation",
-    color: "bg-purple-100 text-purple-700 border-purple-200",
-    icon: "",
+    bgColor: "#ffb81c",
+    badgeColor: "bg-[#ffb81c]",
   },
 };
 
@@ -64,8 +79,8 @@ export function EventCard({
 }: EventCardProps) {
   const config = categoryConfig[event.category] || {
     label: getEventCategoryLabel(event.category),
-    color: "bg-gray-100 text-gray-700 border-gray-200",
-    icon: "",
+    bgColor: "#00a651",
+    badgeColor: "bg-[#00a651]",
   };
   const startDate = new Date(event.startTime);
   const endDate = new Date(event.endTime);
@@ -88,97 +103,163 @@ export function EventCard({
     });
   };
 
+  const formatDateLarge = (date: Date) => {
+    return {
+      month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+      day: date.getDate(),
+    };
+  };
+
+  const dateDisplay = formatDateLarge(startDate);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className={`bg-white rounded-xl p-6 shadow-md border border-gray-200 hover:shadow-lg transition-all h-full flex flex-col ${
+      whileHover={{ x: 4, y: -4, transition: { duration: 0.2 } }}
+      className={`${bricolage.variable} ${sora.variable} relative h-full ${
         isPast ? "opacity-75" : ""
       }`}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4 flex-shrink-0">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {config.icon && <span className="text-2xl">{config.icon}</span>}
-            <Badge className={config.color} variant="outline">
-              {config.label}
-            </Badge>
-            {isToday && !isPast && (
-              <Badge
-                className="bg-blue-100 text-blue-700 border-blue-200"
-                variant="outline"
+      {/* Brutalist shadow */}
+      <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+
+      {/* Card content */}
+      <div className="relative bg-white border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] h-full flex flex-col">
+        {/* Color bar and date stamp */}
+        <div
+          className="h-3 border-b-4 border-black"
+          style={{ backgroundColor: config.bgColor }}
+        />
+
+        <div className="flex p-4 sm:p-5 flex-col h-full">
+          {/* Date stamp and category */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            {/* Large date display */}
+            <div className="flex-shrink-0">
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-black flex flex-col items-center justify-center shadow-[3px_3px_0_0_rgba(0,0,0,1)]"
+                style={{ backgroundColor: config.bgColor }}
               >
-                Today
-              </Badge>
-            )}
-          </div>
-          <h4 className="text-gray-900 mb-1 font-semibold line-clamp-2">{event.name}</h4>
-          <div className="min-h-[2.5rem]">
-            {event.description ? (
-              <p className="text-sm text-gray-500 line-clamp-2">
-                {event.description}
-              </p>
-            ) : (
-              <div className="text-sm text-gray-400">&nbsp;</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Event details */}
-      <div className="space-y-2 mb-4 flex-1">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span className="truncate">{formatDate(startDate)}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span className="truncate">
-            {formatTime(startDate)} - {formatTime(endDate)}
-          </span>
-        </div>
-        <div className="min-h-[1.25rem]">
-          {event.location ? (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">{event.location}</span>
+                <span className={`text-xs font-bold text-white ${bricolage.className}`}>
+                  {dateDisplay.month}
+                </span>
+                <span className={`text-2xl sm:text-3xl font-extrabold text-white ${bricolage.className} leading-none`}>
+                  {dateDisplay.day}
+                </span>
+              </div>
             </div>
-          ) : null}
-        </div>
-        {event.attendeeCount !== undefined && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <span>{event.attendeeCount} attending</span>
+
+            {/* Category and status badges */}
+            <div className="flex flex-col gap-2 items-end flex-shrink min-w-0">
+              <div className={`${config.badgeColor} border-2 border-black px-3 py-1 shadow-[2px_2px_0_0_rgba(0,0,0,1)]`}>
+                <span className={`text-xs font-bold uppercase text-white ${bricolage.className} whitespace-nowrap`}>
+                  {config.label}
+                </span>
+              </div>
+              {isToday && !isPast && (
+                <div className="bg-[#ffb81c] border-2 border-black px-3 py-1 shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-black" />
+                  <span className={`text-xs font-bold uppercase text-black ${bricolage.className}`}>
+                    Today
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 mt-4 flex-shrink-0">
-        <Button
-          variant="outline"
-          onClick={() => onViewDetails(event.id)}
-          className="flex-1"
-        >
-          View Details
-        </Button>
-        {showCheckIn && !isPast && event.isActive && onCheckIn && (
-          <Button
-            onClick={() => onCheckIn(event.id)}
-            className="flex-1 bg-[#00a651] hover:bg-[#008a44] text-white"
-          >
-            Check In
-          </Button>
-        )}
-      </div>
+          {/* Event name */}
+          <h4 className={`text-black text-lg sm:text-xl font-extrabold mb-2 line-clamp-2 ${bricolage.className}`}>
+            {event.name}
+          </h4>
 
-      {isPast && (
-        <div className="mt-3 pt-3 border-t border-gray-100 flex-shrink-0">
-          <span className="text-xs text-gray-500">Event ended</span>
+          {/* Description */}
+          {event.description && (
+            <p className={`text-sm text-black/70 mb-4 line-clamp-2 ${sora.className} font-medium`}>
+              {event.description}
+            </p>
+          )}
+
+          {/* Event details - More prominent */}
+          <div className="space-y-3 mb-4 flex-1 mt-auto">
+            {/* Time */}
+            <div className="border-2 border-black bg-black/5 p-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-black flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs uppercase text-black/60 font-bold ${bricolage.className}`}>
+                    Time
+                  </p>
+                  <p className={`text-sm font-bold text-black ${sora.className} truncate`}>
+                    {formatTime(startDate)} - {formatTime(endDate)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            {event.location && (
+              <div className="border-2 border-black bg-black/5 p-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-black flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-xs uppercase text-black/60 font-bold ${bricolage.className}`}>
+                      Location
+                    </p>
+                    <p className={`text-sm font-bold text-black ${sora.className} truncate`}>
+                      {event.location}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Attendee count */}
+            {event.attendeeCount !== undefined && (
+              <div className="flex items-center gap-2 px-2">
+                <Users className="w-4 h-4 text-black/60 flex-shrink-0" />
+                <span className={`text-sm font-bold text-black/70 ${sora.className}`}>
+                  {event.attendeeCount} attending
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions - Brutalist buttons */}
+          <div className="flex gap-3 mt-4 flex-shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onViewDetails(event.id)}
+              className={`flex-1 border-3 border-black bg-white text-black px-4 py-2.5 shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_rgba(0,0,0,1)] transition-all font-bold uppercase text-xs sm:text-sm ${bricolage.className} border-4`}
+            >
+              Details
+            </motion.button>
+            {showCheckIn && !isPast && event.isActive && onCheckIn && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onCheckIn(event.id)}
+                className={`flex-1 border-4 border-black bg-[#00a651] text-white px-4 py-2.5 shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_0_rgba(0,0,0,1)] transition-all font-bold uppercase text-xs sm:text-sm ${bricolage.className}`}
+              >
+                Check In
+              </motion.button>
+            )}
+          </div>
+
+          {isPast && (
+            <div className="mt-3 pt-3 border-t-2 border-black/20 flex-shrink-0">
+              <span className={`text-xs text-black/50 uppercase font-bold ${bricolage.className}`}>
+                Event Ended
+              </span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </motion.div>
   );
 }

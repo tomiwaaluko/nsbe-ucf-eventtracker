@@ -78,4 +78,72 @@ export class AuthService {
       where: { email },
     });
   }
+
+  async checkDuplicateUser(firstName: string, lastName: string, email: string) {
+    // Check for existing user with same email
+    const existingEmail = await this.prisma.member.findUnique({
+      where: { email },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    if (existingEmail) {
+      return {
+        exists: true,
+        matchType: 'email' as const,
+        user: existingEmail,
+      };
+    }
+
+    // Check for existing user with same first and last name (case-insensitive)
+    const existingName = await this.prisma.member.findFirst({
+      where: {
+        AND: [
+          { firstName: { equals: firstName, mode: 'insensitive' } },
+          { lastName: { equals: lastName, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    if (existingName) {
+      return {
+        exists: true,
+        matchType: 'name' as const,
+        user: existingName,
+      };
+    }
+
+    return {
+      exists: false,
+      matchType: null,
+      user: null,
+    };
+  }
+
+  async requestPasswordReset(email: string) {
+    if (!this.supabaseAdmin) {
+      throw new Error('Supabase Admin not configured');
+    }
+
+    // Check if user exists
+    const member = await this.prisma.member.findUnique({
+      where: { email },
+    });
+
+    if (!member) {
+      // Don't reveal whether email exists or not for security
+      return { success: true, message: 'If an account exists, a password reset email has been sent.' };
+    }
+
+    // Send password reset email via Supabase
+    const { error } = await this.supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: `${this.configService.get<string>('FRONTEND_URL')}/reset-password`,
+    });
+
+    if (error) {
+      throw new Error(`Failed to send password reset email: ${error.message}`);
+    }
+
+    return { success: true, message: 'If an account exists, a password reset email has been sent.' };
+  }
 }
