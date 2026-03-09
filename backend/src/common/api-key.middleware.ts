@@ -3,16 +3,17 @@ import { Request, Response, NextFunction } from 'express';
 
 /** Paths that skip API key check (OAuth uses redirects, no custom headers possible) */
 const SKIP_PATHS = [
-  '/api/auth/oauth/google',
-  '/api/auth/oauth/discord',
+  '/auth/oauth/google',
+  '/auth/oauth/discord',
 ];
 
 @Injectable()
 export class ApiKeyMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const path = req.path;
+    // Use originalUrl (full path including global prefix) and strip query string
+    const fullPath = req.originalUrl.split('?')[0];
 
-    if (SKIP_PATHS.some((p) => path === p || path.startsWith(p + '/'))) {
+    if (SKIP_PATHS.some((p) => fullPath === p || fullPath.startsWith(p + '/') || fullPath === `/api${p}` || fullPath.startsWith(`/api${p}/`))) {
       return next();
     }
 
