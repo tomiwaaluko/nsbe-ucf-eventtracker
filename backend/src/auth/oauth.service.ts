@@ -108,25 +108,10 @@ export class OAuthService {
    * Get Google OAuth authorization URL
    */
   getGoogleAuthUrl(state: string, codeChallenge?: string): string {
-    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-    const redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI');
-
-    if (!clientId || !redirectUri) {
-      throw new BadRequestException(
-        'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.'
-      );
-    }
-
-    if (!this.googleClient) {
-      throw new BadRequestException(
-        'Google OAuth client is not initialized. Please check GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI environment variables.'
-      );
-    }
-
     const scopes = ['openid', 'email', 'profile'];
     const params: any = {
-      client_id: clientId,
-      redirect_uri: redirectUri,
+      client_id: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      redirect_uri: this.configService.get<string>('GOOGLE_REDIRECT_URI'),
       response_type: 'code',
       scope: scopes.join(' '),
       state,
@@ -149,18 +134,11 @@ export class OAuthService {
   getDiscordAuthUrl(state: string): string {
     const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
     const redirectUri = this.configService.get<string>('DISCORD_REDIRECT_URI');
-
-    if (!clientId || !redirectUri) {
-      throw new BadRequestException(
-        'Discord OAuth is not configured. Please set DISCORD_CLIENT_ID and DISCORD_REDIRECT_URI environment variables.'
-      );
-    }
-
     const scopes = ['identify', 'email'];
 
     const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
+      client_id: clientId!,
+      redirect_uri: redirectUri!,
       response_type: 'code',
       scope: scopes.join(' '),
       state,
@@ -314,15 +292,14 @@ export class OAuthService {
       };
     }
 
-    // Step 2: Check if email exists and is verified
-    if (profile.email && profile.emailVerified) {
-      // Find existing member by email
+    // Step 2: Check if a member already exists with the same email (regardless of verification)
+    if (profile.email) {
       const existingMember = await this.prisma.member.findUnique({
         where: { email: profile.email },
       });
 
       if (existingMember) {
-        // Email matches existing account - link OAuth account
+        // Email matches existing account - link OAuth account to it
         await this.prisma.oAuthAccount.create({
           data: {
             userId: existingMember.id,
@@ -333,7 +310,8 @@ export class OAuthService {
           },
         });
 
-        if (!existingMember.emailVerified) {
+        // Upgrade email verification status if provider verified it
+        if (profile.emailVerified && !existingMember.emailVerified) {
           await this.prisma.member.update({
             where: { id: existingMember.id },
             data: { emailVerified: true },
@@ -341,7 +319,7 @@ export class OAuthService {
         }
 
         return {
-          member: { ...existingMember, emailVerified: true },
+          member: { ...existingMember, emailVerified: existingMember.emailVerified || profile.emailVerified },
           isNewAccount: false,
           requiresLinking: false,
           isAccountLinked: true,
@@ -350,13 +328,15 @@ export class OAuthService {
     }
 
     // Step 3: Create new account
+    // First create Supabase Auth user, then use its ID for Member
     let supabaseUserId: string;
     
     if (this.supabaseAdmin && profile.email) {
       try {
+        // Create Supabase Auth user
         const { data: authUser, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
           email: profile.email,
-          email_confirm: profile.emailVerified,
+          email_confirm: profile.emailVerified, // Auto-confirm if email is verified
           user_metadata: {
             first_name: profile.firstName,
             last_name: profile.lastName,
@@ -369,33 +349,40 @@ export class OAuthService {
         });
 
         if (authError) {
+          // If user already exists in Supabase Auth, try to get it
           if (authError.message?.includes('already registered')) {
             const { data: existingUser } = await this.supabaseAdmin.auth.admin.getUserByEmail(profile.email);
             if (existingUser?.user) {
               supabaseUserId = existingUser.user.id;
             } else {
+              // Fallback: generate UUID
               supabaseUserId = crypto.randomUUID();
             }
           } else {
             console.error('Error creating Supabase Auth user:', authError);
+            // Fallback: generate UUID
             supabaseUserId = crypto.randomUUID();
           }
         } else if (authUser?.user) {
           supabaseUserId = authUser.user.id;
         } else {
+          // Fallback: generate UUID
           supabaseUserId = crypto.randomUUID();
         }
       } catch (error) {
         console.error('Error creating Supabase Auth user:', error);
+        // Fallback: generate UUID
         supabaseUserId = crypto.randomUUID();
       }
     } else {
+      // No Supabase Admin configured, generate UUID
       supabaseUserId = crypto.randomUUID();
     }
 
+    // Create Member with Supabase user ID
     const newMember = await this.prisma.member.create({
       data: {
-        id: supabaseUserId,
+        id: supabaseUserId, // Use Supabase Auth user ID
         email: profile.email || `oauth_${provider}_${profile.providerUserId}@temp.local`,
         firstName: profile.firstName,
         lastName: profile.lastName,
@@ -417,11 +404,14 @@ export class OAuthService {
     return {
       member: newMember,
       isNewAccount: true,
-      requiresLinking: !profile.email || !profile.emailVerified,
+      requiresLinking: false,
       isAccountLinked: false,
     };
   }
 
+  /**
+   * Generate JWT token for authenticated user
+   */
   generateJWT(member: any): string {
     const payload = {
       sub: member.id,
@@ -430,14 +420,12 @@ export class OAuthService {
     };
 
     return jwt.sign(payload, this.jwtSecret, {
-      expiresIn: '7d',
+      expiresIn: '7d', // Match your existing JWT expiration
     });
   }
 
   /**
-   * Get redirect URL after OAuth callback.
-   * Uses redirectUri from frontend (sent with OAuth start) when provided,
-   * otherwise falls back to APP_BASE_URL. Fixes production redirect to localhost.
+   * Get redirect URL after OAuth callback
    */
   getRedirectUrl(
     token?: string,
@@ -446,7 +434,7 @@ export class OAuthService {
     email?: string,
     provider?: string,
     isAccountLinked?: boolean,
-    redirectUri?: string,
+    isNewAccount?: boolean,
   ): string {
     const params = new URLSearchParams();
 
@@ -454,6 +442,7 @@ export class OAuthService {
       params.set('token', token);
       if (provider) params.set('provider', provider);
       if (isAccountLinked) params.set('account_linked', 'true');
+      if (isNewAccount) params.set('is_new', 'true');
     } else if (error) {
       params.set('error', error);
     } else if (linkRequired) {
@@ -462,9 +451,7 @@ export class OAuthService {
       if (provider) params.set('provider', provider);
     }
 
-    const base = redirectUri || `${this.appBaseUrl}/auth/callback`;
-    const separator = base.includes('?') ? '&' : '?';
-    return `${base}${separator}${params.toString()}`;
+    return `${this.appBaseUrl}/auth/callback?${params.toString()}`;
   }
 }
 

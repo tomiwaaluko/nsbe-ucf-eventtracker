@@ -71,21 +71,19 @@ export class OAuthController {
     @Query('error') error: string,
     @Res() res: Response,
   ) {
-    const redirectUri = state ? stateStore.get(state)?.redirectUri : undefined;
-
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Google OAuth error: ${error}`, undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Google OAuth error: ${error}`));
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter', undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter', undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
       }
 
       // Remove used state
@@ -95,7 +93,8 @@ export class OAuthController {
       const profile = await this.oauthService.handleGoogleCallback(code, storedState.codeVerifier);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked } = await this.oauthService.linkOrCreateAccount('google', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount } =
+        await this.oauthService.linkOrCreateAccount('google', profile);
 
       if (requiresLinking) {
         return res.redirect(
@@ -105,8 +104,6 @@ export class OAuthController {
             true,
             profile.email || undefined,
             'google',
-            undefined,
-            storedState.redirectUri,
           ),
         );
       }
@@ -114,12 +111,14 @@ export class OAuthController {
       // Generate JWT
       const token = this.oauthService.generateJWT(member);
 
-      // Redirect to frontend with token (use frontend's redirect_uri - fixes production localhost issue)
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, storedState.redirectUri));
+      // Redirect to frontend with token
+      return res.redirect(
+        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, isNewAccount),
+      );
     } catch (error: any) {
       console.error('Google OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`, undefined, undefined, undefined, undefined, redirectUri),
+        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
       );
     }
   }
@@ -163,21 +162,19 @@ export class OAuthController {
     @Query('error') error: string,
     @Res() res: Response,
   ) {
-    const redirectUri = state ? stateStore.get(state)?.redirectUri : undefined;
-
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Discord OAuth error: ${error}`, undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Discord OAuth error: ${error}`));
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter', undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter', undefined, undefined, undefined, undefined, redirectUri));
+        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
       }
 
       // Remove used state
@@ -187,7 +184,8 @@ export class OAuthController {
       const profile = await this.oauthService.handleDiscordCallback(code);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked } = await this.oauthService.linkOrCreateAccount('discord', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount } =
+        await this.oauthService.linkOrCreateAccount('discord', profile);
 
       if (requiresLinking) {
         return res.redirect(
@@ -197,8 +195,6 @@ export class OAuthController {
             true,
             profile.email || undefined,
             'discord',
-            undefined,
-            storedState.redirectUri,
           ),
         );
       }
@@ -206,12 +202,14 @@ export class OAuthController {
       // Generate JWT
       const token = this.oauthService.generateJWT(member);
 
-      // Redirect to frontend with token (use frontend's redirect_uri - fixes production localhost issue)
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked, storedState.redirectUri));
+      // Redirect to frontend with token
+      return res.redirect(
+        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked, isNewAccount),
+      );
     } catch (error: any) {
       console.error('Discord OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`, undefined, undefined, undefined, undefined, redirectUri),
+        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
       );
     }
   }
