@@ -29,6 +29,11 @@ export class MembersController {
     return this.membersService.findMe(req.user.id);
   }
 
+  @Get('me/oauth-accounts')
+  async getMyOAuthAccounts(@Req() req) {
+    return this.membersService.getOAuthAccounts(req.user.id);
+  }
+
   @Put('me')
   async updateMe(@Req() req, @Body() dto: UpdateMemberDto) {
     return this.membersService.updateMe(req.user.id, dto);

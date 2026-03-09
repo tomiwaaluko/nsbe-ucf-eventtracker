@@ -123,6 +123,16 @@ export const api = {
     return response.json();
   },
 
+  getMyOAuthAccounts: async (token: string) => {
+    const response = await fetch(`${API_URL}/members/me/oauth-accounts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch OAuth accounts");
+    }
+    return response.json();
+  },
+
   // Events
   getEvents: async (token: string) => {
     const response = await fetch(`${API_URL}/events`, {

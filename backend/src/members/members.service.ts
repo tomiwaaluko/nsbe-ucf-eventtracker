@@ -55,6 +55,19 @@ export class MembersService {
     });
   }
 
+  async getOAuthAccounts(userId: string) {
+    return this.prisma.oAuthAccount.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        provider: true,
+        providerEmail: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async search(query: string) {
     return this.prisma.member.findMany({
       where: {
