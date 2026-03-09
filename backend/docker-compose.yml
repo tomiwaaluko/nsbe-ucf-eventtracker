@@ -31,6 +31,7 @@ services:
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: postgresql://nsbe_user:nsbe_password@postgres:5432/nsbe_eventtracker
+      DIRECT_URL: postgresql://nsbe_user:nsbe_password@postgres:5432/nsbe_eventtracker
       # Supabase configuration
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}

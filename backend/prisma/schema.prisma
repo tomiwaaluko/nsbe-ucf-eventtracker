@@ -1,4 +1,6 @@
-// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider  = "postgresql"
@@ -6,8 +8,115 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Member {
+  id              String          @id @default(uuid())
+  email           String          @unique
+  firstName       String?
+  lastName        String?
+  role            String          @default("member")
+  createdAt       DateTime        @default(now())
+  emailVerified   Boolean         @default(false)
+  passwordHash    String?
+  updatedAt       DateTime        @updatedAt
+  isActive        Boolean         @default(true)
+  bio             String?
+  discordUsername String?
+  graduationYear  Int?
+  linkedInUrl     String?
+  major           String?
+  phoneNumber     String?
+  photoUrl        String?
+  attendance      Attendance[]
+  eventsCreated   Event[]
+  oauthAccounts   OAuthAccount[]
+  eventInterests  EventInterest[]
+  friendOf        Friendship[]    @relation("FriendFriendships")
+  friendships     Friendship[]    @relation("UserFriendships")
+
+  @@index([email])
+}
+
+model Event {
+  id             String          @id @default(uuid())
+  name           String
+  description    String?
+  category       EventCategory
+  semester       String
+  startTime      DateTime
+  endTime        DateTime
+  location       String?
+  qrSecret       String
+  isActive       Boolean         @default(true)
+  createdById    String?
+  checkInCode    String?         @unique
+  attendance     Attendance[]
+  createdBy      Member?         @relation(fields: [createdById], references: [id])
+  eventInterests EventInterest[]
+}
+
+model Attendance {
+  id            String   @id @default(uuid())
+  memberId      String
+  eventId       String
+  checkedInAt   DateTime @default(now())
+  checkInMethod String   @default("qr")
+  event         Event    @relation(fields: [eventId], references: [id])
+  member        Member   @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, eventId])
+}
+
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  userId         String
+  provider       String
+  providerUserId String
+  providerEmail  String?
+  emailVerified  Boolean  @default(false)
+  accessToken    String?
+  refreshToken   String?
+  scopes         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           Member   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@index([provider, providerEmail])
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  userId      String
+  friendId    String
+  status      FriendshipStatus @default(PENDING)
+  requesterId String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  friend      Member           @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+  user        Member           @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId, status])
+  @@index([friendId, status])
+  @@index([requesterId])
+  @@map("friendships")
+}
+
+model EventInterest {
+  id        String              @id @default(uuid())
+  memberId  String
+  eventId   String
+  status    EventInterestStatus @default(PLANNING)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  event     Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member    Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, eventId])
+  @@index([eventId, status])
+  @@index([memberId, status])
+  @@map("event_interests")
 }
 
 enum EventCategory {
@@ -30,125 +139,4 @@ enum EventInterestStatus {
   PLANNING
   CANCELLED
   ATTENDED
-}
-
-model Member {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  firstName     String?
-  lastName      String?
-  photoUrl      String?
-
-  // Extended profile fields
-  major             String?
-  graduationYear    Int?
-  phoneNumber       String?
-  linkedInUrl       String?
-  bio               String?         @db.Text
-  discordUsername   String?
-
-  role          String   @default("member") // member | admin | super_admin
-  emailVerified Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  passwordHash  String?  // Nullable for OAuth-only accounts
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  attendance     Attendance[]
-  eventsCreated  Event[]
-  oauthAccounts  OAuthAccount[]
-  friendships    Friendship[] @relation("UserFriendships")
-  friendOf       Friendship[] @relation("FriendFriendships")
-  eventInterests EventInterest[]
-
-  @@index([email])
-}
-
-model Event {
-  id          String         @id @default(uuid())
-  name        String
-  description String?
-  category    EventCategory
-  semester    String
-  startTime   DateTime
-  endTime     DateTime
-  location    String?
-  qrSecret    String
-  checkInCode String?        @unique
-  isActive    Boolean        @default(true)
-
-  createdById String?
-  createdBy   Member?        @relation(fields: [createdById], references: [id])
-
-  attendance     Attendance[]
-  eventInterests EventInterest[]
-}
-
-model Attendance {
-  id            String   @id @default(uuid())
-  memberId      String
-  eventId       String
-  checkedInAt   DateTime @default(now())
-  checkInMethod String   @default("qr") // qr | code | manual | exception
-
-  member Member @relation(fields: [memberId], references: [id])
-  event  Event  @relation(fields: [eventId], references: [id])
-
-  @@unique([memberId, eventId])
-}
-
-model OAuthAccount {
-  id             String   @id @default(uuid())
-  userId         String
-  provider       String   // "google" | "discord"
-  providerUserId String   // Provider's unique user ID
-  providerEmail  String?  // Email from provider (may be null)
-  emailVerified  Boolean  @default(false) // Whether provider verified email
-  accessToken    String?  // Encrypted if stored
-  refreshToken   String?  // Encrypted if stored
-  scopes         String?  // Comma-separated scopes
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user           Member   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerUserId])
-  @@index([userId])
-  @@index([provider, providerEmail])
-}
-
-model Friendship {
-  id          String           @id @default(uuid())
-  userId      String
-  friendId    String
-  status      FriendshipStatus @default(PENDING)
-  requesterId String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  user   Member @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
-  friend Member @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, friendId])
-  @@index([userId, status])
-  @@index([friendId, status])
-  @@index([requesterId])
-  @@map("friendships")
-}
-
-model EventInterest {
-  id        String              @id @default(uuid())
-  memberId  String
-  eventId   String
-  status    EventInterestStatus @default(PLANNING)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@unique([memberId, eventId])
-  @@index([eventId, status])
-  @@index([memberId, status])
-  @@map("event_interests")
 }
