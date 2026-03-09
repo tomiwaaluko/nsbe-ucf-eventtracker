@@ -12,13 +12,25 @@ function CallbackContent() {
   useEffect(() => {
     const handleCallback = async () => {
       const token = searchParams.get("token");
+      const isNew = searchParams.get("is_new") === "true";
       const error = searchParams.get("error");
       const linkRequired = searchParams.get("link_required");
       const email = searchParams.get("email");
       const provider = searchParams.get("provider");
       const accountLinked = searchParams.get("account_linked");
 
+      // Read and clear oauth_mode
+      const oauthMode = localStorage.getItem("oauth_mode");
+      localStorage.removeItem("oauth_mode");
+
       if (token) {
+        // Login mode should reject new users
+        if (oauthMode === "login" && isNew) {
+          // Don't store the token — reject this login attempt
+          router.push("/?error=" + encodeURIComponent("No account found. Please sign up first."));
+          return;
+        }
+
         // Success - store token and redirect
         try {
           localStorage.setItem("token", token);
@@ -44,9 +56,11 @@ function CallbackContent() {
           };
           localStorage.setItem("user", JSON.stringify(user));
 
-          // Redirect based on role
-          if (user.role === "admin" || user.role === "super_admin") {
-            router.push("/admin/dashboard");
+          // Redirect based on whether this is a new account and role
+          if (isNew) {
+            router.push("/onboarding");
+          } else if (user.role === "admin" || user.role === "super_admin") {
+            router.push("/admin");
           } else {
             router.push("/dashboard");
           }

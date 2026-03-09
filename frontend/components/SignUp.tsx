@@ -766,6 +766,7 @@ export function SignUp({
                   }}
                   type="button"
                   onClick={() => {
+                    localStorage.setItem("oauth_mode", "signup");
                     const oauthUrl = api.getOAuthUrl(
                       "google",
                       window.location.origin + "/auth/callback",
@@ -816,6 +817,7 @@ export function SignUp({
                   }}
                   type="button"
                   onClick={() => {
+                    localStorage.setItem("oauth_mode", "signup");
                     const oauthUrl = api.getOAuthUrl(
                       "discord",
                       window.location.origin + "/auth/callback",

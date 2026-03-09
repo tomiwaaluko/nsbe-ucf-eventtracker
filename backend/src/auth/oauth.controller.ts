@@ -93,7 +93,8 @@ export class OAuthController {
       const profile = await this.oauthService.handleGoogleCallback(code, storedState.codeVerifier);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked } = await this.oauthService.linkOrCreateAccount('google', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount } =
+        await this.oauthService.linkOrCreateAccount('google', profile);
 
       if (requiresLinking) {
         return res.redirect(
@@ -111,7 +112,9 @@ export class OAuthController {
       const token = this.oauthService.generateJWT(member);
 
       // Redirect to frontend with token
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked));
+      return res.redirect(
+        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, isNewAccount),
+      );
     } catch (error: any) {
       console.error('Google OAuth callback error:', error);
       return res.redirect(
@@ -181,7 +184,8 @@ export class OAuthController {
       const profile = await this.oauthService.handleDiscordCallback(code);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked } = await this.oauthService.linkOrCreateAccount('discord', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount } =
+        await this.oauthService.linkOrCreateAccount('discord', profile);
 
       if (requiresLinking) {
         return res.redirect(
@@ -199,7 +203,9 @@ export class OAuthController {
       const token = this.oauthService.generateJWT(member);
 
       // Redirect to frontend with token
-      return res.redirect(this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked));
+      return res.redirect(
+        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked, isNewAccount),
+      );
     } catch (error: any) {
       console.error('Discord OAuth callback error:', error);
       return res.redirect(

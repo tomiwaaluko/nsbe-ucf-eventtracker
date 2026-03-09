@@ -292,15 +292,14 @@ export class OAuthService {
       };
     }
 
-    // Step 2: Check if email exists and is verified
-    if (profile.email && profile.emailVerified) {
-      // Find existing member by email
+    // Step 2: Check if a member already exists with the same email (regardless of verification)
+    if (profile.email) {
       const existingMember = await this.prisma.member.findUnique({
         where: { email: profile.email },
       });
 
       if (existingMember) {
-        // Email matches existing account - link OAuth account
+        // Email matches existing account - link OAuth account to it
         await this.prisma.oAuthAccount.create({
           data: {
             userId: existingMember.id,
@@ -311,8 +310,8 @@ export class OAuthService {
           },
         });
 
-        // Update email verification status if needed
-        if (!existingMember.emailVerified) {
+        // Upgrade email verification status if provider verified it
+        if (profile.emailVerified && !existingMember.emailVerified) {
           await this.prisma.member.update({
             where: { id: existingMember.id },
             data: { emailVerified: true },
@@ -320,7 +319,7 @@ export class OAuthService {
         }
 
         return {
-          member: { ...existingMember, emailVerified: true },
+          member: { ...existingMember, emailVerified: existingMember.emailVerified || profile.emailVerified },
           isNewAccount: false,
           requiresLinking: false,
           isAccountLinked: true,
@@ -405,7 +404,7 @@ export class OAuthService {
     return {
       member: newMember,
       isNewAccount: true,
-      requiresLinking: !profile.email || !profile.emailVerified,
+      requiresLinking: false,
       isAccountLinked: false,
     };
   }
@@ -428,13 +427,22 @@ export class OAuthService {
   /**
    * Get redirect URL after OAuth callback
    */
-  getRedirectUrl(token?: string, error?: string, linkRequired?: boolean, email?: string, provider?: string, isAccountLinked?: boolean): string {
+  getRedirectUrl(
+    token?: string,
+    error?: string,
+    linkRequired?: boolean,
+    email?: string,
+    provider?: string,
+    isAccountLinked?: boolean,
+    isNewAccount?: boolean,
+  ): string {
     const params = new URLSearchParams();
 
     if (token) {
       params.set('token', token);
       if (provider) params.set('provider', provider);
       if (isAccountLinked) params.set('account_linked', 'true');
+      if (isNewAccount) params.set('is_new', 'true');
     } else if (error) {
       params.set('error', error);
     } else if (linkRequired) {
