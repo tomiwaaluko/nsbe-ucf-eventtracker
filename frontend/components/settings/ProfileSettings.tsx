@@ -261,11 +261,11 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
     <div className="space-y-6">
       {/* Profile Photo Section */}
       <div>
-        <h3 className="font-extrabold text-black text-xl mb-4">Profile Photo</h3>
+        <h3 className="font-extrabold text-white text-xl mb-4">Profile Photo</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="relative">
             {previewUrl ? (
-              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-white/20">
                 <img
                   src={previewUrl}
                   alt="Profile"
@@ -280,8 +280,8 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
                 </button>
               </div>
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
-                <User className="h-12 w-12 text-gray-400" />
+              <div className="w-24 h-24 rounded-full bg-[#1a1a1a] flex items-center justify-center border-2 border-dashed border-white/20">
+                <User className="h-12 w-12 text-white/30" />
               </div>
             )}
           </div>
@@ -310,82 +310,82 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-black/70 font-medium mt-2">
+            <p className="text-xs text-white/60 font-medium mt-2">
               JPG, PNG or GIF. Max size 5MB. Recommended 400x400px.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="font-extrabold text-black text-xl mb-4">
+      <div className="border-t border-white/10 pt-6">
+        <h3 className="font-extrabold text-white text-xl mb-4">
           Personal Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* First Name */}
           <div className="space-y-2">
-            <Label htmlFor="firstName" className="font-bold text-black">
-              First Name <span className="text-red-500">*</span>
+            <Label htmlFor="firstName" className="font-bold text-white">
+              First Name <span className="text-red-400">*</span>
             </Label>
             <Input
               id="firstName"
               type="text"
               value={formData.firstName}
               onChange={(e) => handleChange("firstName", e.target.value)}
-              className={errors.firstName ? "border-red-500" : ""}
+              className={`bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30 ${errors.firstName ? "border-red-400" : ""}`}
               aria-invalid={!!errors.firstName}
             />
             {errors.firstName && (
-              <p className="text-sm text-red-600">⚠ {errors.firstName}</p>
+              <p className="text-sm text-red-400">⚠ {errors.firstName}</p>
             )}
           </div>
 
           {/* Last Name */}
           <div className="space-y-2">
-            <Label htmlFor="lastName" className="font-bold text-black">
-              Last Name <span className="text-red-500">*</span>
+            <Label htmlFor="lastName" className="font-bold text-white">
+              Last Name <span className="text-red-400">*</span>
             </Label>
             <Input
               id="lastName"
               type="text"
               value={formData.lastName}
               onChange={(e) => handleChange("lastName", e.target.value)}
-              className={errors.lastName ? "border-red-500" : ""}
+              className={`bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30 ${errors.lastName ? "border-red-400" : ""}`}
               aria-invalid={!!errors.lastName}
             />
             {errors.lastName && (
-              <p className="text-sm text-red-600">⚠ {errors.lastName}</p>
+              <p className="text-sm text-red-400">⚠ {errors.lastName}</p>
             )}
           </div>
 
           {/* Email */}
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="email" className="font-bold text-black">
-              Email <span className="text-red-500">*</span>
+            <Label htmlFor="email" className="font-bold text-white">
+              Email <span className="text-red-400">*</span>
             </Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               disabled
-              className="bg-gray-100"
+              className="bg-[#0a0a0a] border-white/10 text-white/50"
             />
-            <p className="text-xs text-black/70 font-medium">
+            <p className="text-xs text-white/50 font-medium">
               Email cannot be changed
             </p>
           </div>
 
           {/* Major */}
           <div className="space-y-2">
-            <Label htmlFor="major" className="font-bold text-black">Major</Label>
+            <Label htmlFor="major" className="font-bold text-white">Major</Label>
             <select
               id="major"
               value={formData.major}
               onChange={(e) => handleChange("major", e.target.value)}
-              className="flex h-9 w-full rounded-md border-2 border-black bg-white px-3 py-1 text-sm font-medium text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              className="flex h-9 w-full rounded-md border border-white/20 bg-[#1a1a1a] px-3 py-1 text-sm font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00a651]"
             >
-              <option value="" className="text-black/60">Select your major</option>
+              <option value="" className="text-white/60 bg-[#1a1a1a]">Select your major</option>
               {MAJORS.map((major) => (
                 <option key={major} value={major}>
                   {major}
@@ -396,16 +396,16 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
           {/* Graduation Year */}
           <div className="space-y-2">
-            <Label htmlFor="graduationYear" className="font-bold text-black">Expected Graduation</Label>
+            <Label htmlFor="graduationYear" className="font-bold text-white">Expected Graduation</Label>
             <select
               id="graduationYear"
               value={formData.graduationYear}
               onChange={(e) =>
                 handleChange("graduationYear", e.target.value)
               }
-              className="flex h-9 w-full rounded-md border-2 border-black bg-white px-3 py-1 text-sm font-medium text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              className="flex h-9 w-full rounded-md border border-white/20 bg-[#1a1a1a] px-3 py-1 text-sm font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00a651]"
             >
-              <option value="" className="text-black/60">Select year</option>
+              <option value="" className="text-white/60 bg-[#1a1a1a]">Select year</option>
               {GRADUATION_YEARS.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -416,17 +416,17 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
           {/* Bio */}
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="bio" className="font-bold text-black">Bio</Label>
+            <Label htmlFor="bio" className="font-bold text-white">Bio</Label>
             <Textarea
               id="bio"
               value={formData.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
               placeholder="Tell us about yourself..."
               maxLength={500}
-              className="resize-none"
+              className="resize-none bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30"
               rows={4}
             />
-            <p className="text-xs text-black/70 font-medium">
+            <p className="text-xs text-white/50 font-medium">
               {formData.bio?.length || 0}/500 characters
             </p>
           </div>
@@ -434,49 +434,51 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       </div>
 
       {/* Contact Information */}
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="font-extrabold text-black text-xl mb-4">
+      <div className="border-t border-white/10 pt-6">
+        <h3 className="font-extrabold text-white text-xl mb-4">
           Contact Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Phone Number */}
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber" className="font-bold text-black">Phone Number</Label>
+            <Label htmlFor="phoneNumber" className="font-bold text-white">Phone Number</Label>
             <Input
               id="phoneNumber"
               type="tel"
               value={formData.phoneNumber}
               onChange={(e) => handleChange("phoneNumber", e.target.value)}
               placeholder="(123) 456-7890"
+              className="bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30"
             />
           </div>
 
           {/* Discord Username */}
           <div className="space-y-2">
-            <Label htmlFor="discordUsername" className="font-bold text-black">Discord Username</Label>
+            <Label htmlFor="discordUsername" className="font-bold text-white">Discord Username</Label>
             <Input
               id="discordUsername"
               type="text"
               value={formData.discordUsername}
               onChange={(e) => handleChange("discordUsername", e.target.value)}
               placeholder="username#1234"
+              className="bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30"
             />
           </div>
 
           {/* LinkedIn URL */}
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="linkedInUrl" className="font-bold text-black">LinkedIn Profile</Label>
+            <Label htmlFor="linkedInUrl" className="font-bold text-white">LinkedIn Profile</Label>
             <Input
               id="linkedInUrl"
               type="url"
               value={formData.linkedInUrl}
               onChange={(e) => handleChange("linkedInUrl", e.target.value)}
               placeholder="https://linkedin.com/in/yourprofile"
-              className={errors.linkedInUrl ? "border-red-500" : ""}
+              className={`bg-[#1a1a1a] border-white/20 text-white placeholder:text-white/30 ${errors.linkedInUrl ? "border-red-400" : ""}`}
             />
             {errors.linkedInUrl && (
-              <p className="text-sm text-red-600">⚠ {errors.linkedInUrl}</p>
+              <p className="text-sm text-red-400">⚠ {errors.linkedInUrl}</p>
             )}
           </div>
         </div>
@@ -484,10 +486,10 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
 
       {/* Action Buttons */}
       {hasChanges && (
-        <div className="border-t border-gray-200 pt-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-800 flex items-center gap-2">
-              <span className="text-blue-600">ℹ️</span>
+        <div className="border-t border-white/10 pt-6">
+          <div className="bg-[#00a651]/10 border border-[#00a651]/30 rounded-lg p-4 mb-4">
+            <p className="text-sm text-[#00a651] flex items-center gap-2">
+              <span className="text-[#00a651]">ℹ️</span>
               You have unsaved changes
             </p>
           </div>
@@ -522,11 +524,11 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
       )}
 
       {/* Info Box */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-900 text-sm mb-2">
+      <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4">
+        <h4 className="font-semibold text-white text-sm mb-2">
           Why we need this information
         </h4>
-        <ul className="text-xs text-gray-600 space-y-1">
+        <ul className="text-xs text-white/60 space-y-1">
           <li>
             • Your name appears on event attendance records and certificates
           </li>

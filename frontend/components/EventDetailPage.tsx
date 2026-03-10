@@ -52,33 +52,33 @@ const getCategoryConfig = (category: EventCategory) => {
   // Map categories to Tailwind classes and icons
   const configMap: Record<EventCategory, { gradient: string; color: string; icon: string }> = {
     [EventCategory.GBM]: {
-      gradient: "from-green-500 to-green-600",
-      color: "bg-green-100 text-green-700 border-green-200",
+      gradient: "from-[#00a651] to-[#006830]",
+      color: "bg-[#00a651]/20 text-[#00a651] border-[#00a651]/30",
       icon: "",
     },
     [EventCategory.SOCIAL]: {
-      gradient: "from-yellow-500 to-yellow-600",
-      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      gradient: "from-[#ffb81c] to-[#a67c00]",
+      color: "bg-[#ffb81c]/20 text-[#ffb81c] border-[#ffb81c]/30",
       icon: "",
     },
     [EventCategory.WORKSHOP]: {
-      gradient: "from-blue-500 to-blue-600",
-      color: "bg-blue-100 text-blue-700 border-blue-200",
+      gradient: "from-[#16a34a] to-[#052e16]",
+      color: "bg-[#16a34a]/20 text-[#16a34a] border-[#16a34a]/30",
       icon: "",
     },
     [EventCategory.FUNDRAISER]: {
-      gradient: "from-red-500 to-red-600",
-      color: "bg-red-100 text-red-700 border-red-200",
+      gradient: "from-[#ca8a04] to-[#713f12]",
+      color: "bg-[#ca8a04]/20 text-[#ca8a04] border-[#ca8a04]/30",
       icon: "",
     },
     [EventCategory.COMMUNITY_SERVICE]: {
-      gradient: "from-amber-700 to-amber-800",
-      color: "bg-amber-100 text-amber-700 border-amber-200",
+      gradient: "from-[#15803d] to-[#052e16]",
+      color: "bg-[#15803d]/20 text-[#15803d] border-[#15803d]/30",
       icon: "",
     },
     [EventCategory.COMMITTEE_PARTICIPATION]: {
-      gradient: "from-purple-500 to-purple-600",
-      color: "bg-purple-100 text-purple-700 border-purple-200",
+      gradient: "from-[#374151] to-[#111827]",
+      color: "bg-white/10 text-white/70 border-white/20",
       icon: "",
     },
   };
@@ -143,14 +143,14 @@ export function EventDetailPage({
   return (
     <div className="space-y-6">
       {/* Back button */}
-      <Button variant="ghost" onClick={onBack} className="gap-2">
+      <Button onClick={onBack} className="gap-2 bg-white text-black border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wide hover:bg-black/5 rounded-none">
         <ArrowLeft className="w-4 h-4" />
         Back to Events
       </Button>
 
       {/* Hero section */}
       <div
-        className={`bg-gradient-to-r ${config.gradient} rounded-2xl p-8 text-white relative overflow-hidden`}
+        className={`bg-gradient-to-r ${config.gradient} p-8 text-white relative overflow-hidden border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]`}
       >
         {config.icon && (
           <div className="absolute top-0 right-0 text-9xl opacity-10">
@@ -189,27 +189,27 @@ export function EventDetailPage({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
+            className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]"
           >
-            <h3 className="text-gray-900 mb-4">Event Details</h3>
+            <h3 className="text-black font-extrabold uppercase tracking-wide mb-4">Event Details</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-gray-100">
-                  <Calendar className="w-5 h-5 text-gray-600" />
+                <div className="p-3 bg-[#00a651]/10">
+                  <Calendar className="w-5 h-5 text-[#00a651]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Date</p>
-                  <p className="text-gray-900">{formatDate(startDate)}</p>
+                  <p className="text-xs text-black/50 font-bold uppercase tracking-wide">Date</p>
+                  <p className="text-black font-medium">{formatDate(startDate)}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-gray-100">
-                  <Clock className="w-5 h-5 text-gray-600" />
+                <div className="p-3 bg-[#00a651]/10">
+                  <Clock className="w-5 h-5 text-[#00a651]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Time</p>
-                  <p className="text-gray-900">
+                  <p className="text-xs text-black/50 font-bold uppercase tracking-wide">Time</p>
+                  <p className="text-black font-medium">
                     {formatTime(startDate)} - {formatTime(endDate)}
                   </p>
                 </div>
@@ -217,23 +217,23 @@ export function EventDetailPage({
 
               {event.location && (
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-gray-100">
-                    <MapPin className="w-5 h-5 text-gray-600" />
+                  <div className="p-3 bg-[#00a651]/10">
+                    <MapPin className="w-5 h-5 text-[#00a651]" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="text-gray-900">{event.location}</p>
+                    <p className="text-xs text-black/50 font-bold uppercase tracking-wide">Location</p>
+                    <p className="text-black font-medium">{event.location}</p>
                   </div>
                 </div>
               )}
 
               <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-gray-100">
-                  <Tag className="w-5 h-5 text-gray-600" />
+                <div className="p-3 bg-[#00a651]/10">
+                  <Tag className="w-5 h-5 text-[#00a651]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Category</p>
-                  <p className="text-gray-900">{config.label}</p>
+                  <p className="text-xs text-black/50 font-bold uppercase tracking-wide">Category</p>
+                  <p className="text-black font-medium">{config.label}</p>
                 </div>
               </div>
             </div>
@@ -245,10 +245,10 @@ export function EventDetailPage({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
+              className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900">Attendee List</h3>
+                <h3 className="text-black font-extrabold uppercase tracking-wide">Attendee List</h3>
                 <Badge>{event.attendees.length}</Badge>
               </div>
               {event.attendees.length > 0 ? (
@@ -256,7 +256,7 @@ export function EventDetailPage({
                   {event.attendees.map((attendee) => (
                     <div
                       key={attendee.id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-3 hover:bg-black/5 transition-colors"
                     >
                       <Avatar>
                         <AvatarFallback className="bg-[#00a651] text-white">
@@ -268,12 +268,12 @@ export function EventDetailPage({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 truncate">
+                        <p className="text-sm text-black font-medium truncate">
                           {attendee.firstName && attendee.lastName
                             ? `${attendee.firstName} ${attendee.lastName}`
                             : attendee.email}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-black/50">
                           Checked in at{" "}
                           {new Date(attendee.checkedInAt).toLocaleTimeString(
                             "en-US",
@@ -289,7 +289,7 @@ export function EventDetailPage({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-black/50">
                   <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No attendees yet</p>
                 </div>
@@ -304,14 +304,14 @@ export function EventDetailPage({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
+            className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]"
           >
-            <h4 className="text-gray-900 mb-4">Actions</h4>
+            <h4 className="text-black font-extrabold uppercase tracking-wide mb-4">Actions</h4>
             <div className="space-y-3">
               {!isPast && event.isActive && onCheckIn && (
                 <Button
                   onClick={() => onCheckIn(event.id)}
-                  className="w-full bg-[#00a651] hover:bg-[#008a44] text-white gap-2"
+                  className="w-full bg-[#00a651] hover:bg-[#008a44] text-white gap-2 border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider rounded-none"
                 >
                   <QrCode className="w-4 h-4" />
                   Check In
@@ -319,9 +319,8 @@ export function EventDetailPage({
               )}
               {canEdit && onEdit && (
                 <Button
-                  variant="outline"
                   onClick={() => onEdit(event.id)}
-                  className="w-full gap-2"
+                  className="w-full gap-2 bg-white text-black border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider hover:bg-black/5 rounded-none"
                 >
                   <Edit className="w-4 h-4" />
                   Edit Event
@@ -336,9 +335,9 @@ export function EventDetailPage({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
+              className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]"
             >
-              <h4 className="text-gray-900 mb-4">Created By</h4>
+              <h4 className="text-black font-extrabold uppercase tracking-wide mb-4">Created By</h4>
               <div className="flex items-center gap-3">
                 <Avatar>
                   <AvatarFallback className="bg-[#00a651] text-white">
@@ -350,12 +349,12 @@ export function EventDetailPage({
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-black font-medium">
                     {event.createdBy.firstName && event.createdBy.lastName
                       ? `${event.createdBy.firstName} ${event.createdBy.lastName}`
                       : event.createdBy.email}
                   </p>
-                  <p className="text-xs text-gray-500">Event Organizer</p>
+                  <p className="text-xs text-black/50 uppercase tracking-wide">Event Organizer</p>
                 </div>
               </div>
             </motion.div>
