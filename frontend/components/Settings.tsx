@@ -35,12 +35,12 @@ function WipPlaceholder({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-black/30 bg-gray-50 rounded-lg">
+    <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-white/20 bg-[#1a1a1a] rounded-lg">
       <Construction className="w-16 h-16 text-amber-500 mb-4" />
-      <h3 className={`text-xl font-bold text-black/70 mb-2 ${bricolage.className}`}>
+      <h3 className={`text-xl font-bold text-white/70 mb-2 ${bricolage.className}`}>
         {title}
       </h3>
-      <p className={`text-sm text-black/60 text-center max-w-md ${sora.className}`}>
+      <p className={`text-sm text-white/60 text-center max-w-md ${sora.className}`}>
         {description}
       </p>
       <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-100 border-2 border-amber-600/50 text-amber-800">
@@ -306,7 +306,7 @@ export function Settings({ onBack, memberData }: SettingsProps) {
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-black translate-x-3 translate-y-3" />
-                <div className="relative bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
+                <div className="relative bg-[#111] border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
                   {/* Tab Header - Desktop */}
                   <div className="hidden lg:block border-b-4 border-black px-6 py-5">
                   {tabs.map((tab) => {
@@ -325,12 +325,12 @@ export function Settings({ onBack, memberData }: SettingsProps) {
                           </div>
                           <div>
                             <h2
-                              className={`text-xl font-extrabold text-black ${bricolage.className} uppercase tracking-wide`}
+                              className={`text-xl font-extrabold text-white ${bricolage.className} uppercase tracking-wide`}
                             >
                               {tab.label}
                             </h2>
                             <p
-                              className={`text-sm ${sora.className} text-black/70 font-medium`}
+                              className={`text-sm ${sora.className} text-white/70 font-medium`}
                             >
                               {tab.description}
                             </p>

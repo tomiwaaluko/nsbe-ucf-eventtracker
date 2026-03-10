@@ -257,10 +257,10 @@ export function Sidebar({
                       <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
                     )}
                     <div
-                      className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                      className={`relative flex items-center gap-3 px-4 py-3 transition-all ${
                         isActive
-                          ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-                          : "bg-white text-black hover:bg-black/5"
+                          ? "border-2 border-black bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                          : "text-black hover:bg-black/5"
                       } ${(item as { wip?: boolean }).wip ? "opacity-90" : ""}`}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
@@ -318,10 +318,10 @@ export function Sidebar({
                           <div className="absolute inset-0 bg-black translate-x-1 translate-y-1" />
                         )}
                         <div
-                          className={`relative flex items-center gap-3 px-4 py-3 border-2 border-black transition-all ${
+                          className={`relative flex items-center gap-3 px-4 py-3 transition-all ${
                             isActive
-                              ? "bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-                              : "bg-white text-black hover:bg-black/5"
+                              ? "border-2 border-black bg-[#00a651] text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                              : "text-black hover:bg-black/5"
                           }`}
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />

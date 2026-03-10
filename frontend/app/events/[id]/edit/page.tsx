@@ -116,8 +116,9 @@ export default function EditEventPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-gray-500">Loading event...</div>
+        <div className="relative min-h-screen flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+          <div className="relative z-10 text-lg text-white font-bold uppercase tracking-wider">Loading event...</div>
         </div>
       </DashboardLayout>
     );
@@ -126,12 +127,13 @@ export default function EditEventPage() {
   if (!event) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-gray-500 mb-4">Event not found</p>
+        <div className="relative min-h-screen flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+          <div className="relative z-10 text-center">
+            <p className="text-white/70 mb-4 font-medium">Event not found</p>
             <button
               onClick={() => router.push("/admin/events")}
-              className="text-[#00a651] hover:underline"
+              className="bg-white text-black border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wide px-6 py-2 hover:bg-black/5"
             >
               Back to Events
             </button>
@@ -143,13 +145,16 @@ export default function EditEventPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <EditEventForm 
-            event={transformEventForForm(event)}
-            onSubmit={handleSubmit} 
-            onCancel={handleCancel}
-          />
+      <div className="relative min-h-screen">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+        <div className="relative z-10 p-4 lg:p-6">
+          <div className="max-w-4xl mx-auto">
+            <EditEventForm
+              event={transformEventForForm(event)}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

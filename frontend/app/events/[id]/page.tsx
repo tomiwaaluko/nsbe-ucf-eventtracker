@@ -183,8 +183,9 @@ export default function EventDetail() {
   if (isLoading || !event) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-lg">Loading...</div>
+        <div className="relative min-h-screen flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+          <div className="relative z-10 text-lg text-white font-bold uppercase tracking-wider">Loading...</div>
         </div>
       </DashboardLayout>
     );
@@ -194,7 +195,9 @@ export default function EventDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="relative min-h-screen">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00a651] via-[#006830] to-[#0a0a0a]" />
+        <div className="relative z-10 p-4 lg:p-6 space-y-6">
         <EventDetailPage
           event={event}
           onBack={handleBack}
@@ -208,15 +211,14 @@ export default function EventDetail() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl p-6 shadow-md border border-gray-200"
+            className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)]"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Plan to Attend</h3>
+              <h3 className="text-lg font-extrabold text-black uppercase tracking-wide">Plan to Attend</h3>
               <Button
-                variant={isPlanning ? "default" : "outline"}
                 onClick={handleTogglePlan}
                 disabled={isLoadingPlan}
-                className={isPlanning ? "bg-[#00a651] hover:bg-[#008a44] text-white" : ""}
+                className={`rounded-none border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] font-bold uppercase tracking-wider ${isPlanning ? "bg-[#00a651] hover:bg-[#008a44] text-white" : "bg-white text-black hover:bg-black/5"}`}
               >
                 {isLoadingPlan ? (
                   <>
@@ -237,19 +239,19 @@ export default function EventDetail() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-              <Users className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-sm text-black/60 mb-4">
+              <Users className="w-4 h-4 text-black/40" />
               <span>
                 {plannedCount} {plannedCount === 1 ? "person" : "people"} planning to attend
               </span>
             </div>
 
             {friendsPlanning.length > 0 && (
-              <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 mb-2">
+              <div className="mb-4 p-3 bg-[#00a651]/10 rounded-lg border border-[#00a651]/30">
+                <Badge className="bg-[#00a651] text-white border-0 mb-2">
                   {friendsPlanning.length} of your friends planning to attend
                 </Badge>
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-black">
                   {friendsPlanning.slice(0, 5).map((friend, i) => (
                     <span key={i}>
                       {friend.firstName} {friend.lastName}
@@ -264,14 +266,14 @@ export default function EventDetail() {
             {/* Who's Planning List */}
             {allPlanners.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                <h4 className="text-xs font-bold text-black/60 uppercase tracking-wider mb-3">
                   Who's Planning to Attend
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
                   {allPlanners.map((planner) => (
                     <div
                       key={planner.memberId}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-3 hover:bg-black/5 transition-colors"
                     >
                       <Avatar>
                         <AvatarFallback className="bg-[#00a651] text-white">
@@ -283,13 +285,13 @@ export default function EventDetail() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 truncate">
+                        <p className="text-sm text-black font-medium truncate">
                           {planner.firstName && planner.lastName
                             ? `${planner.firstName} ${planner.lastName}`
                             : planner.email}
                         </p>
                         {planner.isFriend && (
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 mt-1">
+                          <Badge className="text-xs bg-[#00a651] text-white border-0 mt-1">
                             Friend
                           </Badge>
                         )}
@@ -301,6 +303,7 @@ export default function EventDetail() {
             )}
           </motion.div>
         )}
+        </div>
       </div>
     </DashboardLayout>
   );
