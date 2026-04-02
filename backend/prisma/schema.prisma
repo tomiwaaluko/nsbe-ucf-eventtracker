@@ -30,8 +30,10 @@ model Member {
   eventsCreated   Event[]
   oauthAccounts   OAuthAccount[]
   eventInterests  EventInterest[]
-  friendOf        Friendship[]    @relation("FriendFriendships")
-  friendships     Friendship[]    @relation("UserFriendships")
+  friendOf            Friendship[]    @relation("FriendFriendships")
+  friendships         Friendship[]    @relation("UserFriendships")
+  pointEntries        PointEntry[]    @relation("MemberPointEntries")
+  awardedPointEntries PointEntry[]    @relation("AwardedByAdmin")
 
   @@index([email])
 }
@@ -139,4 +141,24 @@ enum EventInterestStatus {
   PLANNING
   CANCELLED
   ATTENDED
+}
+
+model PointEntry {
+  id           String   @id @default(uuid())
+  memberId     String
+  member       Member   @relation("MemberPointEntries", fields: [memberId], references: [id])
+
+  pointTypeKey String
+  points       Int
+  semester     String
+  label        String?
+  note         String?
+
+  awardedById  String
+  awardedBy    Member   @relation("AwardedByAdmin", fields: [awardedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([memberId, pointTypeKey, label, semester])
+  @@index([memberId, semester])
+  @@index([semester])
 }

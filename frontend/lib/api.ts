@@ -78,6 +78,53 @@ export function getOAuthRedirectBase(): string {
   return '';
 }
 
+export interface PointType {
+  label: string;
+  points: number;
+  zone: 'general' | 'communication' | 'program' | 'parliamentarian';
+  requiresLabel: boolean;
+  autoSource: string | null;
+}
+
+export interface PointTypesMap {
+  [key: string]: PointType;
+}
+
+export interface PointEntry {
+  id: string;
+  memberId: string;
+  member: { firstName: string; lastName: string; email: string };
+  pointTypeKey: string;
+  points: number;
+  semester: string;
+  label: string | null;
+  note: string | null;
+  awardedById: string;
+  awardedBy: { firstName: string; lastName: string };
+  createdAt: string;
+}
+
+export interface LeaderboardEntry {
+  memberId: string;
+  name: string;
+  totalPoints: number;
+  general: number;
+  communication: number;
+  program: number;
+  parliamentarian: number;
+}
+
+export interface BulkAwardResult {
+  awarded: number;
+  skipped: number;
+  notFound: number;
+}
+
+export interface ResolvedMembersResult {
+  resolved: Array<{ line: string; member: { id: string; name: string; email: string } }>;
+  unresolved: string[];
+}
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
@@ -652,5 +699,82 @@ export const api = {
       throw new Error(errorText || 'Failed to check planning status');
     }
     return response.json();
+  },
+
+  // Points
+  getPointTypes: async (token: string): Promise<PointTypesMap> => {
+    const response = await fetch(`${API_URL}/points/types`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getPointsSemesters: async (token: string): Promise<string[]> => {
+    const response = await fetch(`${API_URL}/points/semesters`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getPointsLeaderboard: async (token: string, semester: string): Promise<LeaderboardEntry[]> => {
+    const response = await fetch(`${API_URL}/points/leaderboard?semester=${encodeURIComponent(semester)}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getMemberPoints: async (token: string, memberId: string, semester: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/points/member/${memberId}?semester=${encodeURIComponent(semester)}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  getManualPointEntries: async (token: string, semester: string): Promise<PointEntry[]> => {
+    const response = await fetch(`${API_URL}/points/manual?semester=${encodeURIComponent(semester)}`, {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
+  },
+
+  bulkAwardPoints: async (
+    token: string,
+    payload: {
+      memberIds: string[];
+      pointTypeKey: string;
+      semester: string;
+      label?: string;
+      note?: string;
+    }
+  ): Promise<BulkAwardResult> => {
+    const response = await fetch(`${API_URL}/points/bulk`, {
+      method: 'POST',
+      headers: apiHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(response);
+  },
+
+  resolveMembers: async (token: string, lines: string[]): Promise<ResolvedMembersResult> => {
+    const response = await fetch(`${API_URL}/points/resolve-members`, {
+      method: 'POST',
+      headers: apiHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify({ lines }),
+    });
+    return handleResponse(response);
+  },
+
+  deletePointEntry: async (token: string, entryId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/points/manual/${entryId}`, {
+      method: 'DELETE',
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    return handleResponse(response);
   },
 };

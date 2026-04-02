@@ -11,6 +11,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { StatsModule } from './stats/stats.module';
 import { FriendsModule } from './friends/friends.module';
 import { EventInterestModule } from './event-interest/event-interest.module';
+import { PointsModule } from './points/points.module';
 import { ApiKeyMiddleware } from './common/api-key.middleware';
 
 @Module({
@@ -25,6 +26,7 @@ import { ApiKeyMiddleware } from './common/api-key.middleware';
     StatsModule,
     FriendsModule,
     EventInterestModule,
+    PointsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
