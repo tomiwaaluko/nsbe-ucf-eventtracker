@@ -121,6 +121,13 @@ const menuItems = [
     section: "admin",
   },
   {
+    id: "admin-points",
+    label: "Points",
+    icon: Trophy,
+    roles: ["admin", "super_admin"],
+    section: "admin",
+  },
+  {
     id: "admin-admins",
     label: "Manage Admins",
     icon: Shield,
