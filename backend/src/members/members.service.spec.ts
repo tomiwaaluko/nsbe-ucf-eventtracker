@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 
 describe('MembersService', () => {
   let service: MembersService;
@@ -18,6 +19,10 @@ describe('MembersService', () => {
               update: jest.fn(),
             },
           },
+        },
+        {
+          provide: CacheService,
+          useValue: {},
         },
       ],
     }).compile();

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StatsService } from './stats.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 
 describe('StatsService', () => {
   let service: StatsService;
@@ -23,6 +24,10 @@ describe('StatsService', () => {
               count: jest.fn(),
             },
           },
+        },
+        {
+          provide: CacheService,
+          useValue: {},
         },
       ],
     }).compile();

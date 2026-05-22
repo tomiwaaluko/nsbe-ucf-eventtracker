@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -10,13 +10,6 @@ export const metadata: Metadata = {
   title: "NSBE UCF Event Tracker",
   description: "Track your NSBE UCF event attendance and achievements",
   manifest: "/manifest.json",
-  themeColor: "#00843D",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -38,6 +31,14 @@ export const metadata: Metadata = {
     ],
     apple: "/android-chrome-512x512.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#00843D",
 };
 
 export default function RootLayout({

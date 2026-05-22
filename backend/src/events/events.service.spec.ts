@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 
 describe('EventsService', () => {
   let service: EventsService;
@@ -20,6 +21,10 @@ describe('EventsService', () => {
               delete: jest.fn(),
             },
           },
+        },
+        {
+          provide: CacheService,
+          useValue: {},
         },
       ],
     }).compile();

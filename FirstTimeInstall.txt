@@ -1,0 +1,24 @@
+    Basic Run Commands
+  make docker-db-up                                                                                                                                                       
+  make dev-backend                                                                                                                                                        
+  make dev-frontend                                                                                                                                                       
+                                                                                                                                                                          
+  Run those in separate terminals after dependencies are installed.                                                                                                       
+                                                                                                                                                                          
+  Typical first-time flow:                                                                                                                                                
+                                                                                                                                                                          
+  make install                                                                                                                                                            
+  Copy-Item backend\.env.example backend\.env                                                                                                                             
+  Copy-Item frontend\.env.example frontend\.env.local                                                                                                                     
+  make docker-db-up                                                                                                                                                       
+  make prisma-generate                                                                                                                                                    
+
+  Then open:
+
+  - Frontend: http://localhost:3000
+  - Backend API: http://localhost:4000
+  - Database: localhost:5432
+
+  There is also make dev, which starts backend and frontend together, but I’d usually start the database first with make docker-db-up, then run backend and frontend in   
+  separate terminals so logs are easier to read. The full Docker path is make docker-up, but that runs the backend in a more production-like container mode, which is less
+  convenient for day-to-day code changes.

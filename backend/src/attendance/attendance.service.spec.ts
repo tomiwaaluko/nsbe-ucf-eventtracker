@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttendanceService } from './attendance.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 
 describe('AttendanceService', () => {
   let service: AttendanceService;
@@ -20,6 +21,10 @@ describe('AttendanceService', () => {
               findMany: jest.fn(),
             },
           },
+        },
+        {
+          provide: CacheService,
+          useValue: {},
         },
       ],
     }).compile();

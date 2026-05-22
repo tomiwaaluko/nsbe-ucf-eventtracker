@@ -3,6 +3,8 @@ import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
+import { AuthService } from '../auth/auth.service';
+import { StorageService } from '../storage/storage.service';
 
 describe('MembersController', () => {
   let controller: MembersController;
@@ -17,6 +19,14 @@ describe('MembersController', () => {
         },
         {
           provide: PrismaService,
+          useValue: {},
+        },
+        {
+          provide: AuthService,
+          useValue: {},
+        },
+        {
+          provide: StorageService,
           useValue: {},
         },
       ],
