@@ -376,11 +376,15 @@ export class FriendsService {
     const members = await this.prisma.member.findMany({
       where: {
         isActive: true,
+        // SECURITY: no email predicate. The select below deliberately omits
+        // email, but searching on it turned this into a substring oracle -
+        // any member could walk `?search=a`, `?search=ab`, ... and rebuild
+        // every address in the chapter, each one attached to a name. The
+        // projection hid the column; the filter handed it back.
         ...(searchQuery && {
           OR: [
             { firstName: { contains: searchQuery, mode: 'insensitive' } },
             { lastName: { contains: searchQuery, mode: 'insensitive' } },
-            { email: { contains: searchQuery, mode: 'insensitive' } },
           ],
         }),
       },

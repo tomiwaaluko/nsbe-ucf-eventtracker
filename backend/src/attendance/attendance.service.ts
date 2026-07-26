@@ -198,8 +198,23 @@ export class AttendanceService {
           },
         }),
       },
+      // SECURITY: an explicit select, not `event: true`. Including the whole
+      // relation serialised every Event column - qrSecret and checkInCode
+      // among them - to any member reading their own attendance history.
       include: {
-        event: true,
+        event: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            semester: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            isActive: true,
+          },
+        },
       },
       orderBy: { checkedInAt: 'desc' },
     });

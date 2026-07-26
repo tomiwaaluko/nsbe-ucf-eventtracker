@@ -53,8 +53,11 @@ export class EventsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.eventsService.findOne(id);
+  async findOne(@Req() req, @Param('id') id: string) {
+    // The check-in code is a shared secret for marking attendance, so it goes
+    // only to admins. The rest of the event is public to signed-in members.
+    const member = await this.membersService.findMe(req.user.id);
+    return this.eventsService.findOne(id, !!member && isAdmin(member.role));
   }
 
   /**
@@ -122,7 +125,9 @@ export class EventsController {
             : 'Failed to generate QR code',
         });
       }
-      throw error;
+      // Deliberately not rethrowing: the response is already sent, and handing
+      // the error to Nest's exception filter would make it reply a second time
+      // on a closed response (ERR_HTTP_HEADERS_SENT). It is already logged.
     }
   }
 

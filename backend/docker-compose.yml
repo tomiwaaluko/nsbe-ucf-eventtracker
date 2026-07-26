@@ -52,6 +52,10 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       OAUTH_CALLBACK_URL: ${OAUTH_CALLBACK_URL:-http://localhost:4000/api/auth/google/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Required: this block sets NODE_ENV=production, and the app refuses to
+      # boot in production without an explicit CORS allowlist. Defaulted to the
+      # local frontend so `docker-compose up` still works out of the box.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy

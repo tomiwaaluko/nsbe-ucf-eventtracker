@@ -5,6 +5,51 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventCategory } from '@prisma/client';
 import { randomUUID, randomInt } from 'crypto';
+
+/**
+ * Explicit field list for event reads.
+ *
+ * SECURITY: Prisma returns EVERY scalar column when no `select` is given, so
+ * `include`-only queries were serialising `qrSecret` and `checkInCode` into
+ * `GET /events` and `GET /events/:id` - neither of which has a role check.
+ * `qrSecret` is the exact value AttendanceService compares on check-in, so any
+ * member could read it and mark themselves present without attending. That
+ * leak also made the admin gate on `GET /events/:id/qr`, the crypto.randomInt
+ * code generation, and the check-in-code throttle all pointless.
+ *
+ * Never replace this with a bare `include`. New secret columns must be opted
+ * IN here, not accidentally opted out.
+ */
+const EVENT_PUBLIC_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  category: true,
+  semester: true,
+  startTime: true,
+  endTime: true,
+  location: true,
+  isActive: true,
+  createdById: true,
+  // qrSecret: NEVER. checkInCode: admins only, see EVENT_ADMIN_SELECT.
+  createdBy: {
+    // No email - see the leaderboard/directory PII notes.
+    select: { firstName: true, lastName: true },
+  },
+  attendance: {
+    select: {
+      id: true,
+      memberId: true,
+      checkedInAt: true,
+    },
+  },
+} as const;
+
+/** Adds the check-in code. Admin-gated callers only. */
+const EVENT_ADMIN_SELECT = {
+  ...EVENT_PUBLIC_SELECT,
+  checkInCode: true,
+} as const;
 import QRCode from 'qrcode'; // lmk if this needs to be reverted to import * as QRCode from 'qrcode';
 
 @Injectable()
@@ -95,39 +140,20 @@ export class EventsService {
         return this.prisma.event.findMany({
           where,
           orderBy: { startTime: 'desc' },
-          include: {
-            createdBy: {
-              select: { email: true, firstName: true, lastName: true },
-            },
-            attendance: {
-              select: {
-                id: true,
-                memberId: true,
-                checkedInAt: true,
-              },
-            },
-          },
+          select: EVENT_PUBLIC_SELECT,
         });
       },
       120, // 2 minutes
     );
   }
 
-  async findOne(id: string) {
+  /**
+   * @param includeSecrets admin only - adds checkInCode to the payload.
+   */
+  async findOne(id: string, includeSecrets = false) {
     return this.prisma.event.findUnique({
       where: { id },
-      include: {
-        createdBy: {
-          select: { email: true, firstName: true, lastName: true },
-        },
-        attendance: {
-          select: {
-            id: true,
-            memberId: true,
-            checkedInAt: true,
-          },
-        },
-      },
+      select: includeSecrets ? EVENT_ADMIN_SELECT : EVENT_PUBLIC_SELECT,
     });
   }
 

@@ -76,6 +76,26 @@ describe('OAuthService.linkOrCreateAccount', () => {
     expect(prisma.member.create).not.toHaveBeenCalled();
   });
 
+  it('does NOT create an account from an unverified email nobody owns yet', async () => {
+    // Account PRE-hijacking. Refusing only when the address already belongs to
+    // someone left the more damaging case open: squat an address BEFORE its
+    // owner signs up, and when they later authenticate with a verified Google
+    // identity the auto-link attaches them to the squatted row - while the
+    // attacker's original OAuth link survives and keeps minting them tokens.
+    prisma.oAuthAccount.findUnique.mockResolvedValue(null);
+    prisma.member.findUnique.mockResolvedValue(null); // nobody owns it yet
+
+    const result = await service.linkOrCreateAccount(
+      'discord',
+      profile(false) as any,
+    );
+
+    expect(result.member).toBeNull();
+    expect(result.requiresLinking).toBe(true);
+    expect(prisma.member.create).not.toHaveBeenCalled();
+    expect(prisma.oAuthAccount.create).not.toHaveBeenCalled();
+  });
+
   it('links to an existing member when the provider verified the email', async () => {
     prisma.oAuthAccount.findUnique.mockResolvedValue(null);
     prisma.member.findUnique.mockResolvedValue({

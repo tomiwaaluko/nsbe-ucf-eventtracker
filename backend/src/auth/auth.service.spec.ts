@@ -9,6 +9,7 @@ type MemberMock = {
   findFirst: jest.Mock;
   create: jest.Mock;
   update: jest.Mock;
+  upsert: jest.Mock;
 };
 
 const buildService = async (): Promise<{
@@ -20,6 +21,7 @@ const buildService = async (): Promise<{
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    upsert: jest.fn(),
   };
 
   const module: TestingModule = await Test.createTestingModule({
@@ -72,37 +74,87 @@ describe('AuthService.findOrCreateMember', () => {
     expect(member.update).not.toHaveBeenCalled();
   });
 
-  it('refuses to rebind a member row when another subject owns the email', async () => {
+  it('refuses to rebind a member row on an UNVERIFIED email claim', async () => {
     // No member for this subject...
     member.findUnique.mockResolvedValueOnce(null);
     // ...but the email belongs to someone else (e.g. an admin).
     member.findUnique.mockResolvedValueOnce({ id: 'admin-sub' });
 
     await expect(
+      // emailVerified defaults to false - this is the takeover attempt.
       service.findOrCreateMember('attacker-sub', 'admin@example.com'),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     // The assertions that matter: no row is repointed, no duplicate created.
     expect(member.update).not.toHaveBeenCalled();
     expect(member.create).not.toHaveBeenCalled();
+    expect(member.upsert).not.toHaveBeenCalled();
+  });
+
+  it('repairs a legacy row id when the provider VERIFIED the email', async () => {
+    // Rows whose id is not a Supabase subject really exist (prisma/seed.ts
+    // creates members without an explicit id). A verified caller demonstrably
+    // controls the mailbox the row is keyed on, so binding it to them is
+    // correct - and refusing would lock those users out permanently.
+    member.findUnique.mockResolvedValueOnce(null);
+    member.findUnique.mockResolvedValueOnce({ id: 'legacy-uuid' });
+    member.update.mockResolvedValueOnce({ id: 'real-sub' });
+
+    await service.findOrCreateMember(
+      'real-sub',
+      'seeded@example.com',
+      undefined,
+      true,
+    );
+
+    expect(member.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'legacy-uuid' },
+        data: expect.objectContaining({ id: 'real-sub' }),
+      }),
+    );
   });
 
   it('creates a member when neither the subject nor the email is known', async () => {
     member.findUnique.mockResolvedValueOnce(null);
     member.findUnique.mockResolvedValueOnce(null);
-    member.create.mockResolvedValueOnce({ id: 'new-sub' });
+    member.upsert.mockResolvedValueOnce({ id: 'new-sub' });
 
     await service.findOrCreateMember('new-sub', 'new@example.com', {
       firstName: 'New',
     });
 
-    expect(member.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        id: 'new-sub',
-        email: 'new@example.com',
-        role: 'member',
+    // upsert, not create: two concurrent first requests from the same new
+    // subject would otherwise race and the loser's P2002 would surface to the
+    // user as a spurious "Invalid token".
+    expect(member.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'new-sub' },
+        create: expect.objectContaining({
+          id: 'new-sub',
+          email: 'new@example.com',
+          role: 'member',
+        }),
       }),
+    );
+  });
+
+  it('normalizes email case so a conflict cannot be sidestepped', async () => {
+    member.findUnique.mockResolvedValueOnce(null);
+    member.findUnique.mockResolvedValueOnce(null);
+    member.upsert.mockResolvedValueOnce({ id: 'sub' });
+
+    await service.findOrCreateMember('sub', 'MiXeD@Example.COM');
+
+    // Postgres comparison is case-sensitive, so an un-normalized address would
+    // slip past the conflict check and create a duplicate identity.
+    expect(member.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { email: 'mixed@example.com' },
+      select: { id: true },
     });
+    expect(member.upsert.mock.calls[0][0].create.email).toBe(
+      'mixed@example.com',
+    );
   });
 
   it('backfills a missing name without touching the id', async () => {

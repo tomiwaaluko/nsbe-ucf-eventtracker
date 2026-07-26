@@ -13,6 +13,7 @@ import { Response, Request } from 'express';
 import { OAuthService } from './oauth.service';
 import { JwtAuthGuard } from './jwt/jwt.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { LinkOAuthDto } from './dto/link-oauth.dto';
 
 interface OAuthState {
   state: string;
@@ -224,7 +225,7 @@ export class OAuthController {
   @UseGuards(JwtAuthGuard)
   async linkAccount(
     @Req() req: Request,
-    @Body() body: { provider: 'google' | 'discord'; code: string; state: string },
+    @Body() body: LinkOAuthDto,
   ) {
     try {
       const userId = (req as any).user.id;
@@ -271,9 +272,27 @@ export class OAuthController {
         throw new BadRequestException('User not found');
       }
 
-      // Verify email matches (if email is provided)
-      if (profile.email && profile.emailVerified && currentUser.email !== profile.email) {
-        throw new BadRequestException('Email mismatch - cannot link accounts with different emails');
+      // SECURITY: these are two separate requirements and were previously
+      // ANDed into one condition, which meant an UNVERIFIED provider email
+      // skipped the mismatch check entirely - the `emailVerified` term short-
+      // circuited it. The link always targets the caller's own row, so this is
+      // not an escalation today, but the schema already indexes
+      // (provider, providerEmail); the moment any lookup uses that index, a
+      // link carrying someone else's address becomes an impersonation
+      // primitive. Check them independently.
+      if (
+        profile.email &&
+        currentUser.email.toLowerCase() !== profile.email.toLowerCase()
+      ) {
+        throw new BadRequestException(
+          'Email mismatch - cannot link accounts with different emails',
+        );
+      }
+
+      if (!profile.emailVerified) {
+        throw new BadRequestException(
+          'This provider has not verified the email address on that account. Verify it with the provider, then try linking again.',
+        );
       }
 
       // Create OAuth account link

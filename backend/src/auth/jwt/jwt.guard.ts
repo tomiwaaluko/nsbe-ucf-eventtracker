@@ -59,8 +59,23 @@ export class JwtAuthGuard implements CanActivate {
           }
         : undefined;
 
+      // Whether the identity provider considers this address confirmed.
+      //
+      // These claims come from inside the signed token, so they are as
+      // trustworthy as the signing secret - they are NOT client-supplied.
+      // Supabase places the flag in user_metadata; some token versions also
+      // surface it at the top level, so check both and default to false.
+      const emailVerified =
+        payload.email_verified === true ||
+        payload.user_metadata?.email_verified === true;
+
       // Sync user with database - this ensures the Supabase user exists in Prisma
-      await this.authService.findOrCreateMember(payload.sub, payload.email, metadata);
+      await this.authService.findOrCreateMember(
+        payload.sub,
+        payload.email,
+        metadata,
+        emailVerified,
+      );
 
       request.user = {
         ...payload,

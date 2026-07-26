@@ -92,6 +92,21 @@ export class MembersService {
           { lastName: { contains: query, mode: 'insensitive' } },
         ],
       },
+      // SECURITY: explicit select. Without it Prisma returns every scalar,
+      // including passwordHash. This route is admin-gated, which caps the
+      // blast radius, but a password hash must never leave the data layer -
+      // findMe already strips it, so the two paths disagreed.
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        photoUrl: true,
+        major: true,
+        graduationYear: true,
+      },
       take: 20,
     });
   }

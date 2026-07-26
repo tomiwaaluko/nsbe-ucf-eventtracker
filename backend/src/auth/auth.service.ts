@@ -34,21 +34,34 @@ export class AuthService {
    * Sync the authenticated principal to a Member row.
    *
    * Called from JwtAuthGuard on EVERY authenticated request, so it is on the
-   * hot path for the entire API and is security-critical.
+   * hot path for the whole API and is security-critical.
    *
-   * SECURITY: identity is keyed on `userId` (the JWT `sub`), never on email.
+   * SECURITY: identity is keyed on `userId` (the JWT `sub`), not on email.
    *
    * This previously looked the member up by email and, on a mismatch, rewrote
-   * that row's primary key to the caller's `sub` - meaning any principal
-   * holding a valid token whose email claim matched an existing member would
-   * silently take ownership of that row, inheriting its `role`, attendance
-   * history, and points. Email is an attacker-influenceable attribute; the
-   * subject claim is not.
+   * that row's primary key to the caller's `sub` unconditionally - so any
+   * principal holding a valid token whose email claim matched an existing
+   * member silently took ownership of that row, inheriting its role,
+   * attendance history, and points.
+   *
+   * The id-repair path is kept, because rows whose id is not a Supabase
+   * subject genuinely exist (prisma/seed.ts creates members without an
+   * explicit id, and the OAuth flow falls back to randomUUID when the Supabase
+   * admin client is unavailable) - removing it outright would lock those users
+   * out permanently with no self-service recovery. It is now gated on the
+   * identity provider having VERIFIED the address: if Supabase confirmed the
+   * mailbox, the caller demonstrably controls the address the row is keyed on,
+   * so binding the row to them is correct rather than a takeover.
+   *
+   * @param emailVerified whether the token's issuer asserts the email is
+   *   confirmed. Callers must derive this from signed claims, never from
+   *   client-supplied input.
    */
   async findOrCreateMember(
     userId: string,
     email: string,
     metadata?: { firstName?: string; lastName?: string },
+    emailVerified = false,
   ) {
     const memberById = await this.prisma.member.findUnique({
       where: { id: userId },
@@ -72,28 +85,46 @@ export class AuthService {
       return memberById;
     }
 
-    // No member for this subject. If the address is already registered to a
-    // DIFFERENT subject, refuse rather than rebinding or creating a duplicate.
-    // Reaching here means two auth identities claim one address, which needs a
-    // human decision - silently resolving it is what created the takeover.
     const memberByEmail = await this.prisma.member.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
       select: { id: true },
     });
 
     if (memberByEmail) {
-      console.error(
-        `Identity conflict: token subject ${userId} claims email already registered to member ${memberByEmail.id}. Refusing to rebind.`,
+      if (!emailVerified) {
+        // Unverified claim to someone else's address. This is the takeover.
+        console.error(
+          `Identity conflict: subject ${userId} claims unverified email registered to member ${memberByEmail.id}. Refusing to rebind.`,
+        );
+        throw new UnauthorizedException(
+          'This email is already registered to a different account. Please verify your email address, or contact an administrator.',
+        );
+      }
+
+      // Verified owner of the address - repair the row's id to match the
+      // identity provider's subject. Logged because it should be rare.
+      console.warn(
+        `Rebinding member ${memberByEmail.id} to verified subject ${userId} for ${email}`,
       );
-      throw new UnauthorizedException(
-        'This email is already registered to a different account. Please contact an administrator.',
-      );
+      return this.prisma.member.update({
+        where: { id: memberByEmail.id },
+        data: {
+          id: userId,
+          ...(metadata?.firstName && { firstName: metadata.firstName }),
+          ...(metadata?.lastName && { lastName: metadata.lastName }),
+        },
+      });
     }
 
-    return this.prisma.member.create({
-      data: {
+    // Upsert rather than create: two concurrent first requests from the same
+    // new subject would both see no row and both insert, and the loser's
+    // P2002 would surface to the user as a spurious "Invalid token" 401.
+    return this.prisma.member.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
         id: userId,
-        email,
+        email: email.toLowerCase(),
         role: 'member',
         firstName: metadata?.firstName || null,
         lastName: metadata?.lastName || null,

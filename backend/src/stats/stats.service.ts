@@ -177,8 +177,11 @@ export class StatsService {
         }
 
         return {
+          // SECURITY: no email. This route has no role check, so including it
+          // handed every member's address to any signed-in caller - bypassing
+          // the PII gate on GET /members/:id/profile. memberId is enough for
+          // the client to link to a profile.
           memberId: member.id,
-          email: member.email,
           firstName: member.firstName,
           lastName: member.lastName,
           completed111At,
@@ -255,8 +258,8 @@ export class StatsService {
             }
 
             return {
+              // SECURITY: no email - see the 111 leaderboard above.
               memberId: member.id,
-              email: member.email,
               firstName: member.firstName,
               lastName: member.lastName,
               completed333At,
