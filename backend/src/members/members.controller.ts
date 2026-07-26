@@ -18,6 +18,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
@@ -61,7 +63,7 @@ export class MembersController {
   async updateRole(
     @Req() req,
     @Param('id') memberId: string,
-    @Body() body: { role: 'member' | 'admin' | 'super_admin' },
+    @Body() body: UpdateRoleDto,
   ) {
     const currentMember = await this.membersService.findMe(req.user.id);
     if (!currentMember || !isSuperAdmin(currentMember.role)) {
@@ -78,7 +80,7 @@ export class MembersController {
   async updateStatus(
     @Req() req,
     @Param('id') memberId: string,
-    @Body() body: { isActive: boolean },
+    @Body() body: UpdateStatusDto,
   ) {
     const currentMember = await this.membersService.findMe(req.user.id);
     if (!currentMember || !isAdmin(currentMember.role)) {
@@ -121,8 +123,14 @@ export class MembersController {
   }
 
   @Get(':id/profile')
-  async getMemberProfile(@Param('id') memberId: string) {
-    return this.membersService.getMemberProfile(memberId);
+  async getMemberProfile(@Req() req, @Param('id') memberId: string) {
+    // Anyone signed in may view a profile (member directory), but contact PII
+    // is only returned to the member themselves or to an admin.
+    const viewer = await this.membersService.findMe(req.user.id);
+    const includePrivate =
+      req.user.id === memberId || (!!viewer && isAdmin(viewer.role));
+
+    return this.membersService.getMemberProfile(memberId, includePrivate);
   }
 
   @Post('me/photo')

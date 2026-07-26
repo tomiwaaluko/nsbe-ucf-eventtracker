@@ -2,7 +2,8 @@ export class MemberProfileDto {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  /** Contact PII: only populated for the member themselves or an admin. */
+  email?: string;
   photoUrl?: string;
   major?: string;
   graduationYear?: number;

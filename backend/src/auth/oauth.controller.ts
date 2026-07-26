@@ -116,9 +116,12 @@ export class OAuthController {
         this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, isNewAccount),
       );
     } catch (error: any) {
+      // Log the detail; do not put it in a redirect URL. The browser follows
+      // that URL, so the message lands in history, the Referer header, and any
+      // proxy or CDN access log along the way.
       console.error('Google OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
+        this.oauthService.getRedirectUrl(undefined, 'Authentication failed'),
       );
     }
   }
@@ -209,7 +212,7 @@ export class OAuthController {
     } catch (error: any) {
       console.error('Discord OAuth callback error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, `Authentication failed: ${error.message}`),
+        this.oauthService.getRedirectUrl(undefined, 'Authentication failed'),
       );
     }
   }

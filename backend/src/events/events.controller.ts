@@ -57,8 +57,18 @@ export class EventsController {
     return this.eventsService.findOne(id);
   }
 
+  /**
+   * Render an event's check-in QR code.
+   *
+   * SECURITY: admin only. The QR payload embeds `event.qrSecret`, which is the
+   * exact value AttendanceService compares against on check-in. Any member who
+   * could fetch this could mark themselves present without attending, or share
+   * the secret with people who never showed up. Every sibling mutating route on
+   * this controller was already admin-gated; this read was not.
+   */
   @Get(':id/qr')
   async getEventQRCode(
+    @Req() req,
     @Param('id') id: string,
     @Query('format') format?: 'png' | 'svg' | 'dataurl',
     @Query('size') size?: string,
@@ -66,6 +76,11 @@ export class EventsController {
   ) {
     if (!res) {
       throw new Error('Response object not available');
+    }
+
+    const member = await this.membersService.findMe(req.user.id);
+    if (!member || !isAdmin(member.role)) {
+      throw new ForbiddenException('Admin access required');
     }
 
     try {
@@ -93,11 +108,18 @@ export class EventsController {
         res.json({ dataUrl: result });
       }
     } catch (error) {
-      // Ensure error response is sent when using @Res()
+      // Using @Res() bypasses Nest's exception filter, so the response has to
+      // be built here. Only echo the message for deliberate HTTP exceptions -
+      // an unexpected error's message can carry internals (Prisma constraint
+      // and column names, driver text) and this path is not filtered.
+      console.error(`QR generation failed for event ${id}:`, error);
       if (!res.headersSent) {
-        res.status(error.status || 500).json({
-          statusCode: error.status || 500,
-          message: error.message || 'Failed to generate QR code',
+        const status = error.status || 500;
+        res.status(status).json({
+          statusCode: status,
+          message: error.status
+            ? error.message
+            : 'Failed to generate QR code',
         });
       }
       throw error;

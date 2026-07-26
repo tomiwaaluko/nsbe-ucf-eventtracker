@@ -1,11 +1,24 @@
-import { Controller, Get, Query, Req, UseGuards, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Req,
+  UseGuards,
+  Param,
+  ForbiddenException,
+} from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
+import { MembersService } from '../members/members.service';
+import { isAdmin } from '../common/roles.util';
 
 @Controller('stats')
 @UseGuards(JwtAuthGuard)
 export class StatsController {
-  constructor(private readonly statsService: StatsService) {}
+  constructor(
+    private readonly statsService: StatsService,
+    private readonly membersService: MembersService,
+  ) {}
 
   @Get('me')
   async getMyProgress(@Req() req, @Query('semester') semester: string) {
@@ -83,8 +96,16 @@ export class StatsController {
     return this.statsService.getMemberLeaderboardPosition(memberId, semester);
   }
 
+  /**
+   * SECURITY: admin only. Returns org-wide totals; the route was reachable by
+   * any authenticated member despite its name.
+   */
   @Get('admin')
-  async getAdminStats(@Query('semester') semester: string) {
+  async getAdminStats(@Req() req, @Query('semester') semester: string) {
+    const member = await this.membersService.findMe(req.user.id);
+    if (!member || !isAdmin(member.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
     if (!semester) {
       semester = 'Fall 2024'; // default
     }

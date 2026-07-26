@@ -4,7 +4,7 @@ import { CacheService } from '../cache/cache.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventCategory } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
 import QRCode from 'qrcode'; // lmk if this needs to be reverted to import * as QRCode from 'qrcode';
 
 @Injectable()
@@ -22,7 +22,12 @@ export class EventsService {
     const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude ambiguous chars: 0, O, 1, I
     let code = '';
     for (let i = 0; i < 6; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
+      // SECURITY: crypto.randomInt, not Math.random. Math.random is a
+      // predictable PRNG - an attacker who observes a few issued codes can
+      // recover its internal state and derive others, which combined with an
+      // unthrottled check-in endpoint means forgeable attendance. randomInt is
+      // also free of the modulo bias that `% length` would introduce.
+      code += characters.charAt(randomInt(characters.length));
     }
     return code;
   }

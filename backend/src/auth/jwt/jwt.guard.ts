@@ -25,8 +25,9 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('No authorization header');
     }
 
-    const token = authHeader.split(' ')[1];
-    if (!token) {
+    // Require the Bearer scheme explicitly rather than blindly taking [1].
+    const [scheme, token] = authHeader.split(' ');
+    if (!token || scheme?.toLowerCase() !== 'bearer') {
       throw new UnauthorizedException('No token provided');
     }
 
@@ -38,7 +39,17 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Server configuration error');
       }
 
-      const payload = jwt.verify(token, jwtSecret) as JwtPayload;
+      // Pin the algorithm. Without `algorithms`, verification accepts whatever
+      // the token's own header asks for - the attacker controls that field, and
+      // algorithm-confusion attacks live in exactly that gap.
+      const payload = jwt.verify(token, jwtSecret, {
+        algorithms: ['HS256'],
+      }) as JwtPayload;
+
+      // A token is only usable if it carries the claims we key identity on.
+      if (!payload.sub || !payload.email) {
+        throw new UnauthorizedException('Token missing required claims');
+      }
 
       // Extract name from Supabase user_metadata if present
       const metadata = payload.user_metadata
@@ -59,6 +70,13 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch (error: any) {
+      // Preserve deliberate rejections (e.g. the identity-conflict refusal in
+      // findOrCreateMember) instead of flattening them to "Invalid token",
+      // which would send an operator hunting for a token problem that isn't
+      // there. Anything else stays generic.
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       console.error('JWT verification failed:', error.message);
       throw new UnauthorizedException('Invalid token');
     }

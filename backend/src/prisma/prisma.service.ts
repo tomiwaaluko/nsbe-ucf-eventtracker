@@ -6,7 +6,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor() {
     super({
       log: ['error', 'warn'],
-      errorFormat: 'pretty',
+      // 'pretty' renders model, field, and constraint names into the error
+      // message. Any unhandled PrismaClientKnownRequestError that reaches a
+      // client would hand over a map of the schema, so keep it minimal outside
+      // development.
+      errorFormat:
+        process.env.NODE_ENV === 'production' ? 'minimal' : 'pretty',
     });
   }
 

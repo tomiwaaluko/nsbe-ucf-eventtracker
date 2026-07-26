@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,36 +30,64 @@ export class AuthService {
     }
   }
 
+  /**
+   * Sync the authenticated principal to a Member row.
+   *
+   * Called from JwtAuthGuard on EVERY authenticated request, so it is on the
+   * hot path for the entire API and is security-critical.
+   *
+   * SECURITY: identity is keyed on `userId` (the JWT `sub`), never on email.
+   *
+   * This previously looked the member up by email and, on a mismatch, rewrote
+   * that row's primary key to the caller's `sub` - meaning any principal
+   * holding a valid token whose email claim matched an existing member would
+   * silently take ownership of that row, inheriting its `role`, attendance
+   * history, and points. Email is an attacker-influenceable attribute; the
+   * subject claim is not.
+   */
   async findOrCreateMember(
     userId: string,
     email: string,
     metadata?: { firstName?: string; lastName?: string },
   ) {
-    const existingMember = await this.prisma.member.findUnique({
-      where: { email },
+    const memberById = await this.prisma.member.findUnique({
+      where: { id: userId },
     });
 
-    if (existingMember) {
-      const needsIdUpdate = existingMember.id !== userId;
+    if (memberById) {
       const needsNameUpdate =
         metadata &&
-        ((!existingMember.firstName && metadata.firstName) ||
-          (!existingMember.lastName && metadata.lastName));
+        ((!memberById.firstName && metadata.firstName) ||
+          (!memberById.lastName && metadata.lastName));
 
-      if (needsIdUpdate || needsNameUpdate) {
+      if (needsNameUpdate) {
         return this.prisma.member.update({
-          where: { email },
+          where: { id: userId },
           data: {
-            id: userId,
-            role: existingMember.role,
-            ...(needsNameUpdate && {
-              firstName: existingMember.firstName || metadata?.firstName || null,
-              lastName: existingMember.lastName || metadata?.lastName || null,
-            }),
+            firstName: memberById.firstName || metadata?.firstName || null,
+            lastName: memberById.lastName || metadata?.lastName || null,
           },
         });
       }
-      return existingMember;
+      return memberById;
+    }
+
+    // No member for this subject. If the address is already registered to a
+    // DIFFERENT subject, refuse rather than rebinding or creating a duplicate.
+    // Reaching here means two auth identities claim one address, which needs a
+    // human decision - silently resolving it is what created the takeover.
+    const memberByEmail = await this.prisma.member.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (memberByEmail) {
+      console.error(
+        `Identity conflict: token subject ${userId} claims email already registered to member ${memberByEmail.id}. Refusing to rebind.`,
+      );
+      throw new UnauthorizedException(
+        'This email is already registered to a different account. Please contact an administrator.',
+      );
     }
 
     return this.prisma.member.create({
@@ -79,22 +107,34 @@ export class AuthService {
     });
   }
 
+  /**
+   * Signup-time duplicate check.
+   *
+   * SECURITY: returns a verdict only, never the matched record.
+   *
+   * This endpoint is unauthenticated. It previously returned the matched
+   * member's `{ id, email, firstName, lastName }`, which made it a PII
+   * disclosure rather than a duplicate check: submitting a guessed *name*
+   * returned that person's real email address, so the chapter roster could be
+   * harvested by anyone who could guess names. Note that requestPasswordReset
+   * below is deliberately careful not to reveal whether an account exists -
+   * this endpoint was undoing that.
+   *
+   * A boolean is still an existence oracle, but that is inherent to any signup
+   * duplicate check and is the minimum the flow needs. Rate limiting (see
+   * app.module.ts) bounds how fast it can be walked.
+   */
   async checkDuplicateUser(firstName: string, lastName: string, email: string) {
-    // Check for existing user with same email
     const existingEmail = await this.prisma.member.findUnique({
       where: { email },
-      select: { id: true, email: true, firstName: true, lastName: true },
+      select: { id: true },
     });
 
     if (existingEmail) {
-      return {
-        exists: true,
-        matchType: 'email' as const,
-        user: existingEmail,
-      };
+      return { exists: true, matchType: 'email' as const };
     }
 
-    // Check for existing user with same first and last name (case-insensitive)
+    // Same first and last name (case-insensitive).
     const existingName = await this.prisma.member.findFirst({
       where: {
         AND: [
@@ -102,22 +142,14 @@ export class AuthService {
           { lastName: { equals: lastName, mode: 'insensitive' } },
         ],
       },
-      select: { id: true, email: true, firstName: true, lastName: true },
+      select: { id: true },
     });
 
     if (existingName) {
-      return {
-        exists: true,
-        matchType: 'name' as const,
-        user: existingName,
-      };
+      return { exists: true, matchType: 'name' as const };
     }
 
-    return {
-      exists: false,
-      matchType: null,
-      user: null,
-    };
+    return { exists: false, matchType: null };
   }
 
   async requestPasswordReset(email: string) {

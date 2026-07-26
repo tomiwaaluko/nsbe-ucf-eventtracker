@@ -292,8 +292,20 @@ export class OAuthService {
       };
     }
 
-    // Step 2: Check if a member already exists with the same email (regardless of verification)
-    if (profile.email) {
+    // Step 2: Auto-link to an existing member with the same email.
+    //
+    // SECURITY: this MUST require that the provider verified the address.
+    // Auto-linking on an unverified email is a pre-auth account takeover: an
+    // attacker sets their Discord account's email to a chapter admin's address
+    // (Discord does not require confirming it to expose it on the profile),
+    // completes the OAuth flow, and the caller mints a 7-day JWT for that
+    // admin's member row. `profile.emailVerified` was already being captured
+    // from both providers and simply never checked.
+    //
+    // When the address is unverified we fall through to `requiresLinking`, which
+    // routes the user to the authenticated POST /auth/oauth/link flow - there
+    // they must already be signed in as the account they are claiming.
+    if (profile.email && profile.emailVerified) {
       const existingMember = await this.prisma.member.findUnique({
         where: { email: profile.email },
       });
@@ -323,6 +335,31 @@ export class OAuthService {
           isNewAccount: false,
           requiresLinking: false,
           isAccountLinked: true,
+        };
+      }
+    }
+
+    // Step 2b: An unverified address that already belongs to a member.
+    //
+    // This must be handled explicitly rather than falling through to account
+    // creation, which would collide on the unique email constraint and surface
+    // as an opaque 500. Require the user to prove they own the existing account
+    // by linking from an authenticated session instead.
+    if (profile.email && !profile.emailVerified) {
+      const conflictingMember = await this.prisma.member.findUnique({
+        where: { email: profile.email },
+        select: { id: true },
+      });
+
+      if (conflictingMember) {
+        console.warn(
+          `OAuth auto-link refused: ${provider} reported an unverified email already registered to member ${conflictingMember.id}`,
+        );
+        return {
+          member: null,
+          isNewAccount: false,
+          requiresLinking: true,
+          isAccountLinked: false,
         };
       }
     }
