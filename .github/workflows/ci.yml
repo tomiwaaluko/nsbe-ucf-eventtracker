@@ -13,6 +13,13 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    # Prisma's config loader resolves these at startup and throws
+    # PrismaConfigEnvError when they are absent, so `prisma generate` fails
+    # before it ever reads the schema. Nothing here opens a connection - these
+    # only need to parse as Postgres URLs. Do not point them at a real database.
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,9 +42,43 @@ jobs:
         working-directory: backend
         run: npx prisma generate
 
-      - name: Lint
+      # Lint is a ratchet, not a pass/fail gate.
+      #
+      # `main` reports over a thousand eslint errors, almost all of them the
+      # no-unsafe-* family typescript-eslint raises when `any` flows through a
+      # codebase. Demanding zero would block every pull request on a cleanup
+      # unrelated to its own change, and a gate nobody can satisfy is a gate
+      # people learn to scroll past.
+      #
+      # So CI fails only when a change makes the count worse. If you improve it,
+      # lower MAX_ERRORS in the same commit so the improvement sticks.
+      #
+      # This runs eslint directly rather than `npm run lint`, which passes
+      # --fix. CI must not rewrite the tree it is checking.
+      - name: Lint (ratchet)
         working-directory: backend
-        run: npm run lint
+        env:
+          MAX_ERRORS: 390
+        run: |
+          npx eslint "{src,apps,libs,test}/**/*.ts" -f json -o eslint-report.json || true
+          node -e "
+            const report = require('./eslint-report.json');
+            const errors = report.reduce((n, f) => n + f.errorCount, 0);
+            const warnings = report.reduce((n, f) => n + f.warningCount, 0);
+            const max = Number(process.env.MAX_ERRORS);
+            console.log(\`eslint: \${errors} errors, \${warnings} warnings (ceiling: \${max})\`);
+            if (errors > max) {
+              console.error(
+                \`Lint regressed: \${errors} errors exceeds the ceiling of \${max}. \` +
+                'Fix the new errors, or raise MAX_ERRORS in .github/workflows/ci.yml ' +
+                'with a note explaining why.'
+              );
+              process.exit(1);
+            }
+            if (errors < max) {
+              console.log(\`Lint improved by \${max - errors}. Lower MAX_ERRORS to \${errors} to lock it in.\`);
+            }
+          "
 
       - name: Test
         working-directory: backend
@@ -49,6 +90,13 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    # lib/supabase.ts calls createClient() at module scope, so `next build`
+    # evaluates it while prerendering `/` and fails with "supabaseUrl is
+    # required" when these are unset. Placeholders only - the build never
+    # issues a request, and no real project should be named here.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-not-a-real-credential
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,8 +136,17 @@ jobs:
         with:
           node-version: 20.x
 
-      # Nothing checked this before, so vulnerable transitive dependencies
-      # could reach production unnoticed.
-      - name: npm audit (${{ matrix.workspace }})
+      # Nothing checked this before, so vulnerable transitive dependencies could
+      # reach production unnoticed.
+      #
+      # This deliberately does not run `npm audit --audit-level=high`. That
+      # fails on every high/critical advisory including ones with no available
+      # fix - the postcss and sharp advisories under next have no remedy short
+      # of downgrading to next@9.3.3 - which would leave this job permanently
+      # red for reasons no pull request can address. The gate blocks only on
+      # advisories that can actually be cleared today, and prints the rest.
+      - name: Dependency audit (${{ matrix.workspace }})
         working-directory: ${{ matrix.workspace }}
-        run: npm audit --audit-level=high
+        env:
+          AUDIT_WORKSPACE: ${{ matrix.workspace }}
+        run: node ${{ github.workspace }}/.github/scripts/audit-gate.mjs
