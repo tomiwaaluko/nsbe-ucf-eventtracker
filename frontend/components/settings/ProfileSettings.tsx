@@ -6,6 +6,7 @@ import { Textarea } from "../ui/textarea";
 import { User, Upload, X, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiUrl, apiHeaders } from "@/lib/api";
+import { MembershipStatusSection } from "./MembershipStatusSection";
 
 interface ProfileSettingsProps {
   memberData: {
@@ -52,6 +53,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
   });
   const [profilePhoto, setProfilePhoto] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [chapterMembershipActive, setChapterMembershipActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -80,6 +82,7 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           });
           setProfilePhoto(data.photoUrl || "");
           setPreviewUrl(data.photoUrl || "");
+          setChapterMembershipActive(data.chapterMembershipActive ?? false);
         }
       } catch (error) {
         console.error('Failed to fetch member data:', error);
@@ -522,6 +525,10 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           </div>
         </div>
       )}
+
+      <MembershipStatusSection
+        chapterMembershipActive={chapterMembershipActive}
+      />
 
       {/* Info Box */}
       <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-4">

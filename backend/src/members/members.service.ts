@@ -4,6 +4,10 @@ import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory } from '@prisma/client';
+import {
+  resolveChapterMembershipActive,
+  shouldResetChapterMembership,
+} from './chapter-membership.util';
 
 /**
  * Maps an event category to its bucket for statistics calculation
@@ -32,10 +36,10 @@ export class MembersService {
 
   async findMe(userId: string) {
     // Cache JWT user lookups for 5 minutes to reduce DB load on every request
-    return this.cache.wrap(
+    const member = await this.cache.wrap(
       `user:${userId}`,
       async () => {
-        const member = await this.prisma.member.findUnique({
+        const row = await this.prisma.member.findUnique({
           where: { id: userId },
           include: {
             oauthAccounts: {
@@ -44,12 +48,12 @@ export class MembersService {
           },
         });
 
-        if (!member) {
+        if (!row) {
           return null;
         }
 
         // Transform response to include auth methods without exposing password hash
-        const { passwordHash, oauthAccounts, ...memberData } = member;
+        const { passwordHash, oauthAccounts, ...memberData } = row;
         return {
           ...memberData,
           hasPassword: !!passwordHash,
@@ -58,6 +62,22 @@ export class MembersService {
       },
       300, // 5 minutes
     );
+
+    if (!member) {
+      return null;
+    }
+
+    const membership = await this.applyChapterMembershipReset({
+      id: userId,
+      chapterMembershipActive: member.chapterMembershipActive ?? false,
+      chapterMembershipMarkedAt: member.chapterMembershipMarkedAt ?? null,
+    });
+
+    return {
+      ...member,
+      chapterMembershipActive: membership.chapterMembershipActive,
+      chapterMembershipMarkedAt: membership.chapterMembershipMarkedAt,
+    };
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
@@ -84,7 +104,7 @@ export class MembersService {
   }
 
   async search(query: string) {
-    return this.prisma.member.findMany({
+    const members = await this.prisma.member.findMany({
       where: {
         OR: [
           { email: { contains: query, mode: 'insensitive' } },
@@ -103,12 +123,30 @@ export class MembersService {
         lastName: true,
         role: true,
         isActive: true,
+        chapterMembershipActive: true,
+        chapterMembershipMarkedAt: true,
         photoUrl: true,
         major: true,
         graduationYear: true,
       },
       take: 20,
     });
+
+    return Promise.all(
+      members.map(async (member) => {
+        const membership = await this.applyChapterMembershipReset({
+          id: member.id,
+          chapterMembershipActive: member.chapterMembershipActive,
+          chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+        });
+
+        return {
+          ...member,
+          chapterMembershipActive: membership.chapterMembershipActive,
+          chapterMembershipMarkedAt: membership.chapterMembershipMarkedAt,
+        };
+      }),
+    );
   }
 
   /**
@@ -146,11 +184,89 @@ export class MembersService {
       throw new NotFoundException('Member not found');
     }
 
-    // Update the member's status
-    return this.prisma.member.update({
+    const result = await this.prisma.member.update({
       where: { id: memberId },
       data: { isActive },
     });
+    this.cache.del(`user:${memberId}`);
+    this.cache.delPattern('members:');
+    return result;
+  }
+
+  /**
+   * Update chapter membership paid/unpaid status (separate from account isActive).
+   */
+  async updateMemberMembership(
+    memberId: string,
+    chapterMembershipActive: boolean,
+  ) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    const result = await this.prisma.member.update({
+      where: { id: memberId },
+      data: chapterMembershipActive
+        ? {
+            chapterMembershipActive: true,
+            chapterMembershipMarkedAt: new Date(),
+          }
+        : { chapterMembershipActive: false },
+    });
+
+    this.cache.del(`user:${memberId}`);
+    this.cache.delPattern('members:');
+    return result;
+  }
+
+  /**
+   * Check-on-read annual reset for chapter membership (America/New_York).
+   * Keeps chapterMembershipMarkedAt for audit when expiring.
+   */
+  async applyChapterMembershipReset(
+    member: {
+      id: string;
+      chapterMembershipActive: boolean;
+      chapterMembershipMarkedAt: Date | null;
+    },
+    now: Date = new Date(),
+  ): Promise<{
+    chapterMembershipActive: boolean;
+    chapterMembershipMarkedAt: Date | null;
+  }> {
+    if (
+      !shouldResetChapterMembership(
+        member.chapterMembershipActive,
+        member.chapterMembershipMarkedAt,
+        now,
+      )
+    ) {
+      return {
+        chapterMembershipActive: resolveChapterMembershipActive(
+          member.chapterMembershipActive,
+          member.chapterMembershipMarkedAt,
+          now,
+        ),
+        chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+      };
+    }
+
+    await this.prisma.member.update({
+      where: { id: member.id },
+      data: { chapterMembershipActive: false },
+    });
+
+    this.cache.del(`user:${member.id}`);
+    this.cache.delPattern('members:');
+
+    return {
+      chapterMembershipActive: false,
+      chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+    };
   }
 
   /**
@@ -184,44 +300,56 @@ export class MembersService {
         });
 
         // Calculate statistics for each member
-        return members.map((member) => {
-          const bucketCounts = {
-            workshops_socials: 0,
-            fundraiser_community_service: 0,
-            gbm: 0,
-          };
+        const mappedMembers = await Promise.all(
+          members.map(async (member) => {
+            const bucketCounts = {
+              workshops_socials: 0,
+              fundraiser_community_service: 0,
+              gbm: 0,
+            };
 
-          let totalEvents = 0;
+            let totalEvents = 0;
 
-          // Count events by bucket
-          for (const attendance of member.attendance) {
-            const bucket = getEventBucket(attendance.event.category);
-            // Only count categories that are part of achievement buckets
-            // COMMITTEE_PARTICIPATION is excluded
-            if (
-              attendance.event.category !== EventCategory.COMMITTEE_PARTICIPATION
-            ) {
-              bucketCounts[bucket]++;
-              totalEvents++;
+            // Count events by bucket
+            for (const attendance of member.attendance) {
+              const bucket = getEventBucket(attendance.event.category);
+              // Only count categories that are part of achievement buckets
+              // COMMITTEE_PARTICIPATION is excluded
+              if (
+                attendance.event.category !==
+                EventCategory.COMMITTEE_PARTICIPATION
+              ) {
+                bucketCounts[bucket]++;
+                totalEvents++;
+              }
             }
-          }
 
-          return {
-            id: member.id,
-            email: member.email,
-            firstName: member.firstName,
-            lastName: member.lastName,
-            role: member.role,
-            isActive: member.isActive,
-            createdAt: member.createdAt,
-            updatedAt: member.updatedAt,
-            // Statistics
-            workshopsAttended: bucketCounts.workshops_socials,
-            gbmAttended: bucketCounts.gbm,
-            communityServiceAttended: bucketCounts.fundraiser_community_service,
-            totalEvents,
-          };
-        });
+            const membership = await this.applyChapterMembershipReset({
+              id: member.id,
+              chapterMembershipActive: member.chapterMembershipActive,
+              chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+            });
+
+            return {
+              id: member.id,
+              email: member.email,
+              firstName: member.firstName,
+              lastName: member.lastName,
+              role: member.role,
+              isActive: member.isActive,
+              chapterMembershipActive: membership.chapterMembershipActive,
+              createdAt: member.createdAt,
+              updatedAt: member.updatedAt,
+              // Statistics
+              workshopsAttended: bucketCounts.workshops_socials,
+              gbmAttended: bucketCounts.gbm,
+              communityServiceAttended: bucketCounts.fundraiser_community_service,
+              totalEvents,
+            };
+          }),
+        );
+
+        return mappedMembers;
       },
       180, // 3 minutes
     );

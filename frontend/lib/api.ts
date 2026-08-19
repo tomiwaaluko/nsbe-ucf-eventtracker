@@ -777,4 +777,20 @@ export const api = {
     });
     return handleResponse(response);
   },
+
+  updateMemberMembership: async (token: string, memberId: string, chapterMembershipActive: boolean) => {
+    const response = await fetch(`${API_URL}/members/${memberId}/membership`, {
+      method: 'PUT',
+      headers: apiHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify({ chapterMembershipActive }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to update chapter membership: ${response.statusText}`);
+    }
+    return response.json();
+  },
 };
