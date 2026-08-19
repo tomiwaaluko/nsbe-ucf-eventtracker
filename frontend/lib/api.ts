@@ -777,4 +777,22 @@ export const api = {
     });
     return handleResponse(response);
   },
+
+  exportMyData: async (token: string, format: 'json' | 'csv' = 'json') => {
+    const url = new URL(`${API_URL}/members/me/export`);
+    if (format === 'csv') {
+      url.searchParams.set('format', 'csv');
+    }
+    const response = await fetch(url.toString(), {
+      headers: apiHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to export data');
+    }
+    if (format === 'csv') {
+      return response.text();
+    }
+    return response.json();
+  },
 };

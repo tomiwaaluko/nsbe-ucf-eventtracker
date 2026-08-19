@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   Req,
+  Res,
   UseGuards,
   ForbiddenException,
   Param,
@@ -15,11 +16,14 @@ import {
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { ExportMemberDataQueryDto } from './dto/export-member-data.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
@@ -44,6 +48,32 @@ export class MembersController {
   @Get('me/oauth-accounts')
   async getMyOAuthAccounts(@Req() req) {
     return this.membersService.getOAuthAccounts(req.user.id);
+  }
+
+  /**
+   * Self-service export of the authenticated member's data (JSON or CSV).
+   * Always scoped to req.user.id — admins cannot export another member here.
+   */
+  @Get('me/export')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  async exportMyData(
+    @Req() req,
+    @Query() query: ExportMemberDataQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userId = req.user.id;
+
+    if (query.format === 'csv') {
+      const csv = await this.membersService.exportMyDataAsCsv(userId);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="nsbe-my-data-export.csv"',
+      );
+      return csv;
+    }
+
+    return this.membersService.exportMyData(userId);
   }
 
   @Put('me')
