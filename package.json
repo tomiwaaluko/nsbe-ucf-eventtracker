@@ -15,7 +15,7 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "baseline-browser-mapping": "^2.10.0",
+    "baseline-browser-mapping": "^2.11.14",
     "next": "^16.2.12"
   },
   "devDependencies": {
