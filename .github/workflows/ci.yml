@@ -21,7 +21,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
       DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The checkout token is not needed after this step; leaving it in the
           # git config would expose it to every later step.
@@ -98,7 +98,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-not-a-real-credential
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -128,7 +128,7 @@ jobs:
       matrix:
         workspace: [".", "backend", "frontend"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
