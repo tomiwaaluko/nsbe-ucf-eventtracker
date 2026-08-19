@@ -19,7 +19,7 @@
     "next": "^16.2.12"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.7",
     "typescript": "^5.7.3"
   }
