@@ -29,12 +29,23 @@ function HomeContent() {
       return;
     }
     if (linkRequired) {
+      // The backend sends this when the OAuth provider reported an email it
+      // has not verified. Auto-linking on an unverified address would let
+      // anyone claim someone else's account, so we refuse.
+      //
+      // The message names the actual fix. It used to say "sign in with your
+      // email/password account to link", which is not something the user can
+      // do -- there is no link UI wired up, and the OAuth code has already
+      // been consumed by the callback, so it could not be replayed anyway.
+      const providerName = provider
+        ? provider.charAt(0).toUpperCase() + provider.slice(1)
+        : "your provider";
       setErrorMessage(
-        `Account linking required. Please sign in with your email/password account (${email || "your account"}) to link your ${provider} account.`
+        `Your ${providerName} account's email address (${email || "unknown"}) is not verified. Verify it in your ${providerName} account settings, then try signing in again.`
       );
       setShowError(true);
-      toast.info("Account Linking Required", {
-        description: `Please sign in with your existing account to link ${provider}.`,
+      toast.error("Email not verified", {
+        description: `${providerName} has not verified this email address.`,
       });
       return;
     }

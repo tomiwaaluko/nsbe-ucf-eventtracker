@@ -31,7 +31,9 @@ interface MemberProfile {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  // Optional: the API returns contact details only to the member themselves
+  // and to admins. Everyone else gets the non-PII view.
+  email?: string;
   photoUrl?: string;
   major?: string;
   graduationYear?: number;
@@ -259,10 +261,12 @@ export default function MemberProfilePage() {
                     </Badge>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-white/90">
-                    <div className={`flex items-center gap-2 ${sora.className}`}>
-                      <Mail className="w-4 h-4" />
-                      <span className="text-sm">{profile.email}</span>
-                    </div>
+                    {profile.email && (
+                      <div className={`flex items-center gap-2 ${sora.className}`}>
+                        <Mail className="w-4 h-4" />
+                        <span className="text-sm">{profile.email}</span>
+                      </div>
+                    )}
                     {profile.major && (
                       <div className={`flex items-center gap-2 ${sora.className}`}>
                         <Award className="w-4 h-4" />

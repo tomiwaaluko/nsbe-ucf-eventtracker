@@ -186,7 +186,12 @@ export class OAuthService {
 
       return {
         providerUserId: profile.id,
-        email: profile.email || null,
+        // Normalised at the provider boundary so every downstream lookup and
+        // uniqueness check agrees. Postgres string comparison is
+        // case-sensitive, so without this `Admin@x.org` would slip past the
+        // duplicate and conflict checks that key on email and create a second
+        // identity for the same person.
+        email: profile.email ? profile.email.toLowerCase() : null,
         emailVerified: profile.verified_email,
         firstName: profile.given_name || undefined,
         lastName: profile.family_name || undefined,
@@ -254,7 +259,8 @@ export class OAuthService {
 
       return {
         providerUserId: profile.id,
-        email: profile.email || null,
+        // Normalised - see the Google branch above.
+        email: profile.email ? profile.email.toLowerCase() : null,
         emailVerified: profile.verified || false,
         firstName: profile.username || undefined,
       };
@@ -292,8 +298,20 @@ export class OAuthService {
       };
     }
 
-    // Step 2: Check if a member already exists with the same email (regardless of verification)
-    if (profile.email) {
+    // Step 2: Auto-link to an existing member with the same email.
+    //
+    // SECURITY: this MUST require that the provider verified the address.
+    // Auto-linking on an unverified email is a pre-auth account takeover: an
+    // attacker sets their Discord account's email to a chapter admin's address
+    // (Discord does not require confirming it to expose it on the profile),
+    // completes the OAuth flow, and the caller mints a 7-day JWT for that
+    // admin's member row. `profile.emailVerified` was already being captured
+    // from both providers and simply never checked.
+    //
+    // When the address is unverified we fall through to `requiresLinking`, which
+    // routes the user to the authenticated POST /auth/oauth/link flow - there
+    // they must already be signed in as the account they are claiming.
+    if (profile.email && profile.emailVerified) {
       const existingMember = await this.prisma.member.findUnique({
         where: { email: profile.email },
       });
@@ -325,6 +343,33 @@ export class OAuthService {
           isAccountLinked: true,
         };
       }
+    }
+
+    // Step 2b: The provider gave us an address it has not verified.
+    //
+    // SECURITY: refuse outright - do not link, and do NOT fall through to
+    // account creation. Falling through was an account PRE-HIJACKING vector:
+    // when the unverified address did not yet belong to anyone, Step 3 would
+    // happily create a real, immediately-authenticated account under it. An
+    // attacker could squat `president@`, `treasurer@`, or a specific member's
+    // address before that person ever signed up. When the real owner later
+    // signed in with a verified Google identity, Step 2 would link them INTO
+    // the squatted row - and the attacker's original OAuth link survives, so
+    // Step 1 keeps issuing them tokens for that account forever. If the victim
+    // is later promoted to admin, the attacker is promoted with them.
+    //
+    // Refusing here means an unverified provider email can never produce a
+    // session or a row, whether or not the address is already known to us.
+    if (profile.email && !profile.emailVerified) {
+      console.warn(
+        `OAuth refused: ${provider} reported an unverified email for provider user ${profile.providerUserId}`,
+      );
+      return {
+        member: null,
+        isNewAccount: false,
+        requiresLinking: true,
+        isAccountLinked: false,
+      };
     }
 
     // Step 3: Create new account

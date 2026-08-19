@@ -89,6 +89,11 @@ backend/*.tsbuildinfo
 .yarn/install-state.gz
 .pnp.*
 
-# Markdown files except README
-*.md
-!README.md
+# Local scratch notes only.
+#
+# This was a blanket `*.md` + `!README.md`, which silently excluded AGENTS.md,
+# PROJECT_CONTEXT.md, and everything under docs/ from version control - and
+# would have swallowed a SECURITY.md or CONTRIBUTING.md too. Ignore specific
+# throwaway files instead of every markdown file in the repo.
+NOTES.md
+SCRATCH.md

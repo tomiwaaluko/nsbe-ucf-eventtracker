@@ -92,6 +92,21 @@ export class MembersService {
           { lastName: { contains: query, mode: 'insensitive' } },
         ],
       },
+      // SECURITY: explicit select. Without it Prisma returns every scalar,
+      // including passwordHash. This route is admin-gated, which caps the
+      // blast radius, but a password hash must never leave the data layer -
+      // findMe already strips it, so the two paths disagreed.
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        photoUrl: true,
+        major: true,
+        graduationYear: true,
+      },
       take: 20,
     });
   }
@@ -232,7 +247,23 @@ export class MembersService {
    * Get detailed member profile with achievements and attendance
    * @param memberId The ID of the member whose profile to retrieve
    */
-  async getMemberProfile(memberId: string): Promise<MemberProfileDto> {
+  /**
+   * Fetch a member's profile.
+   *
+   * SECURITY: `includePrivate` gates the contact PII. This route takes an
+   * arbitrary id from the URL, so without the gate any authenticated member
+   * could walk member ids and harvest every member's email, phone number,
+   * LinkedIn URL, and Discord handle - a straightforward IDOR. Note the
+   * sibling `GET /members` is already admin-gated and the friends directory
+   * deliberately selects only non-PII columns, so this route was leaking
+   * strictly more than any intended surface.
+   *
+   * Pass true only for the member themselves or for an admin.
+   */
+  async getMemberProfile(
+    memberId: string,
+    includePrivate = false,
+  ): Promise<MemberProfileDto> {
     const member = await this.prisma.member.findUnique({
       where: { id: memberId },
       include: {
@@ -259,14 +290,17 @@ export class MembersService {
       id: member.id,
       firstName: member.firstName || '',
       lastName: member.lastName || '',
-      email: member.email,
+      // Contact details are visible to the member themselves and to admins.
+      email: includePrivate ? member.email : undefined,
       photoUrl: member.photoUrl ?? undefined,
       major: member.major ?? undefined,
       graduationYear: member.graduationYear ?? undefined,
-      phoneNumber: member.phoneNumber ?? undefined,
-      linkedInUrl: member.linkedInUrl ?? undefined,
+      phoneNumber: includePrivate ? member.phoneNumber ?? undefined : undefined,
+      linkedInUrl: includePrivate ? member.linkedInUrl ?? undefined : undefined,
       bio: member.bio ?? undefined,
-      discordUsername: member.discordUsername ?? undefined,
+      discordUsername: includePrivate
+        ? member.discordUsername ?? undefined
+        : undefined,
       role: member.role,
       isActive: member.isActive,
       createdAt: member.createdAt,
