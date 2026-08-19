@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Bricolage_Grotesque, Sora } from 'next/font/google';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trophy, Calendar, CheckCircle2, Mail, Award, TrendingUp, User, Shield, Lock } from 'lucide-react';
+import { Trophy, Calendar, CheckCircle2, Mail, Award, TrendingUp, User, Shield, Lock, CalendarPlus, MapPin } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { getApiUrl, apiHeaders } from '@/lib/api';
 import { StatsCard } from '@/components/StatsCard';
@@ -61,6 +61,15 @@ interface MemberProfile {
     eventDate: string;
     category: string;
     checkedInAt: string;
+  }>;
+  plannedEvents?: Array<{
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    category: string;
+    semester: string;
   }>;
 }
 
@@ -401,6 +410,75 @@ export default function MemberProfilePage() {
             </div>
           </motion.div>
         </div>
+
+        {/* Planned Events */}
+        {profile.plannedEvents !== undefined && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-black translate-x-2 translate-y-2 sm:translate-x-3 sm:translate-y-3" />
+            <div className="relative bg-white border-4 border-black p-6 sm:p-8 text-black">
+              <div className="mb-4">
+                <h3 className={`text-xl font-bold flex items-center gap-2 ${bricolage.className}`}>
+                  <CalendarPlus className="h-6 w-6 text-[#00a651]" />
+                  Planned Events
+                </h3>
+                <p className={`text-sm ${sora.className}`}>Upcoming events they plan to attend</p>
+              </div>
+              <div className="space-y-3">
+                {profile.plannedEvents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className={sora.className}>No upcoming planned events</p>
+                  </div>
+                ) : (
+                  profile.plannedEvents.map((event, index) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.05 }}
+                      className="relative"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/events/${event.id}`)}
+                        className="relative w-full text-left flex items-center justify-between p-4 border-2 border-black bg-white hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-bold ${bricolage.className}`}>{event.name}</h4>
+                          <p className={`text-sm ${sora.className}`}>
+                            {new Date(event.startTime).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                          {event.location && (
+                            <p className={`text-sm flex items-center gap-1 mt-1 ${sora.className}`}>
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              {event.location}
+                            </p>
+                          )}
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <Badge className={`bg-black text-white border-2 border-black font-bold ${sora.className}`}>
+                            {event.category.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </button>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Achievements Section */}
         <motion.div

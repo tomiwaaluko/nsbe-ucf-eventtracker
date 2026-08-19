@@ -48,4 +48,15 @@ export class MemberProfileDto {
     category: string;
     checkedInAt: Date;
   }>;
+
+  /** Upcoming planned events — only included for the profile owner, a confirmed friend, or an admin. */
+  plannedEvents?: Array<{
+    id: string;
+    name: string;
+    startTime: Date;
+    endTime: Date;
+    location?: string;
+    category: string;
+    semester: string;
+  }>;
 }
