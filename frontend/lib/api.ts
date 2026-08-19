@@ -777,4 +777,49 @@ export const api = {
     });
     return handleResponse(response);
   },
+
+  updateMyDuesStatus: async (
+    token: string,
+    data: {
+      chapterDuesSelfReported?: boolean;
+      nationalDuesSelfReported?: boolean;
+    }
+  ) => {
+    const response = await fetch(`${API_URL}/members/me`, {
+      method: "PUT",
+      headers: apiHeaders({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to update dues status");
+    }
+    return response.json();
+  },
+
+  updateMemberDues: async (
+    token: string,
+    memberId: string,
+    data: {
+      chapterDuesSelfReported?: boolean;
+      nationalDuesSelfReported?: boolean;
+    }
+  ) => {
+    const response = await fetch(`${API_URL}/members/${memberId}/dues`, {
+      method: "PUT",
+      headers: apiHeaders({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to update member dues");
+    }
+    return response.json();
+  },
 };

@@ -15,8 +15,12 @@ import {
   QrCode,
   LayoutDashboard,
   History,
+  Loader2,
 } from "lucide-react";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
+import { api } from "@/lib/api";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -39,8 +43,11 @@ interface OnboardingProps {
 
 export function Onboarding({ onComplete, userName }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [chapterDuesPaid, setChapterDuesPaid] = useState(false);
+  const [nationalDuesPaid, setNationalDuesPaid] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const steps = [
+  const tourSteps = [
     {
       id: "welcome",
       icon: "👋",
@@ -618,11 +625,110 @@ export function Onboarding({ onComplete, userName }: OnboardingProps) {
     },
   ];
 
-  const handleNext = () => {
+  const duesStep = {
+    id: "dues",
+    icon: "💳",
+    title: "Membership Dues",
+    subtitle: "Self-reported chapter and national NSBE dues status",
+    content: (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+          <div className="relative bg-[#ffb81c] border-4 border-black p-5">
+            <p className={`text-sm text-black ${sora.className}`}>
+              Honor-system checkboxes only — no receipt upload required. You can
+              update these later in Settings if you pay dues after sign-up.
+            </p>
+          </div>
+        </motion.div>
+
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+            <div className="relative bg-white border-4 border-black p-5 flex items-start gap-4">
+              <Checkbox
+                id="onboarding-chapter-dues"
+                checked={chapterDuesPaid}
+                onCheckedChange={(checked) =>
+                  setChapterDuesPaid(checked === true)
+                }
+                className="mt-1 border-black data-[state=checked]:bg-[#00a651]"
+              />
+              <Label
+                htmlFor="onboarding-chapter-dues"
+                className={`cursor-pointer ${sora.className}`}
+              >
+                <span
+                  className={`block font-bold text-black mb-1 ${bricolage.className}`}
+                >
+                  NSBE UCF Chapter Dues
+                </span>
+                <span className="text-sm text-black/70">
+                  I have paid chapter dues for this academic year.
+                </span>
+              </Label>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 bg-black translate-x-2 translate-y-2" />
+            <div className="relative bg-white border-4 border-black p-5 flex items-start gap-4">
+              <Checkbox
+                id="onboarding-national-dues"
+                checked={nationalDuesPaid}
+                onCheckedChange={(checked) =>
+                  setNationalDuesPaid(checked === true)
+                }
+                className="mt-1 border-black data-[state=checked]:bg-[#00a651]"
+              />
+              <Label
+                htmlFor="onboarding-national-dues"
+                className={`cursor-pointer ${sora.className}`}
+              >
+                <span
+                  className={`block font-bold text-black mb-1 ${bricolage.className}`}
+                >
+                  National NSBE Dues
+                </span>
+                <span className="text-sm text-black/70">
+                  I have paid national NSBE membership dues for this academic
+                  year.
+                </span>
+              </Label>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+
+  const steps = [...tourSteps, duesStep];
+
+  const handleNext = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
-    } else {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        await api.updateMyDuesStatus(token, {
+          chapterDuesSelfReported: chapterDuesPaid,
+          nationalDuesSelfReported: nationalDuesPaid,
+        });
+      }
       onComplete();
+    } catch (error) {
+      console.error("Failed to save dues status:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -807,21 +913,35 @@ export function Onboarding({ onComplete, userName }: OnboardingProps) {
 
                 <motion.button
                   onClick={handleNext}
-                  whileHover={{
-                    scale: 1.02,
-                    boxShadow: "8px 8px 0 0 rgba(0,0,0,1)",
-                    x: 4,
-                    y: 4,
-                  }}
-                  whileTap={{
-                    scale: 0.98,
-                    x: 8,
-                    y: 8,
-                    boxShadow: "4px 4px 0 0 rgba(0,0,0,1)",
-                  }}
-                  className={`flex items-center gap-2 px-6 py-3 bg-[#00a651] text-white font-bold uppercase tracking-wider border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all hover:bg-[#008a44] ${bricolage.className}`}
+                  disabled={isSaving}
+                  whileHover={
+                    isSaving
+                      ? {}
+                      : {
+                          scale: 1.02,
+                          boxShadow: "8px 8px 0 0 rgba(0,0,0,1)",
+                          x: 4,
+                          y: 4,
+                        }
+                  }
+                  whileTap={
+                    isSaving
+                      ? {}
+                      : {
+                          scale: 0.98,
+                          x: 8,
+                          y: 8,
+                          boxShadow: "4px 4px 0 0 rgba(0,0,0,1)",
+                        }
+                  }
+                  className={`flex items-center gap-2 px-6 py-3 bg-[#00a651] text-white font-bold uppercase tracking-wider border-4 border-black shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all hover:bg-[#008a44] ${bricolage.className} disabled:opacity-60`}
                 >
-                  {currentStep === steps.length - 1 ? (
+                  {isSaving ? (
+                    <>
+                      Saving...
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : currentStep === steps.length - 1 ? (
                     <>
                       Get Started
                       <CheckCircle2 className="h-4 w-4" />

@@ -52,6 +52,8 @@ export default function MemberManagementPage() {
           communityServiceAttended: member.communityServiceAttended ?? 0,
           totalEvents: member.totalEvents ?? 0,
           joinedDate: member.createdAt || new Date().toISOString(),
+          chapterDuesSelfReported: member.chapterDuesSelfReported ?? false,
+          nationalDuesSelfReported: member.nationalDuesSelfReported ?? false,
         };
       });
       
@@ -113,6 +115,26 @@ export default function MemberManagementPage() {
     }
   };
 
+  const handleUpdateDues = async (
+    memberId: string,
+    data: {
+      chapterDuesSelfReported?: boolean;
+      nationalDuesSelfReported?: boolean;
+    }
+  ) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await api.updateMemberDues(token, memberId, data);
+      toast.success("Self-reported dues updated");
+      fetchMembers();
+    } catch (error) {
+      console.error("Failed to update member dues:", error);
+      toast.error("Failed to update self-reported dues");
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -130,6 +152,7 @@ export default function MemberManagementPage() {
         onEditMember={handleEditMember}
         onViewMember={handleViewMember}
         onToggleStatus={handleToggleStatus}
+        onUpdateDues={handleUpdateDues}
       />
     </DashboardLayout>
   );

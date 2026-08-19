@@ -20,6 +20,7 @@ import { MembersService } from './members.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
@@ -91,6 +92,20 @@ export class MembersController {
       memberId,
       body.isActive,
     );
+  }
+
+  @Put(':id/dues')
+  async updateMemberDues(
+    @Req() req,
+    @Param('id') memberId: string,
+    @Body() body: UpdateMemberDuesDto,
+  ) {
+    const currentMember = await this.membersService.findMe(req.user.id);
+    if (!currentMember || !isAdmin(currentMember.role)) {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    return this.membersService.updateMemberDues(memberId, body);
   }
 
   @Get('admins')

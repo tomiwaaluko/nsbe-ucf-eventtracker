@@ -1,28 +1,38 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 
-describe('MembersService', () => {
+describe('MembersService dues updates', () => {
   let service: MembersService;
+  let prisma: {
+    member: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let cache: { del: jest.Mock };
 
   beforeEach(async () => {
+    prisma = {
+      member: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+    cache = { del: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MembersService,
         {
           provide: PrismaService,
-          useValue: {
-            member: {
-              findUnique: jest.fn(),
-              findMany: jest.fn(),
-              update: jest.fn(),
-            },
-          },
+          useValue: prisma,
         },
         {
           provide: CacheService,
-          useValue: {},
+          useValue: cache,
         },
       ],
     }).compile();
@@ -30,7 +40,64 @@ describe('MembersService', () => {
     service = module.get<MembersService>(MembersService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('updateMe sets reportedAt when dues are marked paid', async () => {
+    prisma.member.update.mockResolvedValue({ id: 'member-1' });
+
+    await service.updateMe('member-1', {
+      chapterDuesSelfReported: true,
+      nationalDuesSelfReported: true,
+    });
+
+    expect(prisma.member.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'member-1' },
+        data: expect.objectContaining({
+          chapterDuesSelfReported: true,
+          nationalDuesSelfReported: true,
+          chapterDuesReportedAt: expect.any(Date),
+          nationalDuesReportedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(cache.del).toHaveBeenCalledWith('user:member-1');
+  });
+
+  it('updateMe clears reportedAt when dues are marked unpaid', async () => {
+    prisma.member.update.mockResolvedValue({ id: 'member-1' });
+
+    await service.updateMe('member-1', {
+      chapterDuesSelfReported: false,
+      nationalDuesSelfReported: false,
+    });
+
+    expect(prisma.member.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          chapterDuesSelfReported: false,
+          nationalDuesSelfReported: false,
+          chapterDuesReportedAt: null,
+          nationalDuesReportedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it('updateMemberDues throws when member is missing', async () => {
+    prisma.member.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.updateMemberDues('missing', { chapterDuesSelfReported: true }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('updateMemberDues invalidates member cache', async () => {
+    prisma.member.findUnique.mockResolvedValue({ id: 'member-2' });
+    prisma.member.update.mockResolvedValue({ id: 'member-2' });
+
+    await service.updateMemberDues('member-2', {
+      nationalDuesSelfReported: true,
+    });
+
+    expect(cache.del).toHaveBeenCalledWith('user:member-2');
   });
 });

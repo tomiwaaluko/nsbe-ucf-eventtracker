@@ -6,6 +6,7 @@ import { Textarea } from "../ui/textarea";
 import { User, Upload, X, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiUrl, apiHeaders } from "@/lib/api";
+import { DuesStatusSection } from "./DuesStatusSection";
 
 interface ProfileSettingsProps {
   memberData: {
@@ -540,6 +541,8 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           <li>• Contact info helps other members and officers connect with you</li>
         </ul>
       </div>
+
+      <DuesStatusSection />
     </div>
   );
 }

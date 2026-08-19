@@ -26,6 +26,10 @@ model Member {
   major           String?
   phoneNumber     String?
   photoUrl        String?
+  chapterDuesSelfReported    Boolean   @default(false)
+  nationalDuesSelfReported   Boolean   @default(false)
+  chapterDuesReportedAt      DateTime?
+  nationalDuesReportedAt     DateTime?
   attendance      Attendance[]
   eventsCreated   Event[]
   oauthAccounts   OAuthAccount[]

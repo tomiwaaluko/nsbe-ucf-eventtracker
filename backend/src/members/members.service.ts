@@ -2,12 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory } from '@prisma/client';
 
-/**
- * Maps an event category to its bucket for statistics calculation
- */
 function getEventBucket(category: EventCategory): string {
   switch (category) {
     case EventCategory.WORKSHOP:
@@ -21,6 +19,31 @@ function getEventBucket(category: EventCategory): string {
     default:
       return 'workshops_socials';
   }
+}
+
+function buildDuesUpdateData(dto: {
+  chapterDuesSelfReported?: boolean;
+  nationalDuesSelfReported?: boolean;
+}) {
+  const data: {
+    chapterDuesSelfReported?: boolean;
+    nationalDuesSelfReported?: boolean;
+    chapterDuesReportedAt?: Date | null;
+    nationalDuesReportedAt?: Date | null;
+  } = {};
+  const now = new Date();
+
+  if (dto.chapterDuesSelfReported !== undefined) {
+    data.chapterDuesSelfReported = dto.chapterDuesSelfReported;
+    data.chapterDuesReportedAt = dto.chapterDuesSelfReported ? now : null;
+  }
+
+  if (dto.nationalDuesSelfReported !== undefined) {
+    data.nationalDuesSelfReported = dto.nationalDuesSelfReported;
+    data.nationalDuesReportedAt = dto.nationalDuesSelfReported ? now : null;
+  }
+
+  return data;
 }
 
 @Injectable()
@@ -61,12 +84,42 @@ export class MembersService {
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
+    const {
+      chapterDuesSelfReported,
+      nationalDuesSelfReported,
+      ...profileData
+    } = dto;
+    const duesData = buildDuesUpdateData({
+      chapterDuesSelfReported,
+      nationalDuesSelfReported,
+    });
+
     const result = await this.prisma.member.update({
       where: { id: userId },
-      data: dto,
+      data: {
+        ...profileData,
+        ...duesData,
+      },
     });
     // Invalidate user cache on update
     this.cache.del(`user:${userId}`);
+    return result;
+  }
+
+  async updateMemberDues(memberId: string, dto: UpdateMemberDuesDto) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    const result = await this.prisma.member.update({
+      where: { id: memberId },
+      data: buildDuesUpdateData(dto),
+    });
+    this.cache.del(`user:${memberId}`);
     return result;
   }
 
@@ -104,6 +157,8 @@ export class MembersService {
         role: true,
         isActive: true,
         photoUrl: true,
+        chapterDuesSelfReported: true,
+        nationalDuesSelfReported: true,
         major: true,
         graduationYear: true,
       },
@@ -215,6 +270,10 @@ export class MembersService {
             isActive: member.isActive,
             createdAt: member.createdAt,
             updatedAt: member.updatedAt,
+            chapterDuesSelfReported: member.chapterDuesSelfReported,
+            nationalDuesSelfReported: member.nationalDuesSelfReported,
+            chapterDuesReportedAt: member.chapterDuesReportedAt,
+            nationalDuesReportedAt: member.nationalDuesReportedAt,
             // Statistics
             workshopsAttended: bucketCounts.workshops_socials,
             gbmAttended: bucketCounts.gbm,

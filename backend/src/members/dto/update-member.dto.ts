@@ -6,6 +6,7 @@ import {
   Max,
   IsUrl,
   MaxLength,
+  IsBoolean,
 } from 'class-validator';
 
 export class UpdateMemberDto {
@@ -48,4 +49,12 @@ export class UpdateMemberDto {
   @IsString()
   @MaxLength(50)
   discordUsername?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  chapterDuesSelfReported?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  nationalDuesSelfReported?: boolean;
 }
