@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
@@ -12,7 +12,7 @@ describe('MembersService dues updates', () => {
       update: jest.Mock;
     };
   };
-  let cache: { del: jest.Mock };
+  let cache: { del: jest.Mock; delPattern: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -21,7 +21,7 @@ describe('MembersService dues updates', () => {
         update: jest.fn(),
       },
     };
-    cache = { del: jest.fn() };
+    cache = { del: jest.fn(), delPattern: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,6 +57,7 @@ describe('MembersService dues updates', () => {
           chapterDuesReportedAt: expect.any(Date),
           nationalDuesReportedAt: expect.any(Date),
         }),
+        select: expect.not.objectContaining({ passwordHash: expect.anything() }),
       }),
     );
     expect(cache.del).toHaveBeenCalledWith('user:member-1');
@@ -90,6 +91,12 @@ describe('MembersService dues updates', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
+  it('updateMemberDues rejects empty body', async () => {
+    await expect(service.updateMemberDues('member-2', {})).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
   it('updateMemberDues invalidates member cache', async () => {
     prisma.member.findUnique.mockResolvedValue({ id: 'member-2' });
     prisma.member.update.mockResolvedValue({ id: 'member-2' });
@@ -99,5 +106,6 @@ describe('MembersService dues updates', () => {
     });
 
     expect(cache.del).toHaveBeenCalledWith('user:member-2');
+    expect(cache.delPattern).toHaveBeenCalledWith('members:');
   });
 });

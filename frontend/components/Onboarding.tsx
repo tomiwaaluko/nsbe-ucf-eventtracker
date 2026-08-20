@@ -1,6 +1,6 @@
 // Brutalist/Geometric Design System for NSBE UCF Onboarding
 // Matching Login and Dashboard styling
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -21,6 +21,7 @@ import { Bricolage_Grotesque, Sora } from "next/font/google";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -46,6 +47,13 @@ export function Onboarding({ onComplete, userName }: OnboardingProps) {
   const [chapterDuesPaid, setChapterDuesPaid] = useState(false);
   const [nationalDuesPaid, setNationalDuesPaid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const hasCompletedRef = useRef(false);
+
+  const finishOnboarding = () => {
+    if (hasCompletedRef.current) return;
+    hasCompletedRef.current = true;
+    onComplete();
+  };
 
   const tourSteps = [
     {
@@ -724,11 +732,14 @@ export function Onboarding({ onComplete, userName }: OnboardingProps) {
           nationalDuesSelfReported: nationalDuesPaid,
         });
       }
-      onComplete();
     } catch (error) {
       console.error("Failed to save dues status:", error);
+      toast.error("Save failed", {
+        description: "Could not save your dues status. You can update it later in Settings.",
+      });
     } finally {
       setIsSaving(false);
+      finishOnboarding();
     }
   };
 
@@ -819,8 +830,9 @@ export function Onboarding({ onComplete, userName }: OnboardingProps) {
                 Step {currentStep + 1} of {steps.length}
               </span>
               <button
-                onClick={onComplete}
-                className={`text-sm text-white/60 hover:text-white transition-colors font-medium ${sora.className}`}
+                onClick={finishOnboarding}
+                disabled={isSaving}
+                className={`text-sm text-white/60 hover:text-white transition-colors font-medium ${sora.className} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Skip Tutorial
               </button>

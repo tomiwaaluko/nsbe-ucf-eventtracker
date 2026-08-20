@@ -65,7 +65,7 @@ interface MemberManagementProps {
       chapterDuesSelfReported?: boolean;
       nationalDuesSelfReported?: boolean;
     }
-  ) => void;
+  ) => Promise<void>;
 }
 
 export function MemberManagement({

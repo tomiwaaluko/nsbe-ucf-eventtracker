@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -6,6 +10,9 @@ import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory } from '@prisma/client';
 
+/**
+ * Maps an event category to its achievement bucket key.
+ */
 function getEventBucket(category: EventCategory): string {
   switch (category) {
     case EventCategory.WORKSHOP:
@@ -45,6 +52,30 @@ function buildDuesUpdateData(dto: {
 
   return data;
 }
+
+/** Explicit select — never return passwordHash from update routes. */
+const MEMBER_UPDATE_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  createdAt: true,
+  emailVerified: true,
+  updatedAt: true,
+  isActive: true,
+  bio: true,
+  discordUsername: true,
+  graduationYear: true,
+  linkedInUrl: true,
+  major: true,
+  phoneNumber: true,
+  photoUrl: true,
+  chapterDuesSelfReported: true,
+  nationalDuesSelfReported: true,
+  chapterDuesReportedAt: true,
+  nationalDuesReportedAt: true,
+} as const;
 
 @Injectable()
 export class MembersService {
@@ -100,6 +131,7 @@ export class MembersService {
         ...profileData,
         ...duesData,
       },
+      select: MEMBER_UPDATE_SELECT,
     });
     // Invalidate user cache on update
     this.cache.del(`user:${userId}`);
@@ -107,6 +139,15 @@ export class MembersService {
   }
 
   async updateMemberDues(memberId: string, dto: UpdateMemberDuesDto) {
+    if (
+      dto.chapterDuesSelfReported === undefined &&
+      dto.nationalDuesSelfReported === undefined
+    ) {
+      throw new BadRequestException(
+        'At least one dues field must be provided',
+      );
+    }
+
     const member = await this.prisma.member.findUnique({
       where: { id: memberId },
     });
@@ -118,8 +159,10 @@ export class MembersService {
     const result = await this.prisma.member.update({
       where: { id: memberId },
       data: buildDuesUpdateData(dto),
+      select: MEMBER_UPDATE_SELECT,
     });
     this.cache.del(`user:${memberId}`);
+    this.cache.delPattern('members:');
     return result;
   }
 
@@ -201,11 +244,14 @@ export class MembersService {
       throw new NotFoundException('Member not found');
     }
 
-    // Update the member's status
-    return this.prisma.member.update({
+    const result = await this.prisma.member.update({
       where: { id: memberId },
       data: { isActive },
+      select: MEMBER_UPDATE_SELECT,
     });
+    this.cache.del(`user:${memberId}`);
+    this.cache.delPattern('members:');
+    return result;
   }
 
   /**
