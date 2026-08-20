@@ -45,12 +45,15 @@ export function markChangelogAsRead(): void {
 }
 
 export function formatChangelogDate(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return date;
+
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
     timeZone: "UTC",
-  }).format(new Date(`${date}T12:00:00Z`));
+  }).format(d);
 }
 
 export function useChangelogUnread(): boolean {

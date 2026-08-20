@@ -137,6 +137,7 @@ const menuItems = [
     icon: Sparkles,
     roles: ["member", "admin", "super_admin"],
     section: "main",
+    showsUnread: true,
   },
   {
     id: "settings",
@@ -154,7 +155,7 @@ const NavLink = ({
   onClose,
   showUnreadDot = false,
 }: {
-  item: (typeof menuItems)[0] & { wip?: boolean };
+  item: (typeof menuItems)[0] & { wip?: boolean; showsUnread?: boolean };
   isActive: boolean;
   onNavigate: (page: string) => void;
   onClose: () => void;
@@ -185,9 +186,11 @@ const NavLink = ({
       )}
       {showUnreadDot && (
         <span
+          role="status"
           className={`${item.wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
-          aria-label="Unread updates"
-        />
+        >
+          <span className="sr-only">Unread updates</span>
+        </span>
       )}
     </motion.button>
   );
@@ -293,12 +296,6 @@ export function TopBar({
                       <Construction className="w-2.5 h-2.5" />
                       WIP
                     </span>
-                  )}
-                  {item.id === "changelog" && hasUnreadChangelog && (
-                    <span
-                      className="w-2 h-2 rounded-full bg-[#ed1c24] border border-black flex-shrink-0"
-                      aria-label="Unread updates"
-                    />
                   )}
                 </motion.button>
               );
@@ -427,7 +424,8 @@ export function TopBar({
                     onNavigate={onNavigate}
                     onClose={() => setMenuOpen(false)}
                     showUnreadDot={
-                      item.id === "changelog" && hasUnreadChangelog
+                      (item as { showsUnread?: boolean }).showsUnread &&
+                      hasUnreadChangelog
                     }
                   />
                 ))}

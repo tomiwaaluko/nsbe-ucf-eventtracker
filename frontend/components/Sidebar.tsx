@@ -143,6 +143,7 @@ const menuItems = [
     icon: Sparkles,
     roles: ["member", "admin", "super_admin"],
     section: "main",
+    showsUnread: true,
   },
   {
     id: "settings",
@@ -294,11 +295,14 @@ export function Sidebar({
                           WIP
                         </span>
                       )}
-                      {item.id === "changelog" && hasUnreadChangelog && (
+                      {(item as { showsUnread?: boolean }).showsUnread &&
+                        hasUnreadChangelog && (
                         <span
+                          role="status"
                           className={`${(item as { wip?: boolean }).wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
-                          aria-label="Unread updates"
-                        />
+                        >
+                          <span className="sr-only">Unread updates</span>
+                        </span>
                       )}
                     </div>
                   </motion.button>
