@@ -20,6 +20,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
+import { MembersExportService } from './members-export.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -35,6 +36,7 @@ import { StorageService } from '../storage/storage.service';
 export class MembersController {
   constructor(
     private readonly membersService: MembersService,
+    private readonly membersExportService: MembersExportService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
@@ -62,9 +64,10 @@ export class MembersController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const userId = req.user.id;
+    res.setHeader('Cache-Control', 'no-store');
 
     if (query.format === 'csv') {
-      const csv = await this.membersService.exportMyDataAsCsv(userId);
+      const csv = await this.membersExportService.exportMyDataAsCsv(userId);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader(
         'Content-Disposition',
@@ -73,7 +76,7 @@ export class MembersController {
       return csv;
     }
 
-    return this.membersService.exportMyData(userId);
+    return this.membersExportService.exportMyData(userId);
   }
 
   @Put('me')

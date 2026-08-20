@@ -1,13 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { MembersService } from './members.service';
+import { MembersExportService } from './members-export.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CacheService } from '../cache/cache.service';
+import { PointsService } from '../points/points.service';
+import {
+  MEMBER_EXPORT_ATTENDANCE_SELECT,
+  MEMBER_EXPORT_EVENT_SELECT,
+  MEMBER_EXPORT_PROFILE_SELECT,
+} from './dto/export-member-data.dto';
 
-describe('MembersService export', () => {
-  let service: MembersService;
+describe('MembersExportService', () => {
+  let service: MembersExportService;
   let prisma: {
     member: { findUnique: jest.Mock };
+  };
+  let pointsService: {
+    getMemberPoints: jest.Mock;
   };
 
   const userId = 'user-123';
@@ -53,8 +61,6 @@ describe('MembersService export', () => {
           endTime: new Date('2024-09-01'),
           location: 'ENG 2',
           isActive: true,
-          qrSecret: 'secret-should-not-export',
-          checkInCode: 'ABC123',
         },
       },
       {
@@ -71,8 +77,6 @@ describe('MembersService export', () => {
           endTime: new Date('2024-09-15'),
           location: null,
           isActive: true,
-          qrSecret: 'another-secret',
-          checkInCode: 'XYZ789',
         },
       },
     ],
@@ -92,8 +96,6 @@ describe('MembersService export', () => {
           endTime: new Date('2024-10-15'),
           location: 'Student Union',
           isActive: true,
-          qrSecret: 'secret',
-          checkInCode: 'SOC001',
         },
       },
     ],
@@ -106,7 +108,7 @@ describe('MembersService export', () => {
         label: null,
         note: null,
         createdAt: new Date('2024-09-01'),
-        awardedBy: { id: 'admin-1', firstName: 'Admin', lastName: 'User' },
+        awardedBy: { firstName: 'Admin', lastName: 'User' },
       },
     ],
   };
@@ -118,15 +120,56 @@ describe('MembersService export', () => {
       },
     };
 
+    pointsService = {
+      getMemberPoints: jest.fn().mockResolvedValue({
+        memberId: userId,
+        semester: 'Fall 2024',
+        totalPoints: 35,
+        zones: {
+          general: 35,
+          communication: 0,
+          program: 0,
+          parliamentarian: 0,
+        },
+        manualEntries: [
+          {
+            id: 'point-1',
+            pointTypeKey: 'PAID_MEMBER',
+            points: 30,
+            semester: 'Fall 2024',
+            label: null,
+            note: null,
+            createdAt: new Date('2024-09-01'),
+            awardedBy: {
+              id: 'admin-1',
+              firstName: 'Admin',
+              lastName: 'User',
+            },
+          },
+        ],
+        autoEntries: [
+          {
+            pointTypeKey: 'GBM',
+            label: 'GBM Attendance',
+            points: 5,
+            zone: 'general',
+            eventId: 'event-1',
+            eventName: 'Fall GBM',
+            eventStartTime: new Date('2024-09-01'),
+          },
+        ],
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        MembersService,
+        MembersExportService,
         { provide: PrismaService, useValue: prisma },
-        { provide: CacheService, useValue: {} },
+        { provide: PointsService, useValue: pointsService },
       ],
     }).compile();
 
-    service = module.get<MembersService>(MembersService);
+    service = module.get<MembersExportService>(MembersExportService);
   });
 
   describe('exportMyData', () => {
@@ -144,6 +187,58 @@ describe('MembersService export', () => {
       expect(result.exportedAt).toBeDefined();
     });
 
+    it('uses explicit Prisma select lists for profile, attendance, and events', async () => {
+      prisma.member.findUnique.mockResolvedValue(mockMember);
+
+      await service.exportMyData(userId);
+
+      expect(prisma.member.findUnique).toHaveBeenCalledWith({
+        where: { id: userId },
+        select: expect.objectContaining({
+          ...MEMBER_EXPORT_PROFILE_SELECT,
+          attendance: {
+            select: MEMBER_EXPORT_ATTENDANCE_SELECT,
+            orderBy: { checkedInAt: 'desc' },
+          },
+        }),
+      });
+
+      const call = prisma.member.findUnique.mock.calls[0][0];
+      expect(call.select.attendance.select.event.select).toEqual(
+        MEMBER_EXPORT_EVENT_SELECT,
+      );
+      expect(call.select).not.toHaveProperty('include');
+    });
+
+    it('exports only allowlisted profile fields', async () => {
+      prisma.member.findUnique.mockResolvedValue(mockMember);
+
+      const result = await service.exportMyData(userId);
+      const allowedKeys = new Set([
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'role',
+        'createdAt',
+        'updatedAt',
+        'emailVerified',
+        'isActive',
+        'bio',
+        'discordUsername',
+        'graduationYear',
+        'linkedInUrl',
+        'major',
+        'phoneNumber',
+        'photoUrl',
+        'hasPassword',
+      ]);
+
+      expect(Object.keys(result.profile).sort()).toEqual(
+        Array.from(allowedKeys).sort(),
+      );
+    });
+
     it('never includes qrSecret or checkInCode in event data', async () => {
       prisma.member.findUnique.mockResolvedValue(mockMember);
 
@@ -152,8 +247,25 @@ describe('MembersService export', () => {
 
       expect(serialized).not.toContain('qrSecret');
       expect(serialized).not.toContain('checkInCode');
-      expect(serialized).not.toContain('secret-should-not-export');
-      expect(serialized).not.toContain('ABC123');
+    });
+
+    it('never includes awardedById or awardedBy.id in point entries', async () => {
+      prisma.member.findUnique.mockResolvedValue(mockMember);
+
+      const result = await service.exportMyData(userId);
+      const serialized = JSON.stringify(result);
+
+      expect(serialized).not.toContain('awardedById');
+      expect(serialized).not.toContain('admin-1');
+      expect(result.points.bySemester[0].manualEntries[0].awardedByName).toBe(
+        'Admin User',
+      );
+      expect(result.points.bySemester[0].manualEntries[0]).not.toHaveProperty(
+        'awardedBy',
+      );
+      expect(result.points.bySemester[0].manualEntries[0]).not.toHaveProperty(
+        'awardedById',
+      );
     });
 
     it('includes attendance, interests, achievements, and points', async () => {
@@ -169,6 +281,10 @@ describe('MembersService export', () => {
       expect(result.points.bySemester).toHaveLength(1);
       expect(result.points.bySemester[0].manualEntries).toHaveLength(1);
       expect(result.points.bySemester[0].autoEntries.length).toBeGreaterThan(0);
+      expect(pointsService.getMemberPoints).toHaveBeenCalledWith(
+        userId,
+        'Fall 2024',
+      );
     });
 
     it('throws NotFoundException when member does not exist', async () => {
@@ -194,6 +310,19 @@ describe('MembersService export', () => {
       expect(csv).toContain('Section,Auto Points');
       expect(csv).not.toContain('qrSecret');
       expect(csv).not.toContain('checkInCode');
+      expect(csv).not.toContain('awardedById');
+      expect(csv).not.toContain('admin-1');
+    });
+
+    it('prefixes formula-like CSV cells to prevent injection', async () => {
+      prisma.member.findUnique.mockResolvedValue({
+        ...mockMember,
+        bio: '=HYPERLINK("evil")',
+      });
+
+      const csv = await service.exportMyDataAsCsv(userId);
+
+      expect(csv).toContain("'=HYPERLINK");
     });
   });
 });

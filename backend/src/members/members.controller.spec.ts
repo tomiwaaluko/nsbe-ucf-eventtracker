@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { StorageService } from '../storage/storage.service';
+import { MembersExportService } from './members-export.service';
 
 describe('MembersController', () => {
   let controller: MembersController;
@@ -23,6 +24,10 @@ describe('MembersController', () => {
         },
         {
           provide: AuthService,
+          useValue: {},
+        },
+        {
+          provide: MembersExportService,
           useValue: {},
         },
         {

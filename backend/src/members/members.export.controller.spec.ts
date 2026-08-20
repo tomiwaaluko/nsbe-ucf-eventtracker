@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
+import { MembersExportService } from './members-export.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
@@ -8,7 +9,7 @@ import { StorageService } from '../storage/storage.service';
 
 describe('MembersController exportMyData', () => {
   let controller: MembersController;
-  let membersService: {
+  let membersExportService: {
     exportMyData: jest.Mock;
     exportMyDataAsCsv: jest.Mock;
   };
@@ -19,15 +20,18 @@ describe('MembersController exportMyData', () => {
   };
 
   beforeEach(async () => {
-    membersService = {
+    membersExportService = {
       exportMyData: jest.fn().mockResolvedValue(mockExportPayload),
-      exportMyDataAsCsv: jest.fn().mockResolvedValue('Section,Profile\nemail,member@ucf.edu'),
+      exportMyDataAsCsv: jest
+        .fn()
+        .mockResolvedValue('Section,Profile\nemail,member@ucf.edu'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MembersController],
       providers: [
-        { provide: MembersService, useValue: membersService },
+        { provide: MembersService, useValue: {} },
+        { provide: MembersExportService, useValue: membersExportService },
         { provide: PrismaService, useValue: {} },
         { provide: AuthService, useValue: {} },
         { provide: StorageService, useValue: {} },
@@ -40,14 +44,15 @@ describe('MembersController exportMyData', () => {
     controller = module.get<MembersController>(MembersController);
   });
 
-  it('returns JSON export for the authenticated user', async () => {
+  it('returns JSON export for the authenticated user with no-store cache header', async () => {
     const req = { user: { id: 'user-123' } };
     const res = { setHeader: jest.fn() };
 
     const result = await controller.exportMyData(req, {}, res as any);
 
-    expect(membersService.exportMyData).toHaveBeenCalledWith('user-123');
-    expect(membersService.exportMyDataAsCsv).not.toHaveBeenCalled();
+    expect(membersExportService.exportMyData).toHaveBeenCalledWith('user-123');
+    expect(membersExportService.exportMyDataAsCsv).not.toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
     expect(result).toEqual(mockExportPayload);
   });
 
@@ -61,7 +66,10 @@ describe('MembersController exportMyData', () => {
       res as any,
     );
 
-    expect(membersService.exportMyDataAsCsv).toHaveBeenCalledWith('user-456');
+    expect(membersExportService.exportMyDataAsCsv).toHaveBeenCalledWith(
+      'user-456',
+    );
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
     expect(res.setHeader).toHaveBeenCalledWith(
       'Content-Type',
       'text/csv; charset=utf-8',
