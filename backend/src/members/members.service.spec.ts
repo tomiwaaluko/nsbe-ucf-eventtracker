@@ -1,9 +1,25 @@
+import { DateTime } from 'luxon';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
-import { etLocalToUtc } from './chapter-membership.util';
+import { CHAPTER_MEMBERSHIP_TZ } from './chapter-membership.util';
+
+function etLocalToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  ms: number,
+): Date {
+  return DateTime.fromObject(
+    { year, month, day, hour, minute, second, millisecond: ms },
+    { zone: CHAPTER_MEMBERSHIP_TZ },
+  ).toJSDate();
+}
 
 describe('MembersService chapter membership', () => {
   let service: MembersService;
@@ -12,6 +28,7 @@ describe('MembersService chapter membership', () => {
       findUnique: jest.Mock;
       findMany: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
   let cache: {
@@ -26,7 +43,7 @@ describe('MembersService chapter membership', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
-        include: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
     cache = {
@@ -94,6 +111,28 @@ describe('MembersService chapter membership', () => {
     });
   });
 
+  describe('batchResetExpiredChapterMemberships', () => {
+    it('expires active memberships marked before the July 31 ET deadline', async () => {
+      prisma.member.updateMany.mockResolvedValue({ count: 2 });
+
+      const count = await service.batchResetExpiredChapterMemberships(
+        etLocalToUtc(2026, 8, 1, 0, 0, 0, 0),
+      );
+
+      expect(count).toBe(2);
+      expect(prisma.member.updateMany).toHaveBeenCalledWith({
+        where: {
+          chapterMembershipActive: true,
+          OR: [
+            { chapterMembershipMarkedAt: null },
+            { chapterMembershipMarkedAt: { lt: expect.any(Date) } },
+          ],
+        },
+        data: { chapterMembershipActive: false },
+      });
+    });
+  });
+
   describe('updateMemberMembership', () => {
     it('marks paid with timestamp and invalidates cache', async () => {
       prisma.member.findUnique.mockResolvedValue({ id: 'member-1' });
@@ -110,7 +149,13 @@ describe('MembersService chapter membership', () => {
           chapterMembershipActive: true,
           chapterMembershipMarkedAt: expect.any(Date),
         }),
+        select: expect.not.objectContaining({
+          passwordHash: expect.anything(),
+        }),
       });
+      expect(prisma.member.update.mock.calls[0][0].select).not.toHaveProperty(
+        'passwordHash',
+      );
       expect(cache.del).toHaveBeenCalledWith('user:member-1');
       expect(cache.delPattern).toHaveBeenCalledWith('members:');
     });
@@ -131,6 +176,7 @@ describe('MembersService chapter membership', () => {
       expect(prisma.member.update).toHaveBeenCalledWith({
         where: { id: 'member-1' },
         data: { chapterMembershipActive: false },
+        select: expect.any(Object),
       });
     });
 
@@ -140,6 +186,27 @@ describe('MembersService chapter membership', () => {
       await expect(
         service.updateMemberMembership('missing', true),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateMemberStatus', () => {
+    it('updates status without returning passwordHash', async () => {
+      prisma.member.findUnique.mockResolvedValue({ id: 'member-1' });
+      prisma.member.update.mockResolvedValue({
+        id: 'member-1',
+        isActive: false,
+      });
+
+      await service.updateMemberStatus('member-1', false);
+
+      expect(prisma.member.update).toHaveBeenCalledWith({
+        where: { id: 'member-1' },
+        data: { isActive: false },
+        select: expect.any(Object),
+      });
+      expect(prisma.member.update.mock.calls[0][0].select).not.toHaveProperty(
+        'passwordHash',
+      );
     });
   });
 });

@@ -372,6 +372,9 @@ Unless noted, routes expect a valid Supabase JWT. Admin-only routes also require
 | `GET` | `/members/admins` | Admin list |
 | `PUT` | `/members/:id/role` | Super admin |
 | `PUT` | `/members/:id/status` | Activate / deactivate |
+| `PUT` | `/members/:id/membership` | Mark chapter dues paid / unpaid (admin) |
+
+Chapter membership uses a check-on-read reset: if a member is marked paid but `chapterMembershipMarkedAt` is before the most recently elapsed **July 31 23:59 America/New_York** boundary, status is treated as unpaid until an admin re-marks it (Aug 1–July 31 membership year).
 
 ### Events — `/api/events`
 

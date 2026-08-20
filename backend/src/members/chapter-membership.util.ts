@@ -9,7 +9,15 @@ export const CHAPTER_MEMBERSHIP_TZ = 'America/New_York';
  */
 export function getJuly31DeadlineET(year: number): Date {
   return DateTime.fromObject(
-    { year, month: 7, day: 31, hour: 23, minute: 59, second: 59, millisecond: 999 },
+    {
+      year,
+      month: 7,
+      day: 31,
+      hour: 23,
+      minute: 59,
+      second: 59,
+      millisecond: 999,
+    },
     { zone: CHAPTER_MEMBERSHIP_TZ },
   ).toJSDate();
 }
@@ -19,24 +27,13 @@ export function getJuly31DeadlineET(year: number): Date {
  */
 export function getMostRecentJuly31DeadlineET(now: Date = new Date()): Date {
   const nowEt = DateTime.fromJSDate(now, { zone: CHAPTER_MEMBERSHIP_TZ });
-  const thisYearDeadline = DateTime.fromObject(
-    {
-      year: nowEt.year,
-      month: 7,
-      day: 31,
-      hour: 23,
-      minute: 59,
-      second: 59,
-      millisecond: 999,
-    },
-    { zone: CHAPTER_MEMBERSHIP_TZ },
-  );
+  const thisYearDeadline = getJuly31DeadlineET(nowEt.year);
 
-  if (nowEt.toMillis() <= thisYearDeadline.toMillis()) {
+  if (nowEt.toMillis() <= thisYearDeadline.getTime()) {
     return getJuly31DeadlineET(nowEt.year - 1);
   }
 
-  return thisYearDeadline.toJSDate();
+  return thisYearDeadline;
 }
 
 export function shouldResetChapterMembership(
@@ -70,20 +67,4 @@ export function resolveChapterMembershipActive(
     chapterMembershipMarkedAt,
     now,
   );
-}
-
-/** Helper for tests: build a Date at a local ET wall-clock time. */
-export function etLocalToUtc(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute: number,
-  second: number,
-  ms: number,
-): Date {
-  return DateTime.fromObject(
-    { year, month, day, hour, minute, second, millisecond: ms },
-    { zone: CHAPTER_MEMBERSHIP_TZ },
-  ).toJSDate();
 }
