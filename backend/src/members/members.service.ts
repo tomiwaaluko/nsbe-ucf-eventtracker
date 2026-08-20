@@ -11,7 +11,7 @@ import {
 } from './chapter-membership.util';
 
 /** Safe fields returned from admin member update routes (never passwordHash). */
-const ADMIN_MEMBER_UPDATE_SELECT = {
+export const ADMIN_MEMBER_UPDATE_SELECT = {
   id: true,
   email: true,
   firstName: true,
@@ -296,6 +296,10 @@ export class MembersService {
       data: { chapterMembershipActive: false },
     });
 
+    if (result.count > 0) {
+      this.cache.delPattern('members:');
+    }
+
     return result.count;
   }
 
@@ -304,10 +308,7 @@ export class MembersService {
    * @param semester Optional semester filter (if not provided, shows all-time statistics)
    */
   async getAllMembers(semester?: string): Promise<any[]> {
-    const resetCount = await this.batchResetExpiredChapterMemberships();
-    if (resetCount > 0) {
-      this.cache.delPattern('members:');
-    }
+    await this.batchResetExpiredChapterMemberships();
 
     // Cache member list for 3 minutes
     return this.cache.wrap(

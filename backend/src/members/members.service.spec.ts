@@ -1,7 +1,10 @@
 import { DateTime } from 'luxon';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { MembersService } from './members.service';
+import {
+  ADMIN_MEMBER_UPDATE_SELECT,
+  MembersService,
+} from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { CHAPTER_MEMBERSHIP_TZ } from './chapter-membership.util';
@@ -130,6 +133,81 @@ describe('MembersService chapter membership', () => {
         },
         data: { chapterMembershipActive: false },
       });
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+    });
+
+    it('does not invalidate members cache when no rows are reset', async () => {
+      prisma.member.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.batchResetExpiredChapterMemberships(
+        etLocalToUtc(2026, 8, 1, 0, 0, 0, 0),
+      );
+
+      expect(cache.delPattern).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('search cache invalidation after batch reset', () => {
+    it('invalidates members: cache when search triggers a reset', async () => {
+      prisma.member.updateMany.mockResolvedValue({ count: 3 });
+      prisma.member.findMany.mockResolvedValue([]);
+
+      await service.search('alice');
+
+      expect(prisma.member.updateMany).toHaveBeenCalled();
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+    });
+
+    it('ensures getAllMembers does not serve stale Paid=true after search reset', async () => {
+      // Simulate: search already consumed the reset (updateMany returns 0 now),
+      // so getAllMembers must not depend on its own resetCount for invalidation.
+      // The prior search path is what must have called delPattern.
+      prisma.member.updateMany.mockResolvedValueOnce({ count: 2 });
+      prisma.member.findMany.mockResolvedValue([]);
+
+      await service.search('bob');
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+
+      cache.delPattern.mockClear();
+      prisma.member.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      // wrap returns cached value if present — after invalidation it should recompute
+      const staleCached = [
+        {
+          id: 'member-1',
+          chapterMembershipActive: true,
+          chapterMembershipMarkedAt: etLocalToUtc(2025, 8, 15, 10, 0, 0, 0),
+          attendance: [],
+        },
+      ];
+      let wrapCalls = 0;
+      cache.wrap.mockImplementation(async (_key: string, fn: () => Promise<unknown>) => {
+        wrapCalls += 1;
+        if (wrapCalls === 1) {
+          // First getAllMembers after search: cache was invalidated, so factory runs
+          return fn();
+        }
+        return staleCached;
+      });
+      prisma.member.findMany.mockResolvedValue([
+        {
+          id: 'member-1',
+          email: 'a@b.com',
+          firstName: 'A',
+          lastName: 'B',
+          role: 'member',
+          isActive: true,
+          chapterMembershipActive: false,
+          chapterMembershipMarkedAt: etLocalToUtc(2025, 8, 15, 10, 0, 0, 0),
+          attendance: [],
+        },
+      ]);
+
+      const members = await service.getAllMembers();
+
+      expect(cache.delPattern).not.toHaveBeenCalled(); // reset already done
+      expect(members[0].chapterMembershipActive).toBe(false);
+      expect(wrapCalls).toBe(1);
     });
   });
 
@@ -149,9 +227,7 @@ describe('MembersService chapter membership', () => {
           chapterMembershipActive: true,
           chapterMembershipMarkedAt: expect.any(Date),
         }),
-        select: expect.not.objectContaining({
-          passwordHash: expect.anything(),
-        }),
+        select: ADMIN_MEMBER_UPDATE_SELECT,
       });
       expect(prisma.member.update.mock.calls[0][0].select).not.toHaveProperty(
         'passwordHash',
@@ -176,7 +252,7 @@ describe('MembersService chapter membership', () => {
       expect(prisma.member.update).toHaveBeenCalledWith({
         where: { id: 'member-1' },
         data: { chapterMembershipActive: false },
-        select: expect.any(Object),
+        select: ADMIN_MEMBER_UPDATE_SELECT,
       });
     });
 
@@ -202,7 +278,7 @@ describe('MembersService chapter membership', () => {
       expect(prisma.member.update).toHaveBeenCalledWith({
         where: { id: 'member-1' },
         data: { isActive: false },
-        select: expect.any(Object),
+        select: ADMIN_MEMBER_UPDATE_SELECT,
       });
       expect(prisma.member.update.mock.calls[0][0].select).not.toHaveProperty(
         'passwordHash',
