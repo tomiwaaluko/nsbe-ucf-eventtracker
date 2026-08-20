@@ -269,8 +269,16 @@ export class MembersService {
       where: { id: memberId },
       include: {
         attendance: {
-          include: {
-            event: true,
+          select: {
+            checkedInAt: true,
+            event: {
+              select: {
+                id: true,
+                name: true,
+                startTime: true,
+                category: true,
+              },
+            },
           },
           orderBy: {
             checkedInAt: 'desc',
@@ -347,7 +355,6 @@ export class MembersService {
             endTime: true,
             location: true,
             category: true,
-            semester: true,
           },
         },
       },
@@ -365,7 +372,6 @@ export class MembersService {
       endTime: interest.event.endTime,
       location: interest.event.location ?? undefined,
       category: interest.event.category,
-      semester: interest.event.semester,
     }));
   }
 

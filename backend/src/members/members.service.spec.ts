@@ -82,7 +82,6 @@ describe('MembersService', () => {
             endTime: new Date('2026-12-01T20:00:00.000Z'),
             location: 'Student Union',
             category: EventCategory.GBM,
-            semester: 'Spring 2026',
           },
         },
       ]);
@@ -108,8 +107,12 @@ describe('MembersService', () => {
                 endTime: true,
                 location: true,
                 category: true,
-                semester: true,
               },
+            },
+          },
+          orderBy: {
+            event: {
+              startTime: 'asc',
             },
           },
         }),
@@ -123,7 +126,6 @@ describe('MembersService', () => {
           endTime: new Date('2026-12-01T20:00:00.000Z'),
           location: 'Student Union',
           category: EventCategory.GBM,
-          semester: 'Spring 2026',
         },
       ]);
 

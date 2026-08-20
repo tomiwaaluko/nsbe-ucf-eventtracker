@@ -69,7 +69,6 @@ interface MemberProfile {
     endTime: string;
     location?: string;
     category: string;
-    semester: string;
   }>;
 }
 

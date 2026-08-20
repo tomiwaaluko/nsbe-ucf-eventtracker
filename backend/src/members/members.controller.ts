@@ -133,13 +133,9 @@ export class MembersController {
     const isViewerAdmin = !!viewer && isAdmin(viewer.role);
     const includePrivate = isOwner || isViewerAdmin;
 
-    let includePlannedEvents = isOwner || isViewerAdmin;
-    if (!includePlannedEvents) {
-      includePlannedEvents = await this.friendsService.areFriends(
-        req.user.id,
-        memberId,
-      );
-    }
+    const includePlannedEvents =
+      includePrivate ||
+      (await this.friendsService.areFriends(req.user.id, memberId));
 
     return this.membersService.getMemberProfile(
       memberId,

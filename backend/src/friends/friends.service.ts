@@ -360,8 +360,10 @@ export class FriendsService {
   async areFriends(userId: string, otherUserId: string): Promise<boolean> {
     const friendship = await this.prisma.friendship.findFirst({
       where: {
-        userId,
-        friendId: otherUserId,
+        OR: [
+          { userId, friendId: otherUserId },
+          { userId: otherUserId, friendId: userId },
+        ],
         status: FriendshipStatus.ACCEPTED,
       },
     });

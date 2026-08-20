@@ -57,6 +57,5 @@ export class MemberProfileDto {
     endTime: Date;
     location?: string;
     category: string;
-    semester: string;
   }>;
 }
