@@ -125,6 +125,115 @@ export interface ResolvedMembersResult {
   unresolved: string[];
 }
 
+/** JSON shape returned by GET /members/me/export (dates as ISO strings). */
+export interface MemberExportEvent {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  semester: string;
+  startTime: string;
+  endTime: string;
+  location: string | null;
+  isActive: boolean;
+}
+
+export interface MemberExportPayload {
+  exportedAt: string;
+  profile: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+    emailVerified: boolean;
+    isActive: boolean;
+    bio: string | null;
+    discordUsername: string | null;
+    graduationYear: number | null;
+    linkedInUrl: string | null;
+    major: string | null;
+    phoneNumber: string | null;
+    photoUrl: string | null;
+    hasPassword: boolean;
+  };
+  oauthAccounts: Array<{
+    id: string;
+    provider: string;
+    providerEmail: string | null;
+    emailVerified: boolean;
+    createdAt: string;
+  }>;
+  attendance: Array<{
+    id: string;
+    checkedInAt: string;
+    checkInMethod: string;
+    event: MemberExportEvent;
+  }>;
+  eventInterests: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    event: MemberExportEvent;
+  }>;
+  achievements: {
+    oneOneOne: {
+      completed: boolean;
+      completedAt?: string;
+      progress: { bucket1: number; bucket2: number; bucket3: number };
+    };
+    threeThreeThree: {
+      completed: boolean;
+      completedAt?: string;
+      progress: { bucket1: number; bucket2: number; bucket3: number };
+    };
+  };
+  achievementsBySemester: Array<{
+    semester: string;
+    workshopsSocials: number;
+    fundraiserCommunityService: number;
+    gbm: number;
+    has111: boolean;
+    has333: boolean;
+    completed111At?: string;
+    completed333At?: string;
+  }>;
+  points: {
+    bySemester: Array<{
+      semester: string;
+      totalPoints: number;
+      zones: {
+        general: number;
+        communication: number;
+        program: number;
+        parliamentarian: number;
+      };
+      manualEntries: Array<{
+        id: string;
+        pointTypeKey: string;
+        points: number;
+        semester: string;
+        label: string | null;
+        note: string | null;
+        createdAt: string;
+        awardedByName?: string;
+      }>;
+      autoEntries: Array<{
+        pointTypeKey: string;
+        label: string;
+        points: number;
+        zone: string;
+        eventId: string;
+        eventName: string;
+        eventStartTime: string;
+      }>;
+    }>;
+  };
+}
+
 export const api = {
   // Auth
   login: async (credentials: { email: string; password: string }) => {
@@ -778,20 +887,13 @@ export const api = {
     return handleResponse(response);
   },
 
-  exportMyData: async (token: string, format: 'json' | 'csv' = 'json') => {
-    const url = new URL(`${API_URL}/members/me/export`);
-    if (format === 'csv') {
-      url.searchParams.set('format', 'csv');
-    }
-    const response = await fetch(url.toString(), {
+  exportMyData: async (token: string): Promise<MemberExportPayload> => {
+    const response = await fetch(`${API_URL}/members/me/export`, {
       headers: apiHeaders({ Authorization: `Bearer ${token}` }),
     });
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(errorText || 'Failed to export data');
-    }
-    if (format === 'csv') {
-      return response.text();
     }
     return response.json();
   },

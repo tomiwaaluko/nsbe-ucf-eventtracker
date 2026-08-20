@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, type MemberExportPayload } from "@/lib/api";
 
 function downloadBlob(content: BlobPart, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -25,8 +25,18 @@ function exportFilename(ext: "json" | "csv") {
 
 function escapeCsvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const str =
-    value instanceof Date ? value.toISOString() : String(value);
+  let str: string;
+  if (value instanceof Date) {
+    str = value.toISOString();
+  } else if (typeof value === "string") {
+    str = value;
+  } else if (typeof value === "number" || typeof value === "boolean") {
+    str = String(value);
+  } else if (typeof value === "bigint") {
+    str = value.toString();
+  } else {
+    str = JSON.stringify(value) ?? "";
+  }
   const needsFormulaGuard = /^[=+\-@\t\r]/.test(str);
   const guarded = needsFormulaGuard ? `'${str}` : str;
   if (/[",\n\r]/.test(guarded)) {
@@ -35,9 +45,7 @@ function escapeCsvCell(value: unknown): string {
   return guarded;
 }
 
-type ExportPayload = Awaited<ReturnType<typeof api.exportMyData>>;
-
-function buildCsvFromExport(data: ExportPayload): string {
+function buildCsvFromExport(data: MemberExportPayload): string {
   const lines: string[] = [];
   const row = (cells: unknown[]) =>
     lines.push(cells.map(escapeCsvCell).join(","));
@@ -233,7 +241,7 @@ export function DataExportSection() {
     setIsLoading(true);
 
     try {
-      const jsonData = await api.exportMyData(token, "json");
+      const jsonData = await api.exportMyData(token);
       downloadBlob(
         JSON.stringify(jsonData, null, 2),
         exportFilename("json"),

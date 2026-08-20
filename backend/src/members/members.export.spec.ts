@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { MembersExportService } from './members-export.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PointsService } from '../points/points.service';
 import {
   MEMBER_EXPORT_ATTENDANCE_SELECT,
   MEMBER_EXPORT_EVENT_SELECT,
@@ -14,11 +13,11 @@ describe('MembersExportService', () => {
   let prisma: {
     member: { findUnique: jest.Mock };
   };
-  let pointsService: {
-    getMemberPoints: jest.Mock;
-  };
 
   const userId = 'user-123';
+  const SECRET_QR = 'export-fixture-qr-secret-xyz';
+  const SECRET_CHECK_IN = 'export-fixture-check-in-9999';
+
   const mockMember = {
     id: userId,
     email: 'member@ucf.edu',
@@ -61,6 +60,10 @@ describe('MembersExportService', () => {
           endTime: new Date('2024-09-01'),
           location: 'ENG 2',
           isActive: true,
+          // Present on fixtures so serialization assertions have teeth;
+          // Prisma select must omit these — they must not appear in export.
+          qrSecret: SECRET_QR,
+          checkInCode: SECRET_CHECK_IN,
         },
       },
       {
@@ -77,6 +80,8 @@ describe('MembersExportService', () => {
           endTime: new Date('2024-09-15'),
           location: null,
           isActive: true,
+          qrSecret: SECRET_QR,
+          checkInCode: SECRET_CHECK_IN,
         },
       },
     ],
@@ -96,6 +101,8 @@ describe('MembersExportService', () => {
           endTime: new Date('2024-10-15'),
           location: 'Student Union',
           isActive: true,
+          qrSecret: SECRET_QR,
+          checkInCode: SECRET_CHECK_IN,
         },
       },
     ],
@@ -120,52 +127,10 @@ describe('MembersExportService', () => {
       },
     };
 
-    pointsService = {
-      getMemberPoints: jest.fn().mockResolvedValue({
-        memberId: userId,
-        semester: 'Fall 2024',
-        totalPoints: 35,
-        zones: {
-          general: 35,
-          communication: 0,
-          program: 0,
-          parliamentarian: 0,
-        },
-        manualEntries: [
-          {
-            id: 'point-1',
-            pointTypeKey: 'PAID_MEMBER',
-            points: 30,
-            semester: 'Fall 2024',
-            label: null,
-            note: null,
-            createdAt: new Date('2024-09-01'),
-            awardedBy: {
-              id: 'admin-1',
-              firstName: 'Admin',
-              lastName: 'User',
-            },
-          },
-        ],
-        autoEntries: [
-          {
-            pointTypeKey: 'GBM',
-            label: 'GBM Attendance',
-            points: 5,
-            zone: 'general',
-            eventId: 'event-1',
-            eventName: 'Fall GBM',
-            eventStartTime: new Date('2024-09-01'),
-          },
-        ],
-      }),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MembersExportService,
         { provide: PrismaService, useValue: prisma },
-        { provide: PointsService, useValue: pointsService },
       ],
     }).compile();
 
@@ -239,7 +204,7 @@ describe('MembersExportService', () => {
       );
     });
 
-    it('never includes qrSecret or checkInCode in event data', async () => {
+    it('never includes qrSecret or checkInCode values in event data', async () => {
       prisma.member.findUnique.mockResolvedValue(mockMember);
 
       const result = await service.exportMyData(userId);
@@ -247,6 +212,16 @@ describe('MembersExportService', () => {
 
       expect(serialized).not.toContain('qrSecret');
       expect(serialized).not.toContain('checkInCode');
+      expect(serialized).not.toContain(SECRET_QR);
+      expect(serialized).not.toContain(SECRET_CHECK_IN);
+      for (const record of result.attendance) {
+        expect(record.event).not.toHaveProperty('qrSecret');
+        expect(record.event).not.toHaveProperty('checkInCode');
+      }
+      for (const interest of result.eventInterests) {
+        expect(interest.event).not.toHaveProperty('qrSecret');
+        expect(interest.event).not.toHaveProperty('checkInCode');
+      }
     });
 
     it('never includes awardedById or awardedBy.id in point entries', async () => {
@@ -268,7 +243,7 @@ describe('MembersExportService', () => {
       );
     });
 
-    it('includes attendance, interests, achievements, and points', async () => {
+    it('includes attendance, interests, achievements, and points from loaded data', async () => {
       prisma.member.findUnique.mockResolvedValue(mockMember);
 
       const result = await service.exportMyData(userId);
@@ -279,12 +254,78 @@ describe('MembersExportService', () => {
       expect(result.achievements.threeThreeThree).toBeDefined();
       expect(result.achievementsBySemester).toHaveLength(1);
       expect(result.points.bySemester).toHaveLength(1);
-      expect(result.points.bySemester[0].manualEntries).toHaveLength(1);
-      expect(result.points.bySemester[0].autoEntries.length).toBeGreaterThan(0);
-      expect(pointsService.getMemberPoints).toHaveBeenCalledWith(
-        userId,
-        'Fall 2024',
+
+      const fall = result.points.bySemester[0];
+      expect(fall.semester).toBe('Fall 2024');
+      expect(fall.manualEntries).toHaveLength(1);
+      expect(fall.manualEntries[0].points).toBe(30);
+      // GBM attendance → GBM auto (50); WORKSHOP → AEX_WORKSHOP (30)
+      expect(fall.autoEntries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            pointTypeKey: 'GBM',
+            points: 50,
+            eventId: 'event-1',
+          }),
+          expect.objectContaining({
+            pointTypeKey: 'AEX_WORKSHOP',
+            points: 30,
+            eventId: 'event-2',
+          }),
+        ]),
       );
+      expect(fall.totalPoints).toBe(30 + 50 + 30);
+      expect(fall.zones.general).toBe(80);
+      expect(fall.zones.program).toBe(30);
+    });
+
+    it('computes points for all semesters without per-semester DB refetch', async () => {
+      prisma.member.findUnique.mockResolvedValue({
+        ...mockMember,
+        attendance: [
+          ...mockMember.attendance,
+          {
+            id: 'att-3',
+            checkedInAt: new Date('2025-01-10'),
+            checkInMethod: 'qr',
+            event: {
+              id: 'event-4',
+              name: 'Spring GBM',
+              description: null,
+              category: 'GBM',
+              semester: 'Spring 2025',
+              startTime: new Date('2025-01-10'),
+              endTime: new Date('2025-01-10'),
+              location: null,
+              isActive: true,
+              qrSecret: SECRET_QR,
+              checkInCode: SECRET_CHECK_IN,
+            },
+          },
+        ],
+        pointEntries: [
+          ...mockMember.pointEntries,
+          {
+            id: 'point-2',
+            pointTypeKey: 'NATIONAL_DUES',
+            points: 50,
+            semester: 'Spring 2025',
+            label: null,
+            note: null,
+            createdAt: new Date('2025-01-01'),
+            awardedBy: { firstName: 'Admin', lastName: 'User' },
+          },
+        ],
+      });
+
+      const result = await service.exportMyData(userId);
+
+      expect(prisma.member.findUnique).toHaveBeenCalledTimes(1);
+      expect(result.points.bySemester).toHaveLength(2);
+      expect(result.points.bySemester.map((s) => s.semester)).toEqual([
+        'Spring 2025',
+        'Fall 2024',
+      ]);
     });
 
     it('throws NotFoundException when member does not exist', async () => {
@@ -297,7 +338,7 @@ describe('MembersExportService', () => {
   });
 
   describe('exportMyDataAsCsv', () => {
-    it('returns CSV with expected sections', async () => {
+    it('returns CSV with expected sections and omits secret values', async () => {
       prisma.member.findUnique.mockResolvedValue(mockMember);
 
       const csv = await service.exportMyDataAsCsv(userId);
@@ -310,6 +351,8 @@ describe('MembersExportService', () => {
       expect(csv).toContain('Section,Auto Points');
       expect(csv).not.toContain('qrSecret');
       expect(csv).not.toContain('checkInCode');
+      expect(csv).not.toContain(SECRET_QR);
+      expect(csv).not.toContain(SECRET_CHECK_IN);
       expect(csv).not.toContain('awardedById');
       expect(csv).not.toContain('admin-1');
     });

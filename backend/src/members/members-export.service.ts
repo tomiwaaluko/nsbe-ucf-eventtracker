@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PointsService } from '../points/points.service';
+import {
+  POINT_TYPES,
+  PointTypeKey,
+  PointZone,
+} from '../points/point-types.constant';
 import { getEventBucket } from './members.service';
 import {
   MEMBER_EXPORT_ATTENDANCE_SELECT,
@@ -28,6 +32,24 @@ type ExportAttendance = {
   };
 };
 
+type ExportPointEntry = {
+  id: string;
+  pointTypeKey: string;
+  points: number;
+  semester: string;
+  label: string | null;
+  note: string | null;
+  createdAt: Date;
+  awardedBy: { firstName: string | null; lastName: string | null } | null;
+};
+
+type ZoneBreakdown = {
+  general: number;
+  communication: number;
+  program: number;
+  parliamentarian: number;
+};
+
 function formatAwardedByName(
   awardedBy: {
     firstName: string | null;
@@ -40,9 +62,21 @@ function formatAwardedByName(
   return name || undefined;
 }
 
-function escapeCsvCell(value: unknown): string {
+function csvPrimitiveToString(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const str = value instanceof Date ? value.toISOString() : String(value);
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === 'symbol') return value.description ?? '';
+  return JSON.stringify(value) ?? '';
+}
+
+function escapeCsvCell(value: unknown): string {
+  const str = csvPrimitiveToString(value);
+  if (!str) return '';
   const needsFormulaGuard = /^[=+\-@\t\r]/.test(str);
   const guarded = needsFormulaGuard ? `'${str}` : str;
   if (/[",\n\r]/.test(guarded)) {
@@ -51,12 +85,24 @@ function escapeCsvCell(value: unknown): string {
   return guarded;
 }
 
+/** Defense-in-depth: never serialize qrSecret / checkInCode even if select drifts. */
+function toExportEvent(event: ExportAttendance['event']) {
+  return {
+    id: event.id,
+    name: event.name,
+    description: event.description,
+    category: event.category,
+    semester: event.semester,
+    startTime: event.startTime,
+    endTime: event.endTime,
+    location: event.location,
+    isActive: event.isActive,
+  };
+}
+
 @Injectable()
 export class MembersExportService {
-  constructor(
-    private prisma: PrismaService,
-    private pointsService: PointsService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Export all personal data for the authenticated member.
@@ -102,11 +148,9 @@ export class MembersExportService {
     const achievements = this.calculateAchievements(attendance);
     const achievementsBySemester =
       this.calculateAchievementsBySemester(attendance);
-    const points = await this.buildPointsBySemester(
-      userId,
-      attendance,
-      pointEntries,
-    );
+    // Compute points in-memory from already-loaded attendance + pointEntries
+    // so query count stays O(1) relative to semester count (no per-semester refetch).
+    const points = this.buildPointsBySemester(attendance, pointEntries);
 
     return {
       exportedAt: new Date().toISOString(),
@@ -134,14 +178,14 @@ export class MembersExportService {
         id: a.id,
         checkedInAt: a.checkedInAt,
         checkInMethod: a.checkInMethod,
-        event: a.event,
+        event: toExportEvent(a.event),
       })),
       eventInterests: eventInterests.map((interest) => ({
         id: interest.id,
         status: interest.status,
         createdAt: interest.createdAt,
         updatedAt: interest.updatedAt,
-        event: interest.event,
+        event: toExportEvent(interest.event),
       })),
       achievements,
       achievementsBySemester,
@@ -473,19 +517,13 @@ export class MembersExportService {
       });
   }
 
-  private async buildPointsBySemester(
-    memberId: string,
+  /**
+   * Mirror PointsService.getMemberPoints logic over already-fetched rows.
+   * One pass over attendance + pointEntries; no additional DB queries.
+   */
+  private buildPointsBySemester(
     attendance: ExportAttendance[],
-    pointEntries: Array<{
-      id: string;
-      pointTypeKey: string;
-      points: number;
-      semester: string;
-      label: string | null;
-      note: string | null;
-      createdAt: Date;
-      awardedBy: { firstName: string | null; lastName: string | null } | null;
-    }>,
+    pointEntries: ExportPointEntry[],
   ) {
     const semesters = new Set<string>();
     for (const record of attendance) {
@@ -495,45 +533,83 @@ export class MembersExportService {
       semesters.add(entry.semester);
     }
 
-    const bySemester = await Promise.all(
-      Array.from(semesters)
-        .sort((a, b) => b.localeCompare(a))
-        .map(async (semester) => {
-          const semesterPoints = await this.pointsService.getMemberPoints(
-            memberId,
-            semester,
-          );
+    const bySemester = Array.from(semesters)
+      .sort((a, b) => b.localeCompare(a))
+      .map((semester) => {
+        const semesterManual = pointEntries.filter(
+          (entry) => entry.semester === semester,
+        );
+        const semesterAttendance = attendance.filter(
+          (record) => record.event.semester === semester,
+        );
 
-          const manualEntries = semesterPoints.manualEntries.map((entry) => ({
-            id: entry.id,
-            pointTypeKey: entry.pointTypeKey,
-            points: entry.points,
-            semester: entry.semester,
-            label: entry.label,
-            note: entry.note,
-            createdAt: entry.createdAt,
-            awardedByName: formatAwardedByName(entry.awardedBy),
-          }));
+        const autoEntries: Array<{
+          pointTypeKey: string;
+          label: string;
+          points: number;
+          zone: string;
+          eventId: string;
+          eventName: string;
+          eventStartTime: Date;
+        }> = [];
 
-          const autoEntries = semesterPoints.autoEntries.map((entry) => ({
-            pointTypeKey: entry.pointTypeKey,
-            label: entry.label,
-            points: entry.points,
-            zone: entry.zone,
-            eventId: entry.eventId,
-            eventName: entry.eventName,
-            eventStartTime: entry.eventStartTime,
-          }));
+        for (const record of semesterAttendance) {
+          const category = record.event.category as string;
+          for (const [key, typeDef] of Object.entries(POINT_TYPES)) {
+            if (typeDef.autoSource === category) {
+              autoEntries.push({
+                pointTypeKey: key,
+                label: typeDef.label,
+                points: typeDef.points,
+                zone: typeDef.zone,
+                eventId: record.event.id,
+                eventName: record.event.name,
+                eventStartTime: record.event.startTime,
+              });
+            }
+          }
+        }
 
-          return {
-            semester,
-            totalPoints: semesterPoints.totalPoints,
-            zones: semesterPoints.zones,
-            manualEntries,
-            autoEntries,
-          };
-        }),
-    );
+        const zones: ZoneBreakdown = {
+          general: 0,
+          communication: 0,
+          program: 0,
+          parliamentarian: 0,
+        };
+
+        for (const entry of semesterManual) {
+          const typeDef = POINT_TYPES[entry.pointTypeKey as PointTypeKey];
+          if (typeDef) zones[typeDef.zone as PointZone] += entry.points;
+        }
+        for (const entry of autoEntries) {
+          zones[entry.zone as PointZone] += entry.points;
+        }
+
+        const totalPoints =
+          zones.general +
+          zones.communication +
+          zones.program +
+          zones.parliamentarian;
+
+        const manualEntries = semesterManual.map((entry) => ({
+          id: entry.id,
+          pointTypeKey: entry.pointTypeKey,
+          points: entry.points,
+          semester: entry.semester,
+          label: entry.label,
+          note: entry.note,
+          createdAt: entry.createdAt,
+          awardedByName: formatAwardedByName(entry.awardedBy),
+        }));
+
+        return {
+          semester,
+          totalPoints,
+          zones,
+          manualEntries,
+          autoEntries,
+        };
+      });
 
     return { bySemester };
   }
