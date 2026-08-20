@@ -8,31 +8,30 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
-export function DuesStatusSection() {
-  const [chapterDuesPaid, setChapterDuesPaid] = useState(false);
-  const [nationalDuesPaid, setNationalDuesPaid] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+interface DuesStatusSectionProps {
+  chapterDuesSelfReported?: boolean;
+  nationalDuesSelfReported?: boolean;
+}
+
+export function DuesStatusSection({
+  chapterDuesSelfReported = false,
+  nationalDuesSelfReported = false,
+}: DuesStatusSectionProps) {
+  const [chapterDuesPaid, setChapterDuesPaid] = useState(
+    !!chapterDuesSelfReported,
+  );
+  const [nationalDuesPaid, setNationalDuesPaid] = useState(
+    !!nationalDuesSelfReported,
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Sync when parent finishes loading getMe (avoid a second fetch here).
   useEffect(() => {
-    const loadDuesStatus = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const data = await api.getMe(token);
-        setChapterDuesPaid(!!data.chapterDuesSelfReported);
-        setNationalDuesPaid(!!data.nationalDuesSelfReported);
-      } catch (error) {
-        console.error("Failed to load dues status:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadDuesStatus();
-  }, []);
+    if (hasChanges) return;
+    setChapterDuesPaid(!!chapterDuesSelfReported);
+    setNationalDuesPaid(!!nationalDuesSelfReported);
+  }, [chapterDuesSelfReported, nationalDuesSelfReported, hasChanges]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -58,14 +57,6 @@ export function DuesStatusSection() {
       setIsSaving(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="border-t border-white/10 pt-6">
-        <p className="text-white/60 text-sm">Loading dues status...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="border-t border-white/10 pt-6">

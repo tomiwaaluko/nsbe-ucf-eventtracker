@@ -9,6 +9,7 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 /**
  * Maps an event category to its achievement bucket key.
@@ -133,8 +134,9 @@ export class MembersService {
       },
       select: MEMBER_UPDATE_SELECT,
     });
-    // Invalidate user cache on update
+    // Invalidate user + admin list caches so dues show up immediately
     this.cache.del(`user:${userId}`);
+    this.cache.delPattern('members:');
     return result;
   }
 
@@ -143,27 +145,27 @@ export class MembersService {
       dto.chapterDuesSelfReported === undefined &&
       dto.nationalDuesSelfReported === undefined
     ) {
-      throw new BadRequestException(
-        'At least one dues field must be provided',
-      );
+      throw new BadRequestException('At least one dues field must be provided');
     }
 
-    const member = await this.prisma.member.findUnique({
-      where: { id: memberId },
-    });
-
-    if (!member) {
-      throw new NotFoundException('Member not found');
+    try {
+      const result = await this.prisma.member.update({
+        where: { id: memberId },
+        data: buildDuesUpdateData(dto),
+        select: MEMBER_UPDATE_SELECT,
+      });
+      this.cache.del(`user:${memberId}`);
+      this.cache.delPattern('members:');
+      return result;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Member not found');
+      }
+      throw error;
     }
-
-    const result = await this.prisma.member.update({
-      where: { id: memberId },
-      data: buildDuesUpdateData(dto),
-      select: MEMBER_UPDATE_SELECT,
-    });
-    this.cache.del(`user:${memberId}`);
-    this.cache.delPattern('members:');
-    return result;
   }
 
   async getOAuthAccounts(userId: string) {
@@ -300,7 +302,8 @@ export class MembersService {
             // Only count categories that are part of achievement buckets
             // COMMITTEE_PARTICIPATION is excluded
             if (
-              attendance.event.category !== EventCategory.COMMITTEE_PARTICIPATION
+              attendance.event.category !==
+              EventCategory.COMMITTEE_PARTICIPATION
             ) {
               bucketCounts[bucket]++;
               totalEvents++;
@@ -400,11 +403,15 @@ export class MembersService {
       photoUrl: member.photoUrl ?? undefined,
       major: member.major ?? undefined,
       graduationYear: member.graduationYear ?? undefined,
-      phoneNumber: includePrivate ? member.phoneNumber ?? undefined : undefined,
-      linkedInUrl: includePrivate ? member.linkedInUrl ?? undefined : undefined,
+      phoneNumber: includePrivate
+        ? (member.phoneNumber ?? undefined)
+        : undefined,
+      linkedInUrl: includePrivate
+        ? (member.linkedInUrl ?? undefined)
+        : undefined,
       bio: member.bio ?? undefined,
       discordUsername: includePrivate
-        ? member.discordUsername ?? undefined
+        ? (member.discordUsername ?? undefined)
         : undefined,
       role: member.role,
       isActive: member.isActive,
@@ -530,7 +537,9 @@ export class MembersService {
     // Find the date when all requirements were met
     for (const a of sorted) {
       if (
-        [EventCategory.WORKSHOP, EventCategory.SOCIAL].includes(a.event.category)
+        [EventCategory.WORKSHOP, EventCategory.SOCIAL].includes(
+          a.event.category,
+        )
       ) {
         bucket1Count++;
       } else if (

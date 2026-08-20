@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
@@ -57,10 +58,13 @@ describe('MembersService dues updates', () => {
           chapterDuesReportedAt: expect.any(Date),
           nationalDuesReportedAt: expect.any(Date),
         }),
-        select: expect.not.objectContaining({ passwordHash: expect.anything() }),
+        select: expect.not.objectContaining({
+          passwordHash: expect.anything(),
+        }),
       }),
     );
     expect(cache.del).toHaveBeenCalledWith('user:member-1');
+    expect(cache.delPattern).toHaveBeenCalledWith('members:');
   });
 
   it('updateMe clears reportedAt when dues are marked unpaid', async () => {
@@ -81,10 +85,16 @@ describe('MembersService dues updates', () => {
         }),
       }),
     );
+    expect(cache.delPattern).toHaveBeenCalledWith('members:');
   });
 
   it('updateMemberDues throws when member is missing', async () => {
-    prisma.member.findUnique.mockResolvedValue(null);
+    prisma.member.update.mockRejectedValue(
+      new PrismaClientKnownRequestError('Record to update not found.', {
+        code: 'P2025',
+        clientVersion: 'test',
+      }),
+    );
 
     await expect(
       service.updateMemberDues('missing', { chapterDuesSelfReported: true }),
@@ -98,7 +108,6 @@ describe('MembersService dues updates', () => {
   });
 
   it('updateMemberDues invalidates member cache', async () => {
-    prisma.member.findUnique.mockResolvedValue({ id: 'member-2' });
     prisma.member.update.mockResolvedValue({ id: 'member-2' });
 
     await service.updateMemberDues('member-2', {

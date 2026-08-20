@@ -17,6 +17,8 @@ interface ProfileSettingsProps {
     major?: string;
     graduationYear?: number;
     profilePhoto?: string;
+    chapterDuesSelfReported?: boolean;
+    nationalDuesSelfReported?: boolean;
   };
 }
 
@@ -542,7 +544,10 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
         </ul>
       </div>
 
-      <DuesStatusSection />
+      <DuesStatusSection
+        chapterDuesSelfReported={memberData.chapterDuesSelfReported}
+        nationalDuesSelfReported={memberData.nationalDuesSelfReported}
+      />
     </div>
   );
 }

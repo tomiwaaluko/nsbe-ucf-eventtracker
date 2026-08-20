@@ -69,6 +69,8 @@ interface SettingsProps {
     graduationYear?: number;
     profilePhoto?: string;
     hasPassword?: boolean;
+    chapterDuesSelfReported?: boolean;
+    nationalDuesSelfReported?: boolean;
   };
 }
 
