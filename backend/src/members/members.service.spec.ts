@@ -3,17 +3,23 @@ import { NotFoundException } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
-import { EventCategory, EventInterestStatus } from '@prisma/client';
+import { EventCategory, EventInterestStatus, Prisma } from '@prisma/client';
 
 describe('MembersService', () => {
   let service: MembersService;
   let prisma: {
-    member: { findUnique: jest.Mock };
+    member: {
+      findUnique: jest.Mock;
+      findMany: jest.Mock;
+      update: jest.Mock;
+    };
     eventInterest: { findMany: jest.Mock };
   };
 
   const memberId = 'member-1';
   const futureDate = new Date('2026-12-01T18:00:00.000Z');
+  const checkedInAt = new Date('2026-01-15T19:00:00.000Z');
+  const eventStart = new Date('2026-01-15T18:00:00.000Z');
 
   const baseMember = {
     id: memberId,
@@ -35,7 +41,11 @@ describe('MembersService', () => {
 
   beforeEach(async () => {
     prisma = {
-      member: { findUnique: jest.fn() },
+      member: {
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn(),
+      },
       eventInterest: { findMany: jest.fn() },
     };
 
@@ -95,7 +105,7 @@ describe('MembersService', () => {
             status: EventInterestStatus.PLANNING,
             event: {
               isActive: true,
-              startTime: { gt: expect.any(Date) },
+              startTime: { gt: expect.any(Date) as Date },
             },
           },
           select: {
@@ -147,10 +157,15 @@ describe('MembersService', () => {
 
       await service.getMemberProfile(memberId, false, true);
 
-      const call = prisma.eventInterest.findMany.mock.calls[0][0];
-      expect(call.where.event.isActive).toBe(true);
-      expect(call.where.event.startTime.gt).toBeInstanceOf(Date);
-      expect(call.where.status).toBe(EventInterestStatus.PLANNING);
+      const [firstCall] = prisma.eventInterest.findMany.mock.calls as Array<
+        [Prisma.EventInterestFindManyArgs]
+      >;
+      const call = firstCall[0];
+      expect(call.where?.event?.isActive).toBe(true);
+      expect(call.where?.event?.startTime).toEqual(
+        expect.objectContaining({ gt: expect.any(Date) as Date }),
+      );
+      expect(call.where?.status).toBe(EventInterestStatus.PLANNING);
     });
 
     it('throws NotFoundException when member does not exist', async () => {
@@ -159,6 +174,65 @@ describe('MembersService', () => {
       await expect(
         service.getMemberProfile('missing', false, true),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMemberProfile attendance select', () => {
+    it('maps recentAttendance and achievements from selected attendance fields', async () => {
+      prisma.member.findUnique.mockResolvedValue({
+        ...baseMember,
+        attendance: [
+          {
+            checkedInAt,
+            event: {
+              id: 'attended-1',
+              name: 'Tech Workshop',
+              startTime: eventStart,
+              category: EventCategory.WORKSHOP,
+            },
+          },
+        ],
+      });
+
+      const profile = await service.getMemberProfile(memberId, false, false);
+
+      expect(prisma.member.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: {
+            attendance: {
+              select: {
+                checkedInAt: true,
+                event: {
+                  select: {
+                    id: true,
+                    name: true,
+                    startTime: true,
+                    category: true,
+                  },
+                },
+              },
+              orderBy: {
+                checkedInAt: 'desc',
+              },
+              take: 10,
+            },
+          },
+        }),
+      );
+
+      expect(profile.totalEventsAttended).toBe(1);
+      expect(profile.recentAttendance).toEqual([
+        {
+          eventId: 'attended-1',
+          eventTitle: 'Tech Workshop',
+          eventDate: eventStart,
+          category: EventCategory.WORKSHOP,
+          checkedInAt,
+        },
+      ]);
+      expect(profile.achievements.oneOneOne.progress.bucket1).toBe(1);
+      expect(profile.achievements.oneOneOne.progress.bucket2).toBe(0);
+      expect(profile.achievements.oneOneOne.progress.bucket3).toBe(0);
     });
   });
 });

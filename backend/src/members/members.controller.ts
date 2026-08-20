@@ -125,7 +125,10 @@ export class MembersController {
   }
 
   @Get(':id/profile')
-  async getMemberProfile(@Req() req, @Param('id') memberId: string) {
+  async getMemberProfile(
+    @Req() req: { user: { id: string } },
+    @Param('id') memberId: string,
+  ) {
     // Anyone signed in may view a profile (member directory), but contact PII
     // is only returned to the member themselves or to an admin.
     const viewer = await this.membersService.findMe(req.user.id);

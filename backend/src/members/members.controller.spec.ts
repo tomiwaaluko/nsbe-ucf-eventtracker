@@ -73,10 +73,7 @@ describe('MembersController', () => {
     it('includes planned events for the profile owner', async () => {
       membersService.findMe.mockResolvedValue({ role: 'member' });
 
-      await controller.getMemberProfile(
-        { user: { id: memberId } },
-        memberId,
-      );
+      await controller.getMemberProfile({ user: { id: memberId } }, memberId);
 
       expect(membersService.getMemberProfile).toHaveBeenCalledWith(
         memberId,
