@@ -186,7 +186,6 @@ const NavLink = ({
       )}
       {showUnreadDot && (
         <span
-          role="status"
           className={`${item.wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
         >
           <span className="sr-only">Unread updates</span>

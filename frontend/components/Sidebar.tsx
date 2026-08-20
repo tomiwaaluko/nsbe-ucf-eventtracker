@@ -297,13 +297,12 @@ export function Sidebar({
                       )}
                       {(item as { showsUnread?: boolean }).showsUnread &&
                         hasUnreadChangelog && (
-                        <span
-                          role="status"
-                          className={`${(item as { wip?: boolean }).wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
-                        >
-                          <span className="sr-only">Unread updates</span>
-                        </span>
-                      )}
+                          <span
+                            className={`${(item as { wip?: boolean }).wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
+                          >
+                            <span className="sr-only">Unread updates</span>
+                          </span>
+                        )}
                     </div>
                   </motion.button>
                 );
