@@ -32,7 +32,7 @@
     "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/platform-express": "^11.2.1",
     "@nestjs/throttler": "^6.5.0",
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "^7.9.1",
     "@supabase/supabase-js": "^2.112.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/qrcode": "^1.5.6",
