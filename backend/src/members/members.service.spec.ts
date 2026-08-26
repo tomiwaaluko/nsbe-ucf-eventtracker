@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import {
   ADMIN_MEMBER_UPDATE_SELECT,
   MembersService,
@@ -25,7 +26,7 @@ function etLocalToUtc(
   ).toJSDate();
 }
 
-describe('MembersService chapter membership', () => {
+describe('MembersService', () => {
   let service: MembersService;
   let prisma: {
     member: {
@@ -66,7 +67,6 @@ describe('MembersService chapter membership', () => {
     attendance: [],
   };
 
-
   beforeEach(async () => {
     prisma = {
       member: {
@@ -92,6 +92,85 @@ describe('MembersService chapter membership', () => {
     }).compile();
 
     service = module.get<MembersService>(MembersService);
+  });
+
+  describe('dues updates', () => {
+    it('updateMe sets reportedAt when dues are marked paid', async () => {
+      prisma.member.update.mockResolvedValue({ id: 'member-1' });
+
+      await service.updateMe('member-1', {
+        chapterDuesSelfReported: true,
+        nationalDuesSelfReported: true,
+      });
+
+      expect(prisma.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'member-1' },
+          data: expect.objectContaining({
+            chapterDuesSelfReported: true,
+            nationalDuesSelfReported: true,
+            chapterDuesReportedAt: expect.any(Date),
+            nationalDuesReportedAt: expect.any(Date),
+          }),
+          select: expect.not.objectContaining({
+            passwordHash: expect.anything(),
+          }),
+        }),
+      );
+      expect(cache.del).toHaveBeenCalledWith('user:member-1');
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+    });
+
+    it('updateMe clears reportedAt when dues are marked unpaid', async () => {
+      prisma.member.update.mockResolvedValue({ id: 'member-1' });
+
+      await service.updateMe('member-1', {
+        chapterDuesSelfReported: false,
+        nationalDuesSelfReported: false,
+      });
+
+      expect(prisma.member.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            chapterDuesSelfReported: false,
+            nationalDuesSelfReported: false,
+            chapterDuesReportedAt: null,
+            nationalDuesReportedAt: null,
+          }),
+        }),
+      );
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+    });
+
+    it('updateMemberDues throws when member is missing', async () => {
+      prisma.member.update.mockRejectedValue(
+        new PrismaClientKnownRequestError('Record to update not found.', {
+          code: 'P2025',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(
+        service.updateMemberDues('missing', { chapterDuesSelfReported: true }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('updateMemberDues rejects empty body', async () => {
+      await expect(service.updateMemberDues('member-2', {})).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('updateMemberDues invalidates member cache', async () => {
+      prisma.member.update.mockResolvedValue({ id: 'member-2' });
+
+      await service.updateMemberDues('member-2', {
+        nationalDuesSelfReported: true,
+      });
+
+      expect(cache.del).toHaveBeenCalledWith('user:member-2');
+      expect(cache.delPattern).toHaveBeenCalledWith('members:');
+    });
   });
 
   describe('applyChapterMembershipReset', () => {

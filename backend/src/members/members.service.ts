@@ -1,31 +1,49 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
 import { EventCategory, EventInterestStatus } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import {
   getMostRecentJuly31DeadlineET,
   resolveChapterMembershipActive,
   shouldResetChapterMembership,
 } from './chapter-membership.util';
 
-/** Safe fields returned from admin member update routes (never passwordHash). */
+/** Safe fields returned from member update routes (never passwordHash). */
 export const ADMIN_MEMBER_UPDATE_SELECT = {
   id: true,
   email: true,
   firstName: true,
   lastName: true,
   role: true,
+  createdAt: true,
+  emailVerified: true,
+  updatedAt: true,
   isActive: true,
   chapterMembershipActive: true,
   chapterMembershipMarkedAt: true,
-  createdAt: true,
-  updatedAt: true,
+  bio: true,
+  discordUsername: true,
+  graduationYear: true,
+  linkedInUrl: true,
+  major: true,
+  phoneNumber: true,
+  photoUrl: true,
+  chapterDuesSelfReported: true,
+  nationalDuesSelfReported: true,
+  chapterDuesReportedAt: true,
+  nationalDuesReportedAt: true,
 } as const;
 
 /**
- * Maps an event category to its bucket for statistics calculation
+ * Maps an event category to its achievement bucket key.
  */
 export function getEventBucket(category: EventCategory): string {
   switch (category) {
@@ -40,6 +58,31 @@ export function getEventBucket(category: EventCategory): string {
     default:
       return 'workshops_socials';
   }
+}
+
+function buildDuesUpdateData(dto: {
+  chapterDuesSelfReported?: boolean;
+  nationalDuesSelfReported?: boolean;
+}) {
+  const data: {
+    chapterDuesSelfReported?: boolean;
+    nationalDuesSelfReported?: boolean;
+    chapterDuesReportedAt?: Date | null;
+    nationalDuesReportedAt?: Date | null;
+  } = {};
+  const now = new Date();
+
+  if (dto.chapterDuesSelfReported !== undefined) {
+    data.chapterDuesSelfReported = dto.chapterDuesSelfReported;
+    data.chapterDuesReportedAt = dto.chapterDuesSelfReported ? now : null;
+  }
+
+  if (dto.nationalDuesSelfReported !== undefined) {
+    data.nationalDuesSelfReported = dto.nationalDuesSelfReported;
+    data.nationalDuesReportedAt = dto.nationalDuesSelfReported ? now : null;
+  }
+
+  return data;
 }
 
 @Injectable()
@@ -96,13 +139,56 @@ export class MembersService {
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
+    const {
+      chapterDuesSelfReported,
+      nationalDuesSelfReported,
+      ...profileData
+    } = dto;
+    const duesData = buildDuesUpdateData({
+      chapterDuesSelfReported,
+      nationalDuesSelfReported,
+    });
+
     const result = await this.prisma.member.update({
       where: { id: userId },
-      data: dto,
+      data: {
+        ...profileData,
+        ...duesData,
+      },
+      select: ADMIN_MEMBER_UPDATE_SELECT,
     });
-    // Invalidate user cache on update
+    // Invalidate user + admin list caches so dues show up immediately
     this.cache.del(`user:${userId}`);
+    this.cache.delPattern('members:');
     return result;
+  }
+
+  async updateMemberDues(memberId: string, dto: UpdateMemberDuesDto) {
+    if (
+      dto.chapterDuesSelfReported === undefined &&
+      dto.nationalDuesSelfReported === undefined
+    ) {
+      throw new BadRequestException('At least one dues field must be provided');
+    }
+
+    try {
+      const result = await this.prisma.member.update({
+        where: { id: memberId },
+        data: buildDuesUpdateData(dto),
+        select: ADMIN_MEMBER_UPDATE_SELECT,
+      });
+      this.cache.del(`user:${memberId}`);
+      this.cache.delPattern('members:');
+      return result;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Member not found');
+      }
+      throw error;
+    }
   }
 
   async getOAuthAccounts(userId: string) {
@@ -143,6 +229,8 @@ export class MembersService {
         chapterMembershipActive: true,
         chapterMembershipMarkedAt: true,
         photoUrl: true,
+        chapterDuesSelfReported: true,
+        nationalDuesSelfReported: true,
         major: true,
         graduationYear: true,
       },
@@ -369,6 +457,10 @@ export class MembersService {
             chapterMembershipActive: member.chapterMembershipActive,
             createdAt: member.createdAt,
             updatedAt: member.updatedAt,
+            chapterDuesSelfReported: member.chapterDuesSelfReported,
+            nationalDuesSelfReported: member.nationalDuesSelfReported,
+            chapterDuesReportedAt: member.chapterDuesReportedAt,
+            nationalDuesReportedAt: member.nationalDuesReportedAt,
             // Statistics
             workshopsAttended: bucketCounts.workshops_socials,
             gbmAttended: bucketCounts.gbm,

@@ -9,33 +9,37 @@ datasource db {
 }
 
 model Member {
-  id              String          @id @default(uuid())
-  email           String          @unique
-  firstName       String?
-  lastName        String?
-  role            String          @default("member")
-  createdAt       DateTime        @default(now())
-  emailVerified   Boolean         @default(false)
-  passwordHash    String?
-  updatedAt       DateTime        @updatedAt
-  isActive        Boolean         @default(true)
-  chapterMembershipActive   Boolean   @default(false)
+  id                        String          @id @default(uuid())
+  email                     String          @unique
+  firstName                 String?
+  lastName                  String?
+  role                      String          @default("member")
+  createdAt                 DateTime        @default(now())
+  emailVerified             Boolean         @default(false)
+  passwordHash              String?
+  updatedAt                 DateTime        @updatedAt
+  isActive                  Boolean         @default(true)
+  chapterMembershipActive   Boolean         @default(false)
   chapterMembershipMarkedAt DateTime?
-  bio             String?
-  discordUsername String?
-  graduationYear  Int?
-  linkedInUrl     String?
-  major           String?
-  phoneNumber     String?
-  photoUrl        String?
-  attendance      Attendance[]
-  eventsCreated   Event[]
-  oauthAccounts   OAuthAccount[]
-  eventInterests  EventInterest[]
-  friendOf            Friendship[]    @relation("FriendFriendships")
-  friendships         Friendship[]    @relation("UserFriendships")
-  pointEntries        PointEntry[]    @relation("MemberPointEntries")
-  awardedPointEntries PointEntry[]    @relation("AwardedByAdmin")
+  bio                       String?
+  discordUsername           String?
+  graduationYear            Int?
+  linkedInUrl               String?
+  major                     String?
+  phoneNumber               String?
+  photoUrl                  String?
+  chapterDuesSelfReported   Boolean         @default(false)
+  nationalDuesSelfReported  Boolean         @default(false)
+  chapterDuesReportedAt     DateTime?
+  nationalDuesReportedAt    DateTime?
+  attendance                Attendance[]
+  eventsCreated             Event[]
+  oauthAccounts             OAuthAccount[]
+  eventInterests            EventInterest[]
+  friendOf                  Friendship[]    @relation("FriendFriendships")
+  friendships               Friendship[]    @relation("UserFriendships")
+  pointEntries              PointEntry[]    @relation("MemberPointEntries")
+  awardedPointEntries       PointEntry[]    @relation("AwardedByAdmin")
 
   @@index([email])
 }
@@ -146,9 +150,9 @@ enum EventInterestStatus {
 }
 
 model PointEntry {
-  id           String   @id @default(uuid())
-  memberId     String
-  member       Member   @relation("MemberPointEntries", fields: [memberId], references: [id])
+  id       String @id @default(uuid())
+  memberId String
+  member   Member @relation("MemberPointEntries", fields: [memberId], references: [id])
 
   pointTypeKey String
   points       Int
@@ -156,9 +160,9 @@ model PointEntry {
   label        String?
   note         String?
 
-  awardedById  String
-  awardedBy    Member   @relation("AwardedByAdmin", fields: [awardedById], references: [id])
-  createdAt    DateTime @default(now())
+  awardedById String
+  awardedBy   Member   @relation("AwardedByAdmin", fields: [awardedById], references: [id])
+  createdAt   DateTime @default(now())
 
   @@unique([memberId, pointTypeKey, label, semester])
   @@index([memberId, semester])

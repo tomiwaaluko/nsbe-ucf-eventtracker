@@ -6,6 +6,7 @@ import { Textarea } from "../ui/textarea";
 import { User, Upload, X, Camera, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { getApiUrl, apiHeaders } from "@/lib/api";
+import { DuesStatusSection } from "./DuesStatusSection";
 import { MembershipStatusSection } from "./MembershipStatusSection";
 
 interface ProfileSettingsProps {
@@ -17,6 +18,8 @@ interface ProfileSettingsProps {
     major?: string;
     graduationYear?: number;
     profilePhoto?: string;
+    chapterDuesSelfReported?: boolean;
+    nationalDuesSelfReported?: boolean;
   };
 }
 
@@ -547,6 +550,11 @@ export function ProfileSettings({ memberData }: ProfileSettingsProps) {
           <li>• Contact info helps other members and officers connect with you</li>
         </ul>
       </div>
+
+      <DuesStatusSection
+        chapterDuesSelfReported={memberData.chapterDuesSelfReported}
+        nationalDuesSelfReported={memberData.nationalDuesSelfReported}
+      />
     </div>
   );
 }

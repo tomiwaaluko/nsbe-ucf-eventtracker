@@ -37,6 +37,7 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
+import { DuesFlagsCell } from "./admin/DuesFlagsCell";
 import { MembershipToggle } from "./admin/MembershipToggle";
 
 interface Member {
@@ -51,6 +52,8 @@ interface Member {
   communityServiceAttended: number;
   totalEvents: number;
   joinedDate: string;
+  chapterDuesSelfReported?: boolean;
+  nationalDuesSelfReported?: boolean;
 }
 
 interface MemberManagementProps {
@@ -58,6 +61,13 @@ interface MemberManagementProps {
   onEditMember: (memberId: string, data: Partial<Member>) => void;
   onViewMember: (memberId: string) => void;
   onToggleStatus: (memberId: string, isActive: boolean) => void;
+  onUpdateDues?: (
+    memberId: string,
+    data: {
+      chapterDuesSelfReported?: boolean;
+      nationalDuesSelfReported?: boolean;
+    }
+  ) => Promise<void>;
   onToggleMembership?: (memberId: string, chapterMembershipActive: boolean) => void;
 }
 
@@ -66,6 +76,7 @@ export function MemberManagement({
   onEditMember,
   onViewMember,
   onToggleStatus,
+  onUpdateDues,
   onToggleMembership,
 }: MemberManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -331,6 +342,9 @@ export function MemberManagement({
                     Community
                   </th>
                   <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
+                    Self-Reported Dues
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
                     Joined
                   </th>
                   <th className="px-6 py-4 text-right text-xs text-white/80 uppercase tracking-wider font-semibold">
@@ -424,6 +438,22 @@ export function MemberManagement({
                         <span className="text-sm text-white/90">
                           {member.communityServiceAttended} / 3
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {onUpdateDues ? (
+                          <DuesFlagsCell
+                            memberId={member.id}
+                            chapterDuesSelfReported={
+                              member.chapterDuesSelfReported ?? false
+                            }
+                            nationalDuesSelfReported={
+                              member.nationalDuesSelfReported ?? false
+                            }
+                            onUpdateDues={onUpdateDues}
+                          />
+                        ) : (
+                          <span className="text-xs text-white/50">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-white/90">
@@ -603,6 +633,21 @@ export function MemberManagement({
                       </p>
                     </div>
                   </div>
+
+                  {onUpdateDues && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <DuesFlagsCell
+                        memberId={member.id}
+                        chapterDuesSelfReported={
+                          member.chapterDuesSelfReported ?? false
+                        }
+                        nationalDuesSelfReported={
+                          member.nationalDuesSelfReported ?? false
+                        }
+                        onUpdateDues={onUpdateDues}
+                      />
+                    </div>
+                  )}
                 </motion.div>
               );
             })}

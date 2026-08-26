@@ -14,9 +14,11 @@ export default function SettingsPage() {
     firstName: "",
     lastName: "",
     major: "",
-    graduationYear: undefined,
+    graduationYear: undefined as number | undefined,
     profilePhoto: "",
     hasPassword: true,
+    chapterDuesSelfReported: false,
+    nationalDuesSelfReported: false,
   });
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export default function SettingsPage() {
           graduationYear: data.graduationYear ?? prev.graduationYear,
           profilePhoto: data.photoUrl ?? prev.profilePhoto,
           hasPassword: data.hasPassword ?? true,
+          chapterDuesSelfReported: !!data.chapterDuesSelfReported,
+          nationalDuesSelfReported: !!data.nationalDuesSelfReported,
         }));
       }).catch(() => {});
     }
