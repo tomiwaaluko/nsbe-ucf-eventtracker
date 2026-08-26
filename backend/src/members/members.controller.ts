@@ -25,6 +25,7 @@ import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { FriendsService } from '../friends/friends.service';
 
 @Controller('members')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +35,7 @@ export class MembersController {
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly friendsService: FriendsService,
   ) {}
 
   @Get('me')
@@ -123,14 +125,26 @@ export class MembersController {
   }
 
   @Get(':id/profile')
-  async getMemberProfile(@Req() req, @Param('id') memberId: string) {
+  async getMemberProfile(
+    @Req() req: { user: { id: string } },
+    @Param('id') memberId: string,
+  ) {
     // Anyone signed in may view a profile (member directory), but contact PII
     // is only returned to the member themselves or to an admin.
     const viewer = await this.membersService.findMe(req.user.id);
-    const includePrivate =
-      req.user.id === memberId || (!!viewer && isAdmin(viewer.role));
+    const isOwner = req.user.id === memberId;
+    const isViewerAdmin = !!viewer && isAdmin(viewer.role);
+    const includePrivate = isOwner || isViewerAdmin;
 
-    return this.membersService.getMemberProfile(memberId, includePrivate);
+    const includePlannedEvents =
+      includePrivate ||
+      (await this.friendsService.areFriends(req.user.id, memberId));
+
+    return this.membersService.getMemberProfile(
+      memberId,
+      includePrivate,
+      includePlannedEvents,
+    );
   }
 
   @Post('me/photo')
