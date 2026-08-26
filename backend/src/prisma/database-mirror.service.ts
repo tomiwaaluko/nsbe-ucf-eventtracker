@@ -5,7 +5,10 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { BackupPrismaService } from './backup-prisma.service';
-import { syncPrimaryToBackup } from './backup-sync.util';
+import {
+  resetBackupAppTables,
+  syncPrimaryToBackup,
+} from './backup-sync.util';
 import { extractDatabaseHostname } from './database-url.util';
 import { PrismaService } from './prisma.service';
 
@@ -53,6 +56,17 @@ export class DatabaseMirrorService implements OnModuleInit, OnModuleDestroy {
       `Database backup mirror enabled → host ${backupHost ?? 'unknown'} every ${intervalMs}ms`,
     );
 
+    // One-shot: wipe Railway app tables then full sync. Set on staging once after
+    // cutover when seed emails block upsert-by-id; remove the env var after logs
+    // show "backup reset+sync complete". Never leave this on in production long-term.
+    if (isTruthy(process.env.BACKUP_RESET_ON_BOOT)) {
+      this.logger.warn(
+        'BACKUP_RESET_ON_BOOT=true — truncating backup app tables then syncing from primary',
+      );
+      void this.runResetAndSync();
+      return;
+    }
+
     this.initial = setTimeout(() => {
       void this.runSync('initial');
     }, INITIAL_DELAY_MS);
@@ -63,6 +77,39 @@ export class DatabaseMirrorService implements OnModuleInit, OnModuleDestroy {
     // Do not keep the event loop alive solely for backup sync.
     this.timer.unref?.();
     this.initial.unref?.();
+  }
+
+  private async runResetAndSync(): Promise<void> {
+    if (this.running || !this.backup.isEnabled()) {
+      return;
+    }
+    this.running = true;
+    try {
+      await resetBackupAppTables(this.backup);
+      this.logger.log('Backup app tables truncated');
+      const result = await syncPrimaryToBackup(this.prisma, this.backup);
+      const summary = Object.entries(result.tables)
+        .map(([name, count]) => `${name}=${count}`)
+        .join(', ');
+      this.logger.log(`Backup reset+sync complete: ${summary}`);
+      this.logger.warn(
+        'Clear BACKUP_RESET_ON_BOOT from Railway after verifying counts, then redeploy',
+      );
+
+      const intervalMs = parsePositiveInt(
+        process.env.BACKUP_SYNC_INTERVAL_MS,
+        DEFAULT_INTERVAL_MS,
+      );
+      this.timer = setInterval(() => {
+        void this.runSync('interval');
+      }, intervalMs);
+      this.timer.unref?.();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Backup reset+sync failed: ${message}`);
+    } finally {
+      this.running = false;
+    }
   }
 
   onModuleDestroy() {
@@ -101,4 +148,11 @@ function parsePositiveInt(raw: string | undefined, fallback: number): number {
   }
   const value = Number.parseInt(raw, 10);
   return Number.isFinite(value) && value >= 30_000 ? value : fallback;
+}
+
+function isTruthy(raw: string | undefined): boolean {
+  if (!raw?.trim()) {
+    return false;
+  }
+  return ['1', 'true', 'yes', 'on'].includes(raw.trim().toLowerCase());
 }

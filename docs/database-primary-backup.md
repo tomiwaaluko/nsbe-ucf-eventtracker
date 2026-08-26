@@ -63,9 +63,13 @@ Project `NSBE-UCF` · Backend `NSBE App Backend` · Staging env · Postgres serv
    - Confirm `SUPABASE_*` vars match the same project.
 3. Apply schema to Supabase if needed: `npx prisma db push` using `DIRECT_URL` (from a trusted machine; do not commit secrets).
 4. Redeploy backend; confirm boot logs show `Primary database host=… kind=supabase`.
-5. Run `npm run db:sync-backup` once so Railway has a full mirror.
+5. Run a baseline sync so Railway has a full mirror:
+   - Prefer one-shot on the backend: set `BACKUP_RESET_ON_BOOT=true`, redeploy, confirm logs `Backup reset+sync complete` with ~chapter-sized Member counts, then **remove** that env var and redeploy.
+   - Or from a trusted machine: `npm run db:sync-backup` with both URLs set (fails if Railway still has seed emails with different UUIDs — wipe those rows first, or use `BACKUP_RESET_ON_BOOT`).
 6. Spot-check Friends / Events / Leaderboard against real chapter data (not ~4 seed members).
 7. `GET /api/health/db` should show supabase primary + railway backup.
+
+Member mirror deletes backup rows that share a primary email but a different id (seed UUID collision), so later interval syncs stay healthy after the first baseline.
 
 ## Disaster recovery (failover to Railway)
 

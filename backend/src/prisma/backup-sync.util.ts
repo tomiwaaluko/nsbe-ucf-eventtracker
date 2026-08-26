@@ -13,12 +13,22 @@ export const BACKUP_SYNC_ORDER: SyncStep[] = [
   {
     name: 'Member',
     fetch: (db) => db.member.findMany(),
-    upsert: (db, row) =>
-      db.member.upsert({
-        where: { id: row.id as string },
+    upsert: async (db, row) => {
+      // Seed backups often share emails with primary but have different UUIDs.
+      // Upsert-by-id then collides on email unique — remove the stale row first.
+      const email = row.email as string | null | undefined;
+      const id = row.id as string;
+      if (email) {
+        await db.member.deleteMany({
+          where: { email, NOT: { id } },
+        });
+      }
+      return db.member.upsert({
+        where: { id },
         create: row as never,
         update: row as never,
-      }),
+      });
+    },
   },
   {
     name: 'Event',
@@ -86,9 +96,22 @@ export type BackupSyncResult = {
   tables: Record<string, number>;
 };
 
+/** App tables only — never touch Railway system catalogs. FK-safe truncate order. */
+export const BACKUP_TRUNCATE_SQL =
+  'TRUNCATE TABLE "PointEntry", "Attendance", "event_interests", "friendships", "OAuthAccount", "Event", "Member" RESTART IDENTITY CASCADE';
+
+/**
+ * Wipe Prisma app data on the backup DB so a full primary→backup copy can land
+ * without email/UUID collisions from leftover seed rows.
+ */
+export async function resetBackupAppTables(backup: PrismaClient): Promise<void> {
+  await backup.$executeRawUnsafe(BACKUP_TRUNCATE_SQL);
+}
+
 /**
  * Upsert all app tables from primary into backup.
- * Does not delete backup-only rows (safe additive mirror).
+ * Does not delete backup-only rows (safe additive mirror), except Member
+ * email collisions where a different id already holds the primary email.
  */
 export async function syncPrimaryToBackup(
   primary: PrismaClient,
