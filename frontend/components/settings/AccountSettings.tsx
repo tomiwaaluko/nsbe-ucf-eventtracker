@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
+import { DataExportSection } from "./DataExportSection";
 
 interface AccountSettingsProps {
   memberData: {
@@ -428,6 +429,9 @@ export function AccountSettings({ memberData }: AccountSettingsProps) {
           </div>
         </div>
       </div>
+
+      {/* Download My Data */}
+      <DataExportSection />
 
       {/* Delete Account Section */}
       <div className="border-t border-white/10 pt-6">

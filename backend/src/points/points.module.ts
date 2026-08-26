@@ -7,5 +7,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [AuthModule],
   controllers: [PointsController],
   providers: [PointsService],
+  exports: [PointsService],
 })
 export class PointsModule {}

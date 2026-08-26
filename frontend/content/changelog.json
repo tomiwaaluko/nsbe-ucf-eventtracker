@@ -1,0 +1,30 @@
+{
+  "_readme": "Add a new object to the start of entries (newest first). Use a unique version string (e.g. 2025-08-19) so the unread dot clears after members open What's new. Keep summary to one sentence.",
+  "entries": [
+    {
+      "version": "2025-08-19",
+      "date": "2025-08-19",
+      "summary": "Added an in-app What's new page so you can see recent product updates without leaving the app."
+    },
+    {
+      "version": "2025-08-01",
+      "date": "2025-08-01",
+      "summary": "Leaderboard now ranks members by semester attendance with filters for Spring and Fall."
+    },
+    {
+      "version": "2025-07-15",
+      "date": "2025-07-15",
+      "summary": "Friends list and event interest let you see who plans to attend upcoming chapter events."
+    },
+    {
+      "version": "2025-06-20",
+      "date": "2025-06-20",
+      "summary": "Check-in supports QR scan, six-character codes, and admin manual check-in at events."
+    },
+    {
+      "version": "2025-05-10",
+      "date": "2025-05-10",
+      "summary": "Dashboard shows your 111 and 333 achievement progress for the current semester."
+    }
+  ]
+}

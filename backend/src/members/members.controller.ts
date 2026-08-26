@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   Req,
+  Res,
   UseGuards,
   ForbiddenException,
   Param,
@@ -15,26 +16,33 @@ import {
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from './members.service';
+import { MembersExportService } from './members-export.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdateMembershipDto } from './dto/update-membership.dto';
+import { ExportMemberDataQueryDto } from './dto/export-member-data.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { isAdmin, isSuperAdmin } from '../common/roles.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { FriendsService } from '../friends/friends.service';
 
 @Controller('members')
 @UseGuards(JwtAuthGuard)
 export class MembersController {
   constructor(
     private readonly membersService: MembersService,
+    private readonly membersExportService: MembersExportService,
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly friendsService: FriendsService,
   ) {}
 
   @Get('me')
@@ -45,6 +53,33 @@ export class MembersController {
   @Get('me/oauth-accounts')
   async getMyOAuthAccounts(@Req() req) {
     return this.membersService.getOAuthAccounts(req.user.id);
+  }
+
+  /**
+   * Self-service export of the authenticated member's data (JSON or CSV).
+   * Always scoped to req.user.id — admins cannot export another member here.
+   */
+  @Get('me/export')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  async exportMyData(
+    @Req() req,
+    @Query() query: ExportMemberDataQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userId = req.user.id;
+    res.setHeader('Cache-Control', 'no-store');
+
+    if (query.format === 'csv') {
+      const csv = await this.membersExportService.exportMyDataAsCsv(userId);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="nsbe-my-data-export.csv"',
+      );
+      return csv;
+    }
+
+    return this.membersExportService.exportMyData(userId);
   }
 
   @Put('me')
@@ -141,14 +176,26 @@ export class MembersController {
   }
 
   @Get(':id/profile')
-  async getMemberProfile(@Req() req, @Param('id') memberId: string) {
+  async getMemberProfile(
+    @Req() req: { user: { id: string } },
+    @Param('id') memberId: string,
+  ) {
     // Anyone signed in may view a profile (member directory), but contact PII
     // is only returned to the member themselves or to an admin.
     const viewer = await this.membersService.findMe(req.user.id);
-    const includePrivate =
-      req.user.id === memberId || (!!viewer && isAdmin(viewer.role));
+    const isOwner = req.user.id === memberId;
+    const isViewerAdmin = !!viewer && isAdmin(viewer.role);
+    const includePrivate = isOwner || isViewerAdmin;
 
-    return this.membersService.getMemberProfile(memberId, includePrivate);
+    const includePlannedEvents =
+      includePrivate ||
+      (await this.friendsService.areFriends(req.user.id, memberId));
+
+    return this.membersService.getMemberProfile(
+      memberId,
+      includePrivate,
+      includePlannedEvents,
+    );
   }
 
   @Post('me/photo')

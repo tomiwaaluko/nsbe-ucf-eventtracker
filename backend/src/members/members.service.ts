@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
-import { EventCategory } from '@prisma/client';
+import { EventCategory, EventInterestStatus } from '@prisma/client';
 import {
   getMostRecentJuly31DeadlineET,
   resolveChapterMembershipActive,
@@ -27,7 +27,7 @@ export const ADMIN_MEMBER_UPDATE_SELECT = {
 /**
  * Maps an event category to its bucket for statistics calculation
  */
-function getEventBucket(category: EventCategory): string {
+export function getEventBucket(category: EventCategory): string {
   switch (category) {
     case EventCategory.WORKSHOP:
     case EventCategory.SOCIAL:
@@ -419,13 +419,22 @@ export class MembersService {
   async getMemberProfile(
     memberId: string,
     includePrivate = false,
+    includePlannedEvents = false,
   ): Promise<MemberProfileDto> {
     const member = await this.prisma.member.findUnique({
       where: { id: memberId },
       include: {
         attendance: {
-          include: {
-            event: true,
+          select: {
+            checkedInAt: true,
+            event: {
+              select: {
+                id: true,
+                name: true,
+                startTime: true,
+                category: true,
+              },
+            },
           },
           orderBy: {
             checkedInAt: 'desc',
@@ -442,7 +451,7 @@ export class MembersService {
     // Calculate achievement progress
     const achievements = this.calculateAchievements(member.attendance);
 
-    return {
+    const profile: MemberProfileDto = {
       id: member.id,
       firstName: member.firstName || '',
       lastName: member.lastName || '',
@@ -474,6 +483,56 @@ export class MembersService {
         checkedInAt: a.checkedInAt,
       })),
     };
+
+    if (includePlannedEvents) {
+      profile.plannedEvents = await this.getMemberPlannedEvents(memberId);
+    }
+
+    return profile;
+  }
+
+  /**
+   * Upcoming events the member marked as planning to attend.
+   * Omits inactive (soft-deleted) events and past events.
+   */
+  private async getMemberPlannedEvents(memberId: string) {
+    const now = new Date();
+    const interests = await this.prisma.eventInterest.findMany({
+      where: {
+        memberId,
+        status: EventInterestStatus.PLANNING,
+        event: {
+          isActive: true,
+          startTime: { gt: now },
+        },
+      },
+      select: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: {
+        event: {
+          startTime: 'asc',
+        },
+      },
+    });
+
+    return interests.map((interest) => ({
+      id: interest.event.id,
+      name: interest.event.name,
+      startTime: interest.event.startTime,
+      endTime: interest.event.endTime,
+      location: interest.event.location ?? undefined,
+      category: interest.event.category,
+    }));
   }
 
   /**

@@ -12,8 +12,10 @@ import {
   Shield,
   Construction,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useChangelogUnread } from "@/lib/changelog";
 import Image from "next/image";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
 
@@ -136,6 +138,14 @@ const menuItems = [
   },
 
   {
+    id: "changelog",
+    label: "What's new",
+    icon: Sparkles,
+    roles: ["member", "admin", "super_admin"],
+    section: "main",
+    showsUnread: true,
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: Settings,
@@ -152,6 +162,7 @@ export function Sidebar({
   onLogout,
 }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
+  const hasUnreadChangelog = useChangelogUnread();
 
   // Only render admin section after hydration to prevent hydration mismatch
   useEffect(() => {
@@ -284,6 +295,14 @@ export function Sidebar({
                           WIP
                         </span>
                       )}
+                      {(item as { showsUnread?: boolean }).showsUnread &&
+                        hasUnreadChangelog && (
+                          <span
+                            className={`${(item as { wip?: boolean }).wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
+                          >
+                            <span className="sr-only">Unread updates</span>
+                          </span>
+                        )}
                     </div>
                   </motion.button>
                 );
