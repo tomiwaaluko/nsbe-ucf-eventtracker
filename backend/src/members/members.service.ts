@@ -8,7 +8,7 @@ import { EventCategory, EventInterestStatus } from '@prisma/client';
 /**
  * Maps an event category to its bucket for statistics calculation
  */
-function getEventBucket(category: EventCategory): string {
+export function getEventBucket(category: EventCategory): string {
   switch (category) {
     case EventCategory.WORKSHOP:
     case EventCategory.SOCIAL:
