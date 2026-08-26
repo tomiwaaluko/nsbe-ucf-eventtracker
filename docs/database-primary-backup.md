@@ -16,7 +16,7 @@
 ## How backup sync works
 
 1. **Boot guard** — If `DATABASE_URL` hostname looks like Railway (`*.railway.internal`, `*.rlwy.net`, …) and `ALLOW_RAILWAY_PRIMARY` is not truthy, the API **refuses to start**. This prevents silently serving stale Railway seed data while Auth is on Supabase.
-2. **Periodic mirror** — When `BACKUP_DATABASE_URL` is set (and its host differs from primary), `DatabaseMirrorService` upserts all Prisma app tables from primary → backup on an interval (`BACKUP_SYNC_INTERVAL_MS`, default 5 minutes; first run ~20s after boot). Failures are logged and never affect user requests. This stays compatible with Prisma 6 (no `$use` middleware) without a fragile second write path.
+2. **Periodic mirror** — When `BACKUP_DATABASE_URL` is set (and its host differs from primary), `DatabaseMirrorService` upserts all Prisma app tables from primary → backup on an interval (`BACKUP_SYNC_INTERVAL_MS`, default 5 minutes; first run ~20s after boot). Failures are logged and never affect user requests. This stays compatible with Prisma 6 (no `$use` middleware) without a fragile second write path. If the backup still has Railway **seed** rows that share unique keys (`Member.email`, `Event.checkInCode`, …) with different UUIDs, sync deletes those conflicting backup rows so Supabase identities win.
 3. **Baseline sync** — After cutover, also run a one-shot full copy so the backup is warm before the first interval:
 
 ```bash
