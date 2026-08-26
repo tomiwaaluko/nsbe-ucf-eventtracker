@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { StorageService } from '../storage/storage.service';
+import { FriendsService } from '../friends/friends.service';
 
 describe('MembersController exportMyData', () => {
   let controller: MembersController;
@@ -35,6 +36,7 @@ describe('MembersController exportMyData', () => {
         { provide: PrismaService, useValue: {} },
         { provide: AuthService, useValue: {} },
         { provide: StorageService, useValue: {} },
+        { provide: FriendsService, useValue: { areFriends: jest.fn() } },
       ],
     })
       .overrideGuard(JwtAuthGuard)

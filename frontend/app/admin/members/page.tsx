@@ -47,6 +47,7 @@ export default function MemberManagementPage() {
           email: member.email,
           role: role,
           isActive: member.isActive ?? true,
+          chapterMembershipActive: member.chapterMembershipActive ?? false,
           workshopsAttended: member.workshopsAttended ?? 0,
           gbmAttended: member.gbmAttended ?? 0,
           communityServiceAttended: member.communityServiceAttended ?? 0,
@@ -113,6 +114,25 @@ export default function MemberManagementPage() {
     }
   };
 
+  const handleToggleMembership = async (
+    memberId: string,
+    chapterMembershipActive: boolean,
+  ) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      await api.updateMemberMembership(token, memberId, chapterMembershipActive);
+      toast.success(
+        `Chapter membership marked ${chapterMembershipActive ? "paid" : "unpaid"}`,
+      );
+      fetchMembers();
+    } catch (error) {
+      console.error("Failed to toggle chapter membership:", error);
+      toast.error("Failed to update chapter membership");
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -130,6 +150,7 @@ export default function MemberManagementPage() {
         onEditMember={handleEditMember}
         onViewMember={handleViewMember}
         onToggleStatus={handleToggleStatus}
+        onToggleMembership={handleToggleMembership}
       />
     </DashboardLayout>
   );

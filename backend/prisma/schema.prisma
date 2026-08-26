@@ -19,6 +19,8 @@ model Member {
   passwordHash    String?
   updatedAt       DateTime        @updatedAt
   isActive        Boolean         @default(true)
+  chapterMembershipActive   Boolean   @default(false)
+  chapterMembershipMarkedAt DateTime?
   bio             String?
   discordUsername String?
   graduationYear  Int?

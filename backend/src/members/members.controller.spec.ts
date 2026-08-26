@@ -5,11 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { AuthService } from '../auth/auth.service';
 import { StorageService } from '../storage/storage.service';
-<<<<<<< HEAD
 import { MembersExportService } from './members-export.service';
-=======
 import { FriendsService } from '../friends/friends.service';
->>>>>>> origin/staging
 
 describe('MembersController', () => {
   let controller: MembersController;

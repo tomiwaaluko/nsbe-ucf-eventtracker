@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { MembershipBadge } from "@/components/MembershipBadge";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ export default function DashboardPage() {
     gbmAttended: 0,
     communityServiceAttended: 0,
   });
+  const [chapterMembershipActive, setChapterMembershipActive] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [plannedEvents, setPlannedEvents] = useState<any[]>([]);
@@ -127,6 +129,8 @@ export default function DashboardPage() {
         }));
         setPlannedEvents(planned);
 
+        setChapterMembershipActive(userData.chapterMembershipActive ?? false);
+
         // Update component state with calculated statistics (using bucket names)
         setMemberData({
           name: `${updatedUser.firstName} ${updatedUser.lastName}`.trim() || "User",
@@ -190,6 +194,9 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
+      <div className="px-4 pt-4 lg:px-8">
+        <MembershipBadge chapterMembershipActive={chapterMembershipActive} />
+      </div>
       <Dashboard
         memberData={memberData}
         attendanceRecords={attendanceRecords}
