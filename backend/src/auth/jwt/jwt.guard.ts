@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import * as jwt from 'jsonwebtoken';
@@ -11,6 +12,21 @@ interface JwtPayload {
   sub: string;
   email: string;
   [key: string]: any;
+}
+
+/** True when Prisma (or the driver) reports schema drift / missing columns. */
+export function isDatabaseSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const e = error as { code?: string; message?: string };
+  if (e.code === 'P2022') {
+    return true;
+  }
+
+  const message = typeof e.message === 'string' ? e.message : '';
+  return message.includes('does not exist in the current database');
 }
 
 @Injectable()
@@ -88,10 +104,23 @@ export class JwtAuthGuard implements CanActivate {
       // Preserve deliberate rejections (e.g. the identity-conflict refusal in
       // findOrCreateMember) instead of flattening them to "Invalid token",
       // which would send an operator hunting for a token problem that isn't
-      // there. Anything else stays generic.
+      // there.
       if (error instanceof UnauthorizedException) {
         throw error;
       }
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+
+      // Schema drift (missing columns) is an ops/infra failure, not a bad
+      // token. Returning 401 makes the frontend claim "Session Expired".
+      if (isDatabaseSchemaError(error)) {
+        console.error('Database schema mismatch during auth:', error.message);
+        throw new ServiceUnavailableException(
+          'Database temporarily unavailable. Please try again later.',
+        );
+      }
+
       console.error('JWT verification failed:', error.message);
       throw new UnauthorizedException('Invalid token');
     }
