@@ -15,7 +15,7 @@ Keep code next to its feature, for example `backend/src/events/*` and `frontend/
 - `backend/src`: Nest modules — `auth`, `members`, `events`, `attendance`, `stats`, `points`, `friends`, `event-interest`, `storage`, `cache`, `prisma`, `common`.
 - `backend/prisma`: `schema.prisma` and `seed.ts`.
 - `backend/test`: e2e Jest tests.
-- `docs`: design notes (not a substitute for `README.md`).
+- `docs`: design notes (not a substitute for `README.md`). Primary DB policy: [`docs/database-primary-backup.md`](docs/database-primary-backup.md) (Supabase primary, Railway backup).
 
 Backend pattern: **controller → service → Prisma**. `PrismaModule` and `CacheModule` are `@Global()`. Path alias on the frontend: `@/*` → frontend root.
 
@@ -67,7 +67,7 @@ PRs should include a description, linked issue or context, test commands run, da
 
 Do not commit real secrets. Templates: `backend/.env.example`, `frontend/.env.example` (copy frontend to `.env.local`).
 
-- Backend must have `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_JWT_SECRET`. Production must set `CORS_ORIGINS` (comma-separated exact origins — no `*.vercel.app` wildcards). Pair `API_KEY` with frontend `NEXT_PUBLIC_API_KEY` when the gate is on.
+- Backend must have `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_JWT_SECRET` aimed at the **same** Supabase project. Staging/prod should set `BACKUP_DATABASE_URL` (Railway Postgres). Do not use Railway as primary except `ALLOW_RAILWAY_PRIMARY` disaster recovery. Production must set `CORS_ORIGINS` (comma-separated exact origins — no `*.vercel.app` wildcards). Pair `API_KEY` with frontend `NEXT_PUBLIC_API_KEY` when the gate is on.
 - After editing `backend/prisma/schema.prisma`, run Prisma generate and document how to migrate or `db push`.
 - Do not add default JWT/signing secrets in Docker or source. Do not weaken `forbidNonWhitelisted`, Helmet, or the named throttle on check-in-code.
 - Profile photos: JPEG/PNG/WebP, 5 MB, Supabase bucket `profile-photos`.
