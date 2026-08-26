@@ -318,7 +318,7 @@ Most pages are client components (`"use client"`) because they need the JWT in t
 | `/events/[id]/edit` | Admin | Edit event |
 | `/checkin` | Member | Camera QR scanner |
 | `/attendance` | Member | Personal history |
-| `/members` | Member | Directory |
+| `/members` | Member | Redirects to `/friends` |
 | `/members/[id]` | Member | Public profile |
 | `/achievements` | Member | 111 / 333 progress |
 | `/leaderboard` | Member | Attendance / achievement ranks |
