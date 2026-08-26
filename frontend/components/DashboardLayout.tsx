@@ -84,6 +84,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       friends: "friends",
       leaderboard: "leaderboard",
       achievements: "achievements",
+      changelog: "changelog",
       settings: "settings",
     };
 
@@ -109,6 +110,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       friends: "/friends",
       leaderboard: "/leaderboard",
       achievements: "/achievements",
+      changelog: "/changelog",
       settings: "/settings",
     };
 
