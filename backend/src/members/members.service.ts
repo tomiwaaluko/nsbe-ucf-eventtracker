@@ -8,13 +8,44 @@ import { CacheService } from '../cache/cache.service';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { UpdateMemberDuesDto } from './dto/update-dues.dto';
 import { MemberProfileDto } from './dto/member-profile.dto';
-import { EventCategory } from '@prisma/client';
+import { EventCategory, EventInterestStatus } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import {
+  getMostRecentJuly31DeadlineET,
+  resolveChapterMembershipActive,
+  shouldResetChapterMembership,
+} from './chapter-membership.util';
+
+/** Safe fields returned from member update routes (never passwordHash). */
+export const ADMIN_MEMBER_UPDATE_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  createdAt: true,
+  emailVerified: true,
+  updatedAt: true,
+  isActive: true,
+  chapterMembershipActive: true,
+  chapterMembershipMarkedAt: true,
+  bio: true,
+  discordUsername: true,
+  graduationYear: true,
+  linkedInUrl: true,
+  major: true,
+  phoneNumber: true,
+  photoUrl: true,
+  chapterDuesSelfReported: true,
+  nationalDuesSelfReported: true,
+  chapterDuesReportedAt: true,
+  nationalDuesReportedAt: true,
+} as const;
 
 /**
  * Maps an event category to its achievement bucket key.
  */
-function getEventBucket(category: EventCategory): string {
+export function getEventBucket(category: EventCategory): string {
   switch (category) {
     case EventCategory.WORKSHOP:
     case EventCategory.SOCIAL:
@@ -54,30 +85,6 @@ function buildDuesUpdateData(dto: {
   return data;
 }
 
-/** Explicit select — never return passwordHash from update routes. */
-const MEMBER_UPDATE_SELECT = {
-  id: true,
-  email: true,
-  firstName: true,
-  lastName: true,
-  role: true,
-  createdAt: true,
-  emailVerified: true,
-  updatedAt: true,
-  isActive: true,
-  bio: true,
-  discordUsername: true,
-  graduationYear: true,
-  linkedInUrl: true,
-  major: true,
-  phoneNumber: true,
-  photoUrl: true,
-  chapterDuesSelfReported: true,
-  nationalDuesSelfReported: true,
-  chapterDuesReportedAt: true,
-  nationalDuesReportedAt: true,
-} as const;
-
 @Injectable()
 export class MembersService {
   constructor(
@@ -87,10 +94,10 @@ export class MembersService {
 
   async findMe(userId: string) {
     // Cache JWT user lookups for 5 minutes to reduce DB load on every request
-    return this.cache.wrap(
+    const member = await this.cache.wrap(
       `user:${userId}`,
       async () => {
-        const member = await this.prisma.member.findUnique({
+        const row = await this.prisma.member.findUnique({
           where: { id: userId },
           include: {
             oauthAccounts: {
@@ -99,12 +106,12 @@ export class MembersService {
           },
         });
 
-        if (!member) {
+        if (!row) {
           return null;
         }
 
         // Transform response to include auth methods without exposing password hash
-        const { passwordHash, oauthAccounts, ...memberData } = member;
+        const { passwordHash, oauthAccounts, ...memberData } = row;
         return {
           ...memberData,
           hasPassword: !!passwordHash,
@@ -113,6 +120,22 @@ export class MembersService {
       },
       300, // 5 minutes
     );
+
+    if (!member) {
+      return null;
+    }
+
+    const membership = await this.applyChapterMembershipReset({
+      id: userId,
+      chapterMembershipActive: member.chapterMembershipActive ?? false,
+      chapterMembershipMarkedAt: member.chapterMembershipMarkedAt ?? null,
+    });
+
+    return {
+      ...member,
+      chapterMembershipActive: membership.chapterMembershipActive,
+      chapterMembershipMarkedAt: membership.chapterMembershipMarkedAt,
+    };
   }
 
   async updateMe(userId: string, dto: UpdateMemberDto) {
@@ -132,7 +155,7 @@ export class MembersService {
         ...profileData,
         ...duesData,
       },
-      select: MEMBER_UPDATE_SELECT,
+      select: ADMIN_MEMBER_UPDATE_SELECT,
     });
     // Invalidate user + admin list caches so dues show up immediately
     this.cache.del(`user:${userId}`);
@@ -152,7 +175,7 @@ export class MembersService {
       const result = await this.prisma.member.update({
         where: { id: memberId },
         data: buildDuesUpdateData(dto),
-        select: MEMBER_UPDATE_SELECT,
+        select: ADMIN_MEMBER_UPDATE_SELECT,
       });
       this.cache.del(`user:${memberId}`);
       this.cache.delPattern('members:');
@@ -182,7 +205,9 @@ export class MembersService {
   }
 
   async search(query: string) {
-    return this.prisma.member.findMany({
+    await this.batchResetExpiredChapterMemberships();
+
+    const members = await this.prisma.member.findMany({
       where: {
         OR: [
           { email: { contains: query, mode: 'insensitive' } },
@@ -201,6 +226,8 @@ export class MembersService {
         lastName: true,
         role: true,
         isActive: true,
+        chapterMembershipActive: true,
+        chapterMembershipMarkedAt: true,
         photoUrl: true,
         chapterDuesSelfReported: true,
         nationalDuesSelfReported: true,
@@ -209,6 +236,14 @@ export class MembersService {
       },
       take: 20,
     });
+
+    return members.map((member) => ({
+      ...member,
+      chapterMembershipActive: resolveChapterMembershipActive(
+        member.chapterMembershipActive,
+        member.chapterMembershipMarkedAt,
+      ),
+    }));
   }
 
   /**
@@ -249,7 +284,7 @@ export class MembersService {
     const result = await this.prisma.member.update({
       where: { id: memberId },
       data: { isActive },
-      select: MEMBER_UPDATE_SELECT,
+      select: ADMIN_MEMBER_UPDATE_SELECT,
     });
     this.cache.del(`user:${memberId}`);
     this.cache.delPattern('members:');
@@ -257,10 +292,112 @@ export class MembersService {
   }
 
   /**
+   * Update chapter membership paid/unpaid status (separate from account isActive).
+   */
+  async updateMemberMembership(
+    memberId: string,
+    chapterMembershipActive: boolean,
+  ) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    const result = await this.prisma.member.update({
+      where: { id: memberId },
+      data: chapterMembershipActive
+        ? {
+            chapterMembershipActive: true,
+            chapterMembershipMarkedAt: new Date(),
+          }
+        : { chapterMembershipActive: false },
+      select: ADMIN_MEMBER_UPDATE_SELECT,
+    });
+
+    this.cache.del(`user:${memberId}`);
+    this.cache.delPattern('members:');
+    return result;
+  }
+
+  /**
+   * Check-on-read annual reset for chapter membership (America/New_York).
+   * Keeps chapterMembershipMarkedAt for audit when expiring.
+   */
+  async applyChapterMembershipReset(
+    member: {
+      id: string;
+      chapterMembershipActive: boolean;
+      chapterMembershipMarkedAt: Date | null;
+    },
+    now: Date = new Date(),
+  ): Promise<{
+    chapterMembershipActive: boolean;
+    chapterMembershipMarkedAt: Date | null;
+  }> {
+    if (
+      !shouldResetChapterMembership(
+        member.chapterMembershipActive,
+        member.chapterMembershipMarkedAt,
+        now,
+      )
+    ) {
+      return {
+        chapterMembershipActive: member.chapterMembershipActive,
+        chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+      };
+    }
+
+    await this.prisma.member.update({
+      where: { id: member.id },
+      data: { chapterMembershipActive: false },
+    });
+
+    this.cache.del(`user:${member.id}`);
+    this.cache.delPattern('members:');
+
+    return {
+      chapterMembershipActive: false,
+      chapterMembershipMarkedAt: member.chapterMembershipMarkedAt,
+    };
+  }
+
+  /**
+   * Batch-expire chapter memberships past the July 31 ET deadline.
+   * Used by admin list/search to avoid N per-member writes.
+   */
+  async batchResetExpiredChapterMemberships(
+    now: Date = new Date(),
+  ): Promise<number> {
+    const deadline = getMostRecentJuly31DeadlineET(now);
+
+    const result = await this.prisma.member.updateMany({
+      where: {
+        chapterMembershipActive: true,
+        OR: [
+          { chapterMembershipMarkedAt: null },
+          { chapterMembershipMarkedAt: { lt: deadline } },
+        ],
+      },
+      data: { chapterMembershipActive: false },
+    });
+
+    if (result.count > 0) {
+      this.cache.delPattern('members:');
+    }
+
+    return result.count;
+  }
+
+  /**
    * Get all members with their statistics
    * @param semester Optional semester filter (if not provided, shows all-time statistics)
    */
   async getAllMembers(semester?: string): Promise<any[]> {
+    await this.batchResetExpiredChapterMemberships();
+
     // Cache member list for 3 minutes
     return this.cache.wrap(
       `members:all:${semester || 'all'}`,
@@ -287,7 +424,7 @@ export class MembersService {
         });
 
         // Calculate statistics for each member
-        return members.map((member) => {
+        const mappedMembers = members.map((member) => {
           const bucketCounts = {
             workshops_socials: 0,
             fundraiser_community_service: 0,
@@ -317,6 +454,7 @@ export class MembersService {
             lastName: member.lastName,
             role: member.role,
             isActive: member.isActive,
+            chapterMembershipActive: member.chapterMembershipActive,
             createdAt: member.createdAt,
             updatedAt: member.updatedAt,
             chapterDuesSelfReported: member.chapterDuesSelfReported,
@@ -330,6 +468,8 @@ export class MembersService {
             totalEvents,
           };
         });
+
+        return mappedMembers;
       },
       180, // 3 minutes
     );
@@ -371,13 +511,22 @@ export class MembersService {
   async getMemberProfile(
     memberId: string,
     includePrivate = false,
+    includePlannedEvents = false,
   ): Promise<MemberProfileDto> {
     const member = await this.prisma.member.findUnique({
       where: { id: memberId },
       include: {
         attendance: {
-          include: {
-            event: true,
+          select: {
+            checkedInAt: true,
+            event: {
+              select: {
+                id: true,
+                name: true,
+                startTime: true,
+                category: true,
+              },
+            },
           },
           orderBy: {
             checkedInAt: 'desc',
@@ -394,7 +543,7 @@ export class MembersService {
     // Calculate achievement progress
     const achievements = this.calculateAchievements(member.attendance);
 
-    return {
+    const profile: MemberProfileDto = {
       id: member.id,
       firstName: member.firstName || '',
       lastName: member.lastName || '',
@@ -426,6 +575,56 @@ export class MembersService {
         checkedInAt: a.checkedInAt,
       })),
     };
+
+    if (includePlannedEvents) {
+      profile.plannedEvents = await this.getMemberPlannedEvents(memberId);
+    }
+
+    return profile;
+  }
+
+  /**
+   * Upcoming events the member marked as planning to attend.
+   * Omits inactive (soft-deleted) events and past events.
+   */
+  private async getMemberPlannedEvents(memberId: string) {
+    const now = new Date();
+    const interests = await this.prisma.eventInterest.findMany({
+      where: {
+        memberId,
+        status: EventInterestStatus.PLANNING,
+        event: {
+          isActive: true,
+          startTime: { gt: now },
+        },
+      },
+      select: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: {
+        event: {
+          startTime: 'asc',
+        },
+      },
+    });
+
+    return interests.map((interest) => ({
+      id: interest.event.id,
+      name: interest.event.name,
+      startTime: interest.event.startTime,
+      endTime: interest.event.endTime,
+      location: interest.event.location ?? undefined,
+      category: interest.event.category,
+    }));
   }
 
   /**

@@ -16,8 +16,10 @@ import {
   Settings,
   Construction,
   Trophy,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useChangelogUnread } from "@/lib/changelog";
 import Image from "next/image";
 import { Bricolage_Grotesque, Sora } from "next/font/google";
 
@@ -130,6 +132,14 @@ const menuItems = [
     section: "admin",
   },
   {
+    id: "changelog",
+    label: "What's new",
+    icon: Sparkles,
+    roles: ["member", "admin", "super_admin"],
+    section: "main",
+    showsUnread: true,
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: Settings,
@@ -143,11 +153,13 @@ const NavLink = ({
   isActive,
   onNavigate,
   onClose,
+  showUnreadDot = false,
 }: {
-  item: (typeof menuItems)[0] & { wip?: boolean };
+  item: (typeof menuItems)[0] & { wip?: boolean; showsUnread?: boolean };
   isActive: boolean;
   onNavigate: (page: string) => void;
   onClose: () => void;
+  showUnreadDot?: boolean;
 }) => {
   const Icon = item.icon;
   return (
@@ -172,6 +184,13 @@ const NavLink = ({
           WIP
         </span>
       )}
+      {showUnreadDot && (
+        <span
+          className={`${item.wip ? "" : "ml-auto"} w-2.5 h-2.5 rounded-full bg-[#ed1c24] border border-black flex-shrink-0`}
+        >
+          <span className="sr-only">Unread updates</span>
+        </span>
+      )}
     </motion.button>
   );
 };
@@ -185,6 +204,7 @@ export function TopBar({
 }: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const hasUnreadChangelog = useChangelogUnread();
 
   useEffect(() => {
     setMounted(true);
@@ -402,6 +422,10 @@ export function TopBar({
                     isActive={currentPage === item.id}
                     onNavigate={onNavigate}
                     onClose={() => setMenuOpen(false)}
+                    showUnreadDot={
+                      (item as { showsUnread?: boolean }).showsUnread &&
+                      hasUnreadChangelog
+                    }
                   />
                 ))}
 

@@ -38,6 +38,7 @@ import {
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { DuesFlagsCell } from "./admin/DuesFlagsCell";
+import { MembershipToggle } from "./admin/MembershipToggle";
 
 interface Member {
   id: string;
@@ -45,6 +46,7 @@ interface Member {
   email: string;
   role: "MEMBER" | "OFFICER" | "ADMIN";
   isActive: boolean;
+  chapterMembershipActive?: boolean;
   workshopsAttended: number;
   gbmAttended: number;
   communityServiceAttended: number;
@@ -66,6 +68,7 @@ interface MemberManagementProps {
       nationalDuesSelfReported?: boolean;
     }
   ) => Promise<void>;
+  onToggleMembership?: (memberId: string, chapterMembershipActive: boolean) => void;
 }
 
 export function MemberManagement({
@@ -74,6 +77,7 @@ export function MemberManagement({
   onViewMember,
   onToggleStatus,
   onUpdateDues,
+  onToggleMembership,
 }: MemberManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
@@ -323,6 +327,9 @@ export function MemberManagement({
                     Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
+                    Membership
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
                     Progress
                   </th>
                   <th className="px-6 py-4 text-left text-xs text-white/80 uppercase tracking-wider font-semibold">
@@ -385,6 +392,26 @@ export function MemberManagement({
                         >
                           {member.isActive ? "Active" : "Inactive"}
                         </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        {onToggleMembership ? (
+                          <MembershipToggle
+                            memberId={member.id}
+                            memberName={member.name}
+                            chapterMembershipActive={member.chapterMembershipActive ?? false}
+                            onToggleMembership={onToggleMembership}
+                          />
+                        ) : (
+                          <Badge
+                            className={
+                              member.chapterMembershipActive
+                                ? "bg-green-500/30 text-white border-green-500/50"
+                                : "bg-white/20 text-white/70"
+                            }
+                          >
+                            {member.chapterMembershipActive ? "Paid" : "Unpaid"}
+                          </Badge>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <Badge
@@ -576,6 +603,15 @@ export function MemberManagement({
                       {progress.label}
                     </Badge>
                   </div>
+
+                  {onToggleMembership && (
+                    <MembershipToggle
+                      memberId={member.id}
+                      memberName={member.name}
+                      chapterMembershipActive={member.chapterMembershipActive ?? false}
+                      onToggleMembership={onToggleMembership}
+                    />
+                  )}
 
                   <div className="grid grid-cols-3 gap-4 text-center text-sm">
                     <div>

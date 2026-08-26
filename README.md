@@ -318,11 +318,12 @@ Most pages are client components (`"use client"`) because they need the JWT in t
 | `/events/[id]/edit` | Admin | Edit event |
 | `/checkin` | Member | Camera QR scanner |
 | `/attendance` | Member | Personal history |
-| `/members` | Member | Directory |
+| `/members` | Member | Redirects to `/friends` |
 | `/members/[id]` | Member | Public profile |
 | `/achievements` | Member | 111 / 333 progress |
 | `/leaderboard` | Member | Attendance / achievement ranks |
 | `/friends` | Member | Friends and requests |
+| `/changelog` | Member | What's new / patch notes |
 | `/settings` | Member | Profile and photo |
 | `/forgot-password` · `/reset-password` | Public | Reset flow |
 | `/auth/callback` | Public | OAuth return |
@@ -336,6 +337,8 @@ Most pages are client components (`"use client"`) because they need the JWT in t
 | `/admin/points` | Admin | Leaderboard, bulk award, history |
 
 Path alias: `@/*` → frontend root (`import { cn } from "@/lib/utils"`).
+
+**Changelog:** Signed-in members open **What's new** in the sidebar or top bar (`/changelog`). Entries live in `frontend/content/changelog.json` (newest first). Add an object with `version` (unique id, e.g. `2025-08-19`), `date` (ISO `YYYY-MM-DD`), and a one-sentence `summary`. The sidebar shows an unread dot until a member opens the page; clearing uses `localStorage` keyed by `version`.
 
 ---
 
@@ -372,6 +375,9 @@ Unless noted, routes expect a valid Supabase JWT. Admin-only routes also require
 | `GET` | `/members/admins` | Admin list |
 | `PUT` | `/members/:id/role` | Super admin |
 | `PUT` | `/members/:id/status` | Activate / deactivate |
+| `PUT` | `/members/:id/membership` | Mark chapter dues paid / unpaid (admin) |
+
+Chapter membership uses a check-on-read reset: if a member is marked paid but `chapterMembershipMarkedAt` is before the most recently elapsed **July 31 23:59 America/New_York** boundary, status is treated as unpaid until an admin re-marks it (Aug 1–July 31 membership year).
 
 ### Events — `/api/events`
 
