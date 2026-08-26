@@ -6,9 +6,18 @@ export class StorageService {
   private supabase: SupabaseClient;
 
   constructor() {
+    // Storage-only client: no browser session persistence. Realtime is unused
+    // here; Node 22+ provides the native WebSocket createClient still probes
+    // for during construction. Prefer Node 22 in Docker/Railpack/engines.
     this.supabase = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!, // Admin access
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
     );
   }
 
