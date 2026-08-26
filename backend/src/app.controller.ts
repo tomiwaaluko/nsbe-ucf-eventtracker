@@ -9,4 +9,10 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  /** Hostnames + roles for cutover verification (no secrets). */
+  @Get('health/db')
+  getDatabaseHealth() {
+    return this.appService.getDatabaseStatus();
+  }
 }
