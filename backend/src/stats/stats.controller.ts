@@ -49,8 +49,14 @@ export class StatsController {
    * GET /stats/leaderboard/me - Get my leaderboard position
    */
   @Get('leaderboard/me')
-  async getMyLeaderboardPosition(@Req() req, @Query('semester') semester?: string) {
-    return this.statsService.getMemberLeaderboardPosition(req.user.id, semester);
+  async getMyLeaderboardPosition(
+    @Req() req,
+    @Query('semester') semester?: string,
+  ) {
+    return this.statsService.getMemberLeaderboardPosition(
+      req.user.id,
+      semester,
+    );
   }
 
   /**
