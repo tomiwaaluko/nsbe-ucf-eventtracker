@@ -20,6 +20,12 @@ describe('AppController', () => {
     });
   });
 
+  describe('health', () => {
+    it('should return status ok', () => {
+      expect(appController.getHealth()).toEqual({ status: 'ok' });
+    });
+  });
+
   describe('health/db', () => {
     it('should report primary host kind without secrets', () => {
       const status = appController.getDatabaseHealth();
