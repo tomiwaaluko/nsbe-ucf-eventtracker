@@ -6,6 +6,26 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInterestStatus } from '@prisma/client';
 
+/**
+ * Safe event fields for member-facing interest responses.
+ *
+ * SECURITY: Prisma returns every scalar column when a relation is included
+ * without `select`. That leaked `qrSecret` and `checkInCode` on
+ * GET /event-interest/my (NSB-49 / NSB-37). Never replace this with a bare
+ * `include: { event: true }` or `include: { event: { include: ... } }`.
+ */
+const EVENT_INTEREST_PUBLIC_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  category: true,
+  semester: true,
+  startTime: true,
+  endTime: true,
+  location: true,
+  isActive: true,
+} as const;
+
 @Injectable()
 export class EventInterestService {
   constructor(private prisma: PrismaService) {}
@@ -65,12 +85,7 @@ export class EventInterestService {
       },
       include: {
         event: {
-          select: {
-            id: true,
-            name: true,
-            startTime: true,
-            location: true,
-          },
+          select: EVENT_INTEREST_PUBLIC_SELECT,
         },
       },
     });
@@ -114,17 +129,28 @@ export class EventInterestService {
   }
 
   /**
-   * Get all events user plans to attend
+   * Get all upcoming active events the user plans to attend.
+   *
+   * Omits soft-deleted (`isActive: false`) and past events. Never returns
+   * `qrSecret` or `checkInCode`.
    */
   async getMyPlannedEvents(memberId: string) {
+    const now = new Date();
     const interests = await this.prisma.eventInterest.findMany({
       where: {
         memberId,
         status: EventInterestStatus.PLANNING,
-      },
-      include: {
         event: {
-          include: {
+          isActive: true,
+          startTime: { gt: now },
+        },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        event: {
+          select: {
+            ...EVENT_INTEREST_PUBLIC_SELECT,
             _count: {
               select: {
                 eventInterests: {
@@ -144,16 +170,15 @@ export class EventInterestService {
       },
     });
 
-    // Filter out past events
-    const now = new Date();
-    return interests
-      .filter((i) => i.event.startTime > now)
-      .map((i) => ({
+    return interests.map((i) => {
+      const { _count, ...event } = i.event;
+      return {
         interestId: i.id,
-        event: i.event,
-        plannedCount: i.event._count.eventInterests,
+        event,
+        plannedCount: _count.eventInterests,
         markedAt: i.createdAt,
-      }));
+      };
+    });
   }
 
   /**
@@ -319,7 +344,12 @@ export class EventInterestService {
         isActive: true,
         ...(semester && { semester }),
       },
-      include: {
+      // Explicit select so admin stats never pull qrSecret / checkInCode.
+      select: {
+        id: true,
+        name: true,
+        startTime: true,
+        category: true,
         _count: {
           select: {
             eventInterests: {
