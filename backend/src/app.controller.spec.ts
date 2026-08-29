@@ -25,4 +25,13 @@ describe('AppController', () => {
       expect(appController.getHealth()).toEqual({ status: 'ok' });
     });
   });
+
+  describe('health/db', () => {
+    it('should report primary host kind without secrets', () => {
+      const status = appController.getDatabaseHealth();
+      expect(status.policy.expectedPrimary).toBe('supabase');
+      expect(status.primary).toHaveProperty('kind');
+      expect(status.backup).toHaveProperty('configured');
+    });
+  });
 });

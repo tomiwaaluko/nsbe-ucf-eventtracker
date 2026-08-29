@@ -2,7 +2,7 @@
 
 Full-stack web app for the UCF chapter of the [National Society of Black Engineers](https://nsbe.org/). It manages chapter events, tracks attendance with QR codes and short check-in codes, and rewards participation with semester achievements and a points system.
 
-**Live stack:** frontend on Vercel, backend on Railway, database and auth on Supabase.
+**Live stack:** frontend on Vercel, backend on Railway, **primary** database + auth on Supabase Postgres/Auth (Railway Postgres is backup only — see [`docs/database-primary-backup.md`](docs/database-primary-backup.md)).
 
 ---
 
@@ -157,10 +157,13 @@ Do not commit real secrets. Templates live at `backend/.env.example` and `fronte
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | Pooled Postgres URL (Supabase pooler in prod, local Docker in dev) |
-| `DIRECT_URL` | Yes | Direct Postgres URL (Prisma migrations / `db push`) |
+| `DATABASE_URL` | Yes | **Primary** pooled Postgres URL — must be **Supabase** in staging/production (local Docker in dev) |
+| `DIRECT_URL` | Yes | Direct Postgres URL for Prisma migrations / `db push` (same Supabase project) |
+| `BACKUP_DATABASE_URL` | Staging/prod recommended | **Backup only** — Railway Postgres URL; periodic primary→backup upsert target. Do not use as primary except DR |
+| `BACKUP_SYNC_INTERVAL_MS` | No | Mirror interval when backup is set (default `300000`; minimum `30000`) |
+| `ALLOW_RAILWAY_PRIMARY` | No | Disaster recovery only. If truthy, allows Railway as `DATABASE_URL` primary; otherwise the API refuses to boot on a Railway primary host |
 | `SUPABASE_JWT_SECRET` | Yes | Verifies the JWT from Supabase Auth (JWT Secret in project settings) |
-| `SUPABASE_URL` | For photos / admin Auth | Project URL |
+| `SUPABASE_URL` | For photos / admin Auth | Project URL (must match the same Supabase project as `DATABASE_URL`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | For photos / admin Auth | Server-side Supabase client — never expose to the browser |
 | `PORT` | No | Defaults to `4000` |
 | `FRONTEND_URL` | Recommended | Password-reset redirects |
@@ -193,6 +196,8 @@ Local CORS fallback (only when `NODE_ENV` is not `production` and `CORS_ORIGINS`
 ## Database
 
 Schema: [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma).
+
+**Deployed policy (NSB-51):** Supabase Postgres is the **primary** source of truth for Member / Event / Attendance / Friends / Points. Railway Postgres is **backup only** (kept running; mirrored on an interval when `BACKUP_DATABASE_URL` is set). Auth stays on Supabase Auth. Ops cutover, failover, and `npm run db:sync-backup` are documented in [`docs/database-primary-backup.md`](docs/database-primary-backup.md). Verify hosts with `GET /api/health/db` (hostnames only).
 
 This repo does not currently ship a `prisma/migrations` history. For local development, push the schema directly:
 
@@ -579,12 +584,14 @@ If you reduce ESLint errors, lower `MAX_ERRORS` in the same PR so the improvemen
 - Bind to `0.0.0.0:$PORT` (Nest uses `process.env.PORT`, which Railway/Render inject)
 - Image: `backend/Dockerfile` (multi-stage, `node:20-alpine`, user `nestjs`)
 - On Compose start: `prisma migrate deploy && npm run start:prod` — you need a migration history for that path
-- Production env must include `CORS_ORIGINS`, `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_JWT_SECRET`, and (if used) OAuth + `API_KEY`
+- Production/staging env must include `CORS_ORIGINS`, `DATABASE_URL`, `DIRECT_URL` (**Supabase** hosts), `SUPABASE_JWT_SECRET`, and (if used) OAuth + `API_KEY`
+- Set `BACKUP_DATABASE_URL` to Railway Postgres; leave `ALLOW_RAILWAY_PRIMARY` unset except documented DR ([`docs/database-primary-backup.md`](docs/database-primary-backup.md))
 - Filesystem is ephemeral; do not write uploads to disk — photos go to Supabase Storage
 
 **Supabase**
 
 - Copy the JWT secret into `SUPABASE_JWT_SECRET`
+- Point `DATABASE_URL` / `DIRECT_URL` at **this same** project’s Postgres (not Railway)
 - Create public bucket `profile-photos`
 - Configure Google/Discord redirect URLs to the **backend** callback URLs, not only the frontend
 

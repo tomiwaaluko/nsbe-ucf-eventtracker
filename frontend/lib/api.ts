@@ -299,6 +299,14 @@ export const api = {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("getMe API error:", response.status, errorText);
+      // Surface status so AuthFlow can distinguish session vs backend failures
+      // without treating every getMe failure as a successful login.
+      if (response.status === 401) {
+        throw new Error("Session expired");
+      }
+      if (response.status === 503) {
+        throw new Error("Backend unavailable");
+      }
       throw new Error(`Failed to fetch user data: ${response.statusText}`);
     }
     return response.json();
