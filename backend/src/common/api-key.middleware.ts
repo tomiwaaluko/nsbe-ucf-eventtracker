@@ -19,10 +19,11 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
-/** Paths that skip API key check (OAuth uses redirects, no custom headers possible) */
+/** Paths that skip API key check (OAuth redirects + platform health probes) */
 const SKIP_PATHS = [
   '/auth/oauth/google',
   '/auth/oauth/discord',
+  '/health',
 ];
 
 @Injectable()
