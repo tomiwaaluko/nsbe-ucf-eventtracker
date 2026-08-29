@@ -171,7 +171,7 @@ Do not commit real secrets. Templates live at `backend/.env.example` and `fronte
 | `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | For Discord login | Discord application |
 | `DISCORD_REDIRECT_URI` | For Discord login | `http://localhost:4000/api/auth/oauth/discord/callback` |
 | `API_KEY` | Recommended | Shared secret; if set, every request except OAuth redirects must send it |
-| `CORS_ORIGINS` | **Required in production** | Comma-separated frontend origins, e.g. `https://nsbeucf.org,https://www.nsbeucf.org` |
+| `CORS_ORIGINS` | **Required in production** | Comma-separated frontend origins, e.g. `https://nsbe-ucf-eventtracker-six.vercel.app` |
 | `JWT_SECRET` | Docker Compose only | Compose will not start without it |
 
 Local CORS fallback (only when `NODE_ENV` is not `production` and `CORS_ORIGINS` is empty): `http://localhost:3000` and `http://localhost:5173`. Production **refuses to boot** without `CORS_ORIGINS`.
@@ -565,22 +565,42 @@ If you reduce ESLint errors, lower `MAX_ERRORS` in the same PR so the improvemen
 
 - Root / app directory: `frontend`
 - Node 20
-- Set the `NEXT_PUBLIC_*` variables
-- Point `NEXT_PUBLIC_API_URL` at the Railway API (`https://<host>/api`) **or** rewrite `/api` to the backend and leave the variable unset
+- Production URL: `https://nsbe-ucf-eventtracker-six.vercel.app`
+- Set the `NEXT_PUBLIC_*` variables (see checklist below)
+- Point `NEXT_PUBLIC_API_URL` at the Railway API (`https://nsbe-ucf-eventtracker-production-4454.up.railway.app/api`) **or** rewrite `/api` to the backend and leave the variable unset
 
 **Backend (Railway / Docker)**
 
+- Production URL: `https://nsbe-ucf-eventtracker-production-4454.up.railway.app`
 - Bind to `0.0.0.0:$PORT` (Nest uses `process.env.PORT`, which Railway/Render inject)
 - Image: `backend/Dockerfile` (multi-stage, `node:20-alpine`, user `nestjs`)
 - On Compose start: `prisma migrate deploy && npm run start:prod` — you need a migration history for that path
-- Production env must include `CORS_ORIGINS`, `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_JWT_SECRET`, and (if used) OAuth + `API_KEY`
+- Production env must include `CORS_ORIGINS`, `FRONTEND_URL`, `APP_BASE_URL`, `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_JWT_SECRET`, and (if used) OAuth + `API_KEY`
+- Example production alignment: `CORS_ORIGINS`, `FRONTEND_URL`, and `APP_BASE_URL` all set to `https://nsbe-ucf-eventtracker-six.vercel.app`
 - Filesystem is ephemeral; do not write uploads to disk — photos go to Supabase Storage
 
-**Supabase**
+**Supabase** (project `nsbe-app`, ref `hzcdeyzpdqhucypmiqey`)
 
 - Copy the JWT secret into `SUPABASE_JWT_SECRET`
 - Create public bucket `profile-photos`
-- Configure Google/Discord redirect URLs to the **backend** callback URLs, not only the frontend
+- **Authentication → URL configuration**
+  - Site URL: `https://nsbe-ucf-eventtracker-six.vercel.app`
+  - Redirect URLs (add each):
+    - `https://nsbe-ucf-eventtracker-six.vercel.app/**`
+    - `http://localhost:3000/**` (local dev)
+- Configure Google/Discord redirect URLs to the **backend** callback URLs, not only the frontend:
+  - `https://nsbe-ucf-eventtracker-production-4454.up.railway.app/api/auth/oauth/google/callback`
+  - `https://nsbe-ucf-eventtracker-production-4454.up.railway.app/api/auth/oauth/discord/callback`
+
+**Vercel env checklist** (chapter team project — set in Vercel dashboard)
+
+| Variable | Production value |
+|---|---|
+| `NEXT_PUBLIC_APP_URL` | `https://nsbe-ucf-eventtracker-six.vercel.app` |
+| `NEXT_PUBLIC_API_URL` | `https://nsbe-ucf-eventtracker-production-4454.up.railway.app/api` |
+| `NEXT_PUBLIC_SUPABASE_URL` | From Supabase project settings |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | From Supabase project settings |
+| `NEXT_PUBLIC_API_KEY` | Must match Railway `API_KEY` if the gate is on |
 
 ---
 
