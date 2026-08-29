@@ -18,11 +18,20 @@ import { LinkOAuthDto } from './dto/link-oauth.dto';
 interface OAuthState {
   state: string;
   codeVerifier?: string;
+  /** Ignored for redirects (APP_BASE_URL is authoritative); kept for diagnostics. */
   redirectUri?: string;
+  /** `login` refuses new Member creation; `signup` / omitted allow create. */
+  mode?: 'login' | 'signup';
 }
 
-// In-memory store for OAuth state (use Redis in production)
+// In-memory store for OAuth state (per-process; multi-replica deploys need sticky
+// sessions or a shared store — see PR notes for NSB-38).
 const stateStore = new Map<string, OAuthState>();
+
+function parseOAuthMode(raw?: string): 'login' | 'signup' | undefined {
+  if (raw === 'login' || raw === 'signup') return raw;
+  return undefined;
+}
 
 @Controller('auth/oauth')
 export class OAuthController {
@@ -35,7 +44,11 @@ export class OAuthController {
    * Initiate Google OAuth flow
    */
   @Get('google')
-  async googleAuth(@Query('redirect_uri') redirectUri: string, @Res() res: Response) {
+  async googleAuth(
+    @Query('redirect_uri') redirectUri: string,
+    @Query('mode') mode: string,
+    @Res() res: Response,
+  ) {
     try {
       const state = this.oauthService.generateStateToken();
       const { codeVerifier, codeChallenge } = this.oauthService.generatePKCE();
@@ -45,6 +58,7 @@ export class OAuthController {
         state,
         codeVerifier,
         redirectUri,
+        mode: parseOAuthMode(mode),
       });
 
       // Clean up old states (older than 10 minutes)
@@ -94,8 +108,19 @@ export class OAuthController {
       const profile = await this.oauthService.handleGoogleCallback(code, storedState.codeVerifier);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked, isNewAccount } =
-        await this.oauthService.linkOrCreateAccount('google', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount, accountNotFound } =
+        await this.oauthService.linkOrCreateAccount('google', profile, {
+          allowCreate: storedState.mode !== 'login',
+        });
+
+      if (accountNotFound) {
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'No account found. Please sign up first.',
+          ),
+        );
+      }
 
       if (requiresLinking) {
         return res.redirect(
@@ -131,7 +156,11 @@ export class OAuthController {
    * Initiate Discord OAuth flow
    */
   @Get('discord')
-  async discordAuth(@Query('redirect_uri') redirectUri: string, @Res() res: Response) {
+  async discordAuth(
+    @Query('redirect_uri') redirectUri: string,
+    @Query('mode') mode: string,
+    @Res() res: Response,
+  ) {
     try {
       const state = this.oauthService.generateStateToken();
 
@@ -139,6 +168,7 @@ export class OAuthController {
       stateStore.set(state, {
         state,
         redirectUri,
+        mode: parseOAuthMode(mode),
       });
 
       // Clean up old states
@@ -188,8 +218,19 @@ export class OAuthController {
       const profile = await this.oauthService.handleDiscordCallback(code);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked, isNewAccount } =
-        await this.oauthService.linkOrCreateAccount('discord', profile);
+      const { member, requiresLinking, isAccountLinked, isNewAccount, accountNotFound } =
+        await this.oauthService.linkOrCreateAccount('discord', profile, {
+          allowCreate: storedState.mode !== 'login',
+        });
+
+      if (accountNotFound) {
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'No account found. Please sign up first.',
+          ),
+        );
+      }
 
       if (requiresLinking) {
         return res.redirect(

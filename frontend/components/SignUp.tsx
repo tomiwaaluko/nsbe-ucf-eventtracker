@@ -770,6 +770,7 @@ export function SignUp({
                     const oauthUrl = api.getOAuthUrl(
                       "google",
                       window.location.origin + "/auth/callback",
+                      "signup",
                     );
                     window.location.href = oauthUrl;
                   }}
@@ -821,6 +822,7 @@ export function SignUp({
                     const oauthUrl = api.getOAuthUrl(
                       "discord",
                       window.location.origin + "/auth/callback",
+                      "signup",
                     );
                     window.location.href = oauthUrl;
                   }}

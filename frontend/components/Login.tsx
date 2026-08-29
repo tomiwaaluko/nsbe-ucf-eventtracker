@@ -582,7 +582,11 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   type="button"
                   onClick={() => {
                     localStorage.setItem("oauth_mode", "login");
-                    const oauthUrl = api.getOAuthUrl("google", window.location.origin + "/auth/callback");
+                    const oauthUrl = api.getOAuthUrl(
+                      "google",
+                      window.location.origin + "/auth/callback",
+                      "login",
+                    );
                     window.location.href = oauthUrl;
                   }}
                   disabled={isLoading}
@@ -630,7 +634,11 @@ export function Login({ onLogin, onNavigate, isLoading = false }: LoginProps) {
                   type="button"
                   onClick={() => {
                     localStorage.setItem("oauth_mode", "login");
-                    const oauthUrl = api.getOAuthUrl("discord", window.location.origin + "/auth/callback");
+                    const oauthUrl = api.getOAuthUrl(
+                      "discord",
+                      window.location.origin + "/auth/callback",
+                      "login",
+                    );
                     window.location.href = oauthUrl;
                   }}
                   disabled={isLoading}

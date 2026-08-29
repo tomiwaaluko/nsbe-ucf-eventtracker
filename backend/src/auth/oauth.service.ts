@@ -62,8 +62,13 @@ export class OAuthService {
     }
 
     this.jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || '';
-    this.appBaseUrl = this.configService.get<string>('APP_BASE_URL') || 'http://localhost:3000';
-    this.oauthBaseUrl = this.configService.get<string>('OAUTH_BASE_URL') || 'http://localhost:4000';
+    // Trailing slash would produce `//auth/callback` in getRedirectUrl.
+    this.appBaseUrl = (
+      this.configService.get<string>('APP_BASE_URL') || 'http://localhost:3000'
+    ).replace(/\/$/, '');
+    this.oauthBaseUrl = (
+      this.configService.get<string>('OAUTH_BASE_URL') || 'http://localhost:4000'
+    ).replace(/\/$/, '');
 
     if (!this.jwtSecret) {
       throw new Error('SUPABASE_JWT_SECRET is required');
@@ -272,11 +277,25 @@ export class OAuthService {
 
   /**
    * Core account linking logic
+   *
+   * @param options.allowCreate When false (OAuth started from Login), refuse to
+   *   mint a new Member row. The previous Login UI rejected `is_new` tokens
+   *   client-side only — the backend had already created the account, so a
+   *   second Login attempt would succeed against an orphan row.
    */
   async linkOrCreateAccount(
     provider: OAuthProvider,
     profile: OAuthProfile,
-  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean; isAccountLinked: boolean }> {
+    options: { allowCreate?: boolean } = {},
+  ): Promise<{
+    member: any;
+    isNewAccount: boolean;
+    requiresLinking: boolean;
+    isAccountLinked: boolean;
+    accountNotFound?: boolean;
+  }> {
+    const allowCreate = options.allowCreate !== false;
+
     // Step 1: Check if OAuth account already exists
     const existingOAuthAccount = await this.prisma.oAuthAccount.findUnique({
       where: {
@@ -372,7 +391,17 @@ export class OAuthService {
       };
     }
 
-    // Step 3: Create new account
+    // Step 3: Create new account (signup / connect only)
+    if (!allowCreate) {
+      return {
+        member: null,
+        isNewAccount: false,
+        requiresLinking: false,
+        isAccountLinked: false,
+        accountNotFound: true,
+      };
+    }
+
     // First create Supabase Auth user, then use its ID for Member
     let supabaseUserId: string;
     
