@@ -62,16 +62,22 @@ export class OAuthController {
       });
 
       // Clean up old states (older than 10 minutes)
-      setTimeout(() => {
-        stateStore.delete(state);
-      }, 10 * 60 * 1000);
+      setTimeout(
+        () => {
+          stateStore.delete(state);
+        },
+        10 * 60 * 1000,
+      );
 
       const authUrl = this.oauthService.getGoogleAuthUrl(state, codeChallenge);
       return res.redirect(authUrl);
     } catch (error: any) {
       console.error('Google OAuth start error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, 'Failed to initiate Google OAuth'),
+        this.oauthService.getRedirectUrl(
+          undefined,
+          'Failed to initiate Google OAuth',
+        ),
       );
     }
   }
@@ -88,30 +94,53 @@ export class OAuthController {
   ) {
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Google OAuth error: ${error}`));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            `Google OAuth error: ${error}`,
+          ),
+        );
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'Missing code or state parameter',
+          ),
+        );
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'Invalid or expired state parameter',
+          ),
+        );
       }
 
       // Remove used state
       stateStore.delete(state);
 
       // Handle OAuth callback
-      const profile = await this.oauthService.handleGoogleCallback(code, storedState.codeVerifier);
+      const profile = await this.oauthService.handleGoogleCallback(
+        code,
+        storedState.codeVerifier,
+      );
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked, isNewAccount, accountNotFound } =
-        await this.oauthService.linkOrCreateAccount('google', profile, {
-          allowCreate: storedState.mode !== 'login',
-        });
+      const {
+        member,
+        requiresLinking,
+        isAccountLinked,
+        isNewAccount,
+        accountNotFound,
+      } = await this.oauthService.linkOrCreateAccount('google', profile, {
+        allowCreate: storedState.mode !== 'login',
+      });
 
       if (accountNotFound) {
         return res.redirect(
@@ -139,7 +168,15 @@ export class OAuthController {
 
       // Redirect to frontend with token
       return res.redirect(
-        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'google', isAccountLinked, isNewAccount),
+        this.oauthService.getRedirectUrl(
+          token,
+          undefined,
+          false,
+          undefined,
+          'google',
+          isAccountLinked,
+          isNewAccount,
+        ),
       );
     } catch (error: any) {
       // Log the detail; do not put it in a redirect URL. The browser follows
@@ -172,16 +209,22 @@ export class OAuthController {
       });
 
       // Clean up old states
-      setTimeout(() => {
-        stateStore.delete(state);
-      }, 10 * 60 * 1000);
+      setTimeout(
+        () => {
+          stateStore.delete(state);
+        },
+        10 * 60 * 1000,
+      );
 
       const authUrl = this.oauthService.getDiscordAuthUrl(state);
       return res.redirect(authUrl);
     } catch (error: any) {
       console.error('Discord OAuth start error:', error);
       return res.redirect(
-        this.oauthService.getRedirectUrl(undefined, 'Failed to initiate Discord OAuth'),
+        this.oauthService.getRedirectUrl(
+          undefined,
+          'Failed to initiate Discord OAuth',
+        ),
       );
     }
   }
@@ -198,17 +241,32 @@ export class OAuthController {
   ) {
     try {
       if (error) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, `Discord OAuth error: ${error}`));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            `Discord OAuth error: ${error}`,
+          ),
+        );
       }
 
       if (!code || !state) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Missing code or state parameter'));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'Missing code or state parameter',
+          ),
+        );
       }
 
       // Verify state
       const storedState = stateStore.get(state);
       if (!storedState) {
-        return res.redirect(this.oauthService.getRedirectUrl(undefined, 'Invalid or expired state parameter'));
+        return res.redirect(
+          this.oauthService.getRedirectUrl(
+            undefined,
+            'Invalid or expired state parameter',
+          ),
+        );
       }
 
       // Remove used state
@@ -218,10 +276,15 @@ export class OAuthController {
       const profile = await this.oauthService.handleDiscordCallback(code);
 
       // Link or create account
-      const { member, requiresLinking, isAccountLinked, isNewAccount, accountNotFound } =
-        await this.oauthService.linkOrCreateAccount('discord', profile, {
-          allowCreate: storedState.mode !== 'login',
-        });
+      const {
+        member,
+        requiresLinking,
+        isAccountLinked,
+        isNewAccount,
+        accountNotFound,
+      } = await this.oauthService.linkOrCreateAccount('discord', profile, {
+        allowCreate: storedState.mode !== 'login',
+      });
 
       if (accountNotFound) {
         return res.redirect(
@@ -249,7 +312,15 @@ export class OAuthController {
 
       // Redirect to frontend with token
       return res.redirect(
-        this.oauthService.getRedirectUrl(token, undefined, false, undefined, 'discord', isAccountLinked, isNewAccount),
+        this.oauthService.getRedirectUrl(
+          token,
+          undefined,
+          false,
+          undefined,
+          'discord',
+          isAccountLinked,
+          isNewAccount,
+        ),
       );
     } catch (error: any) {
       console.error('Discord OAuth callback error:', error);
@@ -264,10 +335,7 @@ export class OAuthController {
    */
   @Post('link')
   @UseGuards(JwtAuthGuard)
-  async linkAccount(
-    @Req() req: Request,
-    @Body() body: LinkOAuthDto,
-  ) {
+  async linkAccount(@Req() req: Request, @Body() body: LinkOAuthDto) {
     try {
       const userId = (req as any).user.id;
       const { provider, code, state } = body;
@@ -287,7 +355,10 @@ export class OAuthController {
       // Get profile from OAuth provider
       const profile =
         provider === 'google'
-          ? await this.oauthService.handleGoogleCallback(code, storedState.codeVerifier)
+          ? await this.oauthService.handleGoogleCallback(
+              code,
+              storedState.codeVerifier,
+            )
           : await this.oauthService.handleDiscordCallback(code);
 
       // Check if OAuth account already linked to another user
@@ -301,7 +372,9 @@ export class OAuthController {
       });
 
       if (existingOAuthAccount) {
-        throw new BadRequestException('This OAuth account is already linked to another user');
+        throw new BadRequestException(
+          'This OAuth account is already linked to another user',
+        );
       }
 
       // Get current user
@@ -365,4 +438,3 @@ export class OAuthController {
     }
   }
 }
-

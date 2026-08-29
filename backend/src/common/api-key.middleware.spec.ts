@@ -20,10 +20,11 @@ describe('ApiKeyMiddleware OAuth exemptions', () => {
     const middleware = new ApiKeyMiddleware();
     const req = { originalUrl: path, headers: {} } as unknown as Request;
     const json = jest.fn();
-    const res = { status: jest.fn().mockReturnValue({ json }) } as unknown as Response;
-    const next = jest.fn() as NextFunction;
-    middleware.use(req, res, next);
-    return { next, res, json };
+    const status = jest.fn().mockReturnValue({ json });
+    const res = { status } as unknown as Response;
+    const next = jest.fn();
+    middleware.use(req, res, next as NextFunction);
+    return { next, status, json };
   }
 
   it.each([
@@ -34,15 +35,17 @@ describe('ApiKeyMiddleware OAuth exemptions', () => {
     '/api/auth/oauth/google?mode=login',
     '/api/health',
   ])('skips API key for %s', (path) => {
-    const { next, res } = run(path);
+    const { next, status } = run(path);
     expect(next).toHaveBeenCalled();
-    expect(res.status).not.toHaveBeenCalled();
+    expect(status).not.toHaveBeenCalled();
   });
 
   it('rejects protected routes without a key', () => {
-    const { next, res, json } = run('/api/events');
+    const { next, status, json } = run('/api/events');
     expect(next).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(json).toHaveBeenCalledWith({ message: 'Invalid or missing API key' });
+    expect(status).toHaveBeenCalledWith(401);
+    expect(json).toHaveBeenCalledWith({
+      message: 'Invalid or missing API key',
+    });
   });
 });

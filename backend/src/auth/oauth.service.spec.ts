@@ -30,7 +30,8 @@ describe('OAuthService.linkOrCreateAccount', () => {
     GOOGLE_CLIENT_ID: 'google-client-id',
     GOOGLE_REDIRECT_URI: 'http://localhost:4000/api/auth/oauth/google/callback',
     DISCORD_CLIENT_ID: 'discord-client-id',
-    DISCORD_REDIRECT_URI: 'http://localhost:4000/api/auth/oauth/discord/callback',
+    DISCORD_REDIRECT_URI:
+      'http://localhost:4000/api/auth/oauth/discord/callback',
   };
 
   beforeEach(async () => {
@@ -65,10 +66,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     // The victim's member row exists with that address.
     prisma.member.findUnique.mockResolvedValue({ id: 'admin-member-id' });
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     // The caller mints a JWT from `member`, so it must be null here.
     expect(result.member).toBeNull();
@@ -89,10 +87,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     prisma.oAuthAccount.findUnique.mockResolvedValue(null);
     prisma.member.findUnique.mockResolvedValue(null); // nobody owns it yet
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     expect(result.member).toBeNull();
     expect(result.requiresLinking).toBe(true);
@@ -110,10 +105,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     });
     prisma.oAuthAccount.create.mockResolvedValue({});
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(true) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(true));
 
     expect(result.isAccountLinked).toBe(true);
     expect(result.requiresLinking).toBe(false);
@@ -125,10 +117,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     const user = { id: 'known-member', role: 'member' };
     prisma.oAuthAccount.findUnique.mockResolvedValue({ user });
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     // An already-linked identity was proven at link time, so verification
     // status on this login is irrelevant.
@@ -140,11 +129,9 @@ describe('OAuthService.linkOrCreateAccount', () => {
     prisma.oAuthAccount.findUnique.mockResolvedValue(null);
     prisma.member.findUnique.mockResolvedValue(null);
 
-    const result = await service.linkOrCreateAccount(
-      'google',
-      profile(true) as any,
-      { allowCreate: false },
-    );
+    const result = await service.linkOrCreateAccount('google', profile(true), {
+      allowCreate: false,
+    });
 
     expect(result.accountNotFound).toBe(true);
     expect(result.member).toBeNull();
@@ -162,11 +149,9 @@ describe('OAuthService.linkOrCreateAccount', () => {
     });
     prisma.oAuthAccount.create.mockResolvedValue({});
 
-    const result = await service.linkOrCreateAccount(
-      'google',
-      profile(true) as any,
-      { allowCreate: false },
-    );
+    const result = await service.linkOrCreateAccount('google', profile(true), {
+      allowCreate: false,
+    });
 
     expect(result.accountNotFound).toBeUndefined();
     expect(result.isAccountLinked).toBe(true);
@@ -185,7 +170,11 @@ describe('OAuthService URL helpers', () => {
           provide: PrismaService,
           useValue: {
             oAuthAccount: { findUnique: jest.fn(), create: jest.fn() },
-            member: { findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
+            member: {
+              findUnique: jest.fn(),
+              update: jest.fn(),
+              create: jest.fn(),
+            },
           },
         },
         {
@@ -193,7 +182,8 @@ describe('OAuthService URL helpers', () => {
           useValue: {
             get: (key: string) =>
               ({
-                SUPABASE_JWT_SECRET: 'test-secret-value-not-used-for-signing-here',
+                SUPABASE_JWT_SECRET:
+                  'test-secret-value-not-used-for-signing-here',
                 APP_BASE_URL: 'https://app.example.com/',
                 OAUTH_BASE_URL: 'https://api.example.com/',
                 GOOGLE_CLIENT_ID: 'google-client-id',
