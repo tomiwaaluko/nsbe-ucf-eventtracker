@@ -12,7 +12,9 @@ export class AuthService {
     private configService: ConfigService,
   ) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseServiceKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceKey = this.configService.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
     if (supabaseUrl && supabaseServiceKey) {
       this.supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: { autoRefreshToken: false, persistSession: false },

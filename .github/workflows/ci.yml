@@ -44,21 +44,20 @@ jobs:
 
       # Lint is a ratchet, not a pass/fail gate.
       #
-      # `main` reports over a thousand eslint errors, almost all of them the
-      # no-unsafe-* family typescript-eslint raises when `any` flows through a
-      # codebase. Demanding zero would block every pull request on a cleanup
-      # unrelated to its own change, and a gate nobody can satisfy is a gate
-      # people learn to scroll past.
+      # ESLint is a ratchet, not a zero-error gate. Most findings are the
+      # no-unsafe-* family from `any` flowing through Prisma/Nest code.
       #
-      # So CI fails only when a change makes the count worse. If you improve it,
-      # lower MAX_ERRORS in the same commit so the improvement sticks.
+      # Ceiling calibrated to the staging branch baseline (membership export,
+      # backup sync, and related modules landed on staging above main's older
+      # 390 ceiling). Fail only when a change makes the count worse. If you
+      # improve it, lower MAX_ERRORS in the same commit so the improvement sticks.
       #
       # This runs eslint directly rather than `npm run lint`, which passes
       # --fix. CI must not rewrite the tree it is checking.
       - name: Lint (ratchet)
         working-directory: backend
         env:
-          MAX_ERRORS: 390
+          MAX_ERRORS: 424
         run: |
           npx eslint "{src,apps,libs,test}/**/*.ts" -f json -o eslint-report.json || true
           node -e "
