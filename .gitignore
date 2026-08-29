@@ -97,3 +97,4 @@ backend/*.tsbuildinfo
 # throwaway files instead of every markdown file in the repo.
 NOTES.md
 SCRATCH.md
+.worktrees/
