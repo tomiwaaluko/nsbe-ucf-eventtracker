@@ -51,8 +51,14 @@ describe('StatsController', () => {
     const expected = getCurrentSemester();
 
     it('getMyProgress defaults to current semester when query is missing', async () => {
-      await controller.getMyProgress({ user: { id: 'm1' } }, undefined as unknown as string);
-      expect(statsService.getMemberProgress).toHaveBeenCalledWith('m1', expected);
+      await controller.getMyProgress(
+        { user: { id: 'm1' } },
+        undefined as unknown as string,
+      );
+      expect(statsService.getMemberProgress).toHaveBeenCalledWith(
+        'm1',
+        expected,
+      );
     });
 
     it('get111Leaderboard defaults to current semester when query is missing', async () => {
@@ -66,13 +72,19 @@ describe('StatsController', () => {
     });
 
     it('getAdminStats defaults to current semester when query is missing', async () => {
-      await controller.getAdminStats({ user: { id: 'a1' } }, undefined as unknown as string);
+      await controller.getAdminStats(
+        { user: { id: 'a1' } },
+        undefined as unknown as string,
+      );
       expect(statsService.getAdminStats).toHaveBeenCalledWith(expected);
     });
 
     it('preserves an explicit semester query param', async () => {
       await controller.getMyProgress({ user: { id: 'm1' } }, 'Spring 2025');
-      expect(statsService.getMemberProgress).toHaveBeenCalledWith('m1', 'Spring 2025');
+      expect(statsService.getMemberProgress).toHaveBeenCalledWith(
+        'm1',
+        'Spring 2025',
+      );
     });
   });
 
