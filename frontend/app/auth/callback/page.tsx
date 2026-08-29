@@ -16,8 +16,9 @@ function CallbackContent() {
       const type = hashParams.get("type");
 
       if (type === "recovery") {
-        // Password reset flow - redirect to reset-password page with hash intact
-        router.push(`/reset-password${window.location.hash}`);
+        // Full navigation preserves the hash; Next.js router.push can drop it.
+        // Prefer backend redirectTo=/reset-password; this is a fallback.
+        window.location.replace(`/reset-password${window.location.hash}`);
         return;
       }
 

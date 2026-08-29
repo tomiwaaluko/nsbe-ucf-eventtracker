@@ -188,27 +188,40 @@ export class AuthService {
       throw new Error('Supabase Admin not configured');
     }
 
-    // Check if user exists
+    // Members are stored lowercase; normalize so mixed-case input still matches.
+    const normalizedEmail = email.toLowerCase().trim();
+
     const member = await this.prisma.member.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!member) {
       // Don't reveal whether email exists or not for security
-      return { success: true, message: 'If an account exists, a password reset email has been sent.' };
+      return {
+        success: true,
+        message: 'If an account exists, a password reset email has been sent.',
+      };
     }
 
-    // Send password reset email via Supabase
-    // Supabase will redirect to auth/callback first, which will then redirect to reset-password
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const { error } = await this.supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${frontendUrl}/auth/callback`,
-    });
+    // Redirect straight to /reset-password so the recovery hash/code is not
+    // lost on an intermediate client-side hop through /auth/callback.
+    // /reset-password must be listed in the Supabase Auth redirect allow-list.
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const { error } = await this.supabaseAdmin.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo: `${frontendUrl.replace(/\/$/, '')}/reset-password`,
+      },
+    );
 
     if (error) {
       throw new Error(`Failed to send password reset email: ${error.message}`);
     }
 
-    return { success: true, message: 'If an account exists, a password reset email has been sent.' };
+    return {
+      success: true,
+      message: 'If an account exists, a password reset email has been sent.',
+    };
   }
 }
