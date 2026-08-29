@@ -3,12 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Eye, EyeOff, Lock, Loader2, CheckCircle2 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabase";
 
 interface ResetPasswordProps {
   onNavigate: (page: "login") => void;
@@ -19,21 +14,80 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
-  const [touched, setTouched] = useState<{ password?: boolean; confirmPassword?: boolean }>({});
+  const [errors, setErrors] = useState<{
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    password?: boolean;
+    confirmPassword?: boolean;
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tokenError, setTokenError] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid recovery token
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get("access_token");
-    const type = hashParams.get("type");
+    let cancelled = false;
 
-    if (!accessToken || type !== "recovery") {
-      setTokenError(true);
-    }
+    const establishRecoverySession = async () => {
+      try {
+        const hashParams = new URLSearchParams(
+          window.location.hash.substring(1)
+        );
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        const type = hashParams.get("type");
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get("code");
+
+        // PKCE: exchange ?code= for a session (client-initiated reset flows)
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          if (!cancelled) {
+            window.history.replaceState(null, "", window.location.pathname);
+            setSessionReady(true);
+          }
+          return;
+        }
+
+        // Implicit: set session from hash tokens (admin/API-initiated reset)
+        if (accessToken && refreshToken && type === "recovery") {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          if (!cancelled) {
+            window.history.replaceState(null, "", window.location.pathname);
+            setSessionReady(true);
+          }
+          return;
+        }
+
+        // detectSessionInUrl may already have consumed the hash/code
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          if (!cancelled) setSessionReady(true);
+          return;
+        }
+
+        if (!cancelled) setTokenError(true);
+      } catch (err) {
+        console.error("Failed to establish recovery session:", err);
+        if (!cancelled) setTokenError(true);
+      }
+    };
+
+    establishRecoverySession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const validatePassword = (password: string) => {
@@ -58,7 +112,10 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
 
   const handleConfirmPasswordBlur = () => {
     setTouched({ ...touched, confirmPassword: true });
-    setErrors({ ...errors, confirmPassword: validateConfirmPassword(confirmPassword) });
+    setErrors({
+      ...errors,
+      confirmPassword: validateConfirmPassword(confirmPassword),
+    });
   };
 
   const getPasswordStrength = (password: string) => {
@@ -72,8 +129,22 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
   };
 
   const passwordStrength = getPasswordStrength(password);
-  const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
-  const strengthColors = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-[#00843D]", "bg-[#00843D]"];
+  const strengthLabels = [
+    "",
+    "Weak",
+    "Fair",
+    "Good",
+    "Strong",
+    "Very Strong",
+  ];
+  const strengthColors = [
+    "",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-[#00843D]",
+    "bg-[#00843D]",
+  ];
 
   const passwordRequirements = [
     { label: "At least 8 characters", met: password.length >= 8 },
@@ -88,28 +159,44 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
     const passwordError = validatePassword(password);
     const confirmPasswordError = validateConfirmPassword(confirmPassword);
 
-    setErrors({ password: passwordError, confirmPassword: confirmPasswordError });
+    setErrors({
+      password: passwordError,
+      confirmPassword: confirmPasswordError,
+    });
     setTouched({ password: true, confirmPassword: true });
 
     if (!passwordError && !confirmPasswordError) {
       setIsLoading(true);
 
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error(
+            "Your reset link is invalid or has expired. Please request a new one."
+          );
+        }
+
         const { error } = await supabase.auth.updateUser({
           password: password,
         });
 
         if (error) throw error;
 
+        // Clear recovery session so the user signs in fresh with the new password
+        await supabase.auth.signOut();
+        localStorage.removeItem("token");
+
         setSuccess(true);
 
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           onNavigate("login");
         }, 3000);
       } catch (err: any) {
         setErrors({
-          password: err.message || "Failed to reset password. Please try again."
+          password:
+            err.message || "Failed to reset password. Please try again.",
         });
       } finally {
         setIsLoading(false);
@@ -121,7 +208,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
@@ -134,7 +220,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
             </div>
           </div>
 
-          {/* Error Card */}
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -145,7 +230,8 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
               Invalid Reset Link
             </h2>
             <p className="text-gray-600 mb-6">
-              This password reset link is invalid or has expired. Please request a new password reset email.
+              This password reset link is invalid or has expired. Please request
+              a new password reset email.
             </p>
             <Button
               onClick={() => onNavigate("login")}
@@ -159,11 +245,21 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
     );
   }
 
+  if (!sessionReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#00843D] mx-auto" />
+          <p className="text-gray-600">Verifying reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
@@ -176,7 +272,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
             </div>
           </div>
 
-          {/* Success Card */}
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -201,7 +296,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-[#00843D] rounded-lg flex items-center justify-center">
@@ -214,26 +308,23 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
           </div>
         </div>
 
-        {/* Card */}
         <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-[#00843D]/10 rounded-full flex items-center justify-center">
               <Lock className="h-8 w-8 text-[#00843D]" />
             </div>
           </div>
 
-          {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Reset Your Password
+            </h2>
             <p className="text-gray-600">
               Enter a new password for your account
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* New Password */}
             <div className="space-y-2">
               <Label htmlFor="password" className="text-gray-700">
                 New Password
@@ -263,11 +354,14 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
-              
-              {/* Password Strength Indicator */}
+
               {password && (
                 <div className="space-y-2">
                   <div className="flex gap-1">
@@ -275,26 +369,32 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
                       <div
                         key={level}
                         className={`h-1 flex-1 rounded-full transition-colors ${
-                          passwordStrength >= level ? strengthColors[passwordStrength] : "bg-gray-200"
+                          passwordStrength >= level
+                            ? strengthColors[passwordStrength]
+                            : "bg-gray-200"
                         }`}
                       />
                     ))}
                   </div>
                   <p className="text-xs text-gray-600">
-                    Strength: <span className="font-medium">{strengthLabels[passwordStrength]}</span>
+                    Strength:{" "}
+                    <span className="font-medium">
+                      {strengthLabels[passwordStrength]}
+                    </span>
                   </p>
                 </div>
               )}
-              
+
               {touched.password && errors.password && (
                 <p className="text-sm text-red-600">⚠ {errors.password}</p>
               )}
             </div>
 
-            {/* Password Requirements */}
             {password && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-medium text-gray-700 mb-2">Password must contain:</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Password must contain:
+                </p>
                 {passwordRequirements.map((req, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <div
@@ -302,9 +402,15 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
                         req.met ? "bg-[#00843D]" : "bg-gray-300"
                       }`}
                     >
-                      {req.met && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      {req.met && (
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      )}
                     </div>
-                    <span className={`text-sm ${req.met ? "text-gray-700" : "text-gray-500"}`}>
+                    <span
+                      className={`text-sm ${
+                        req.met ? "text-gray-700" : "text-gray-500"
+                      }`}
+                    >
                       {req.label}
                     </span>
                   </div>
@@ -312,7 +418,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
               </div>
             )}
 
-            {/* Confirm Password */}
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-gray-700">
                 Confirm New Password
@@ -331,27 +436,40 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
                       ? "border-red-500 focus-visible:ring-red-500/20"
                       : ""
                   }`}
-                  aria-invalid={touched.confirmPassword && !!errors.confirmPassword}
+                  aria-invalid={
+                    touched.confirmPassword && !!errors.confirmPassword
+                  }
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
                   disabled={isLoading}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
               {touched.confirmPassword && errors.confirmPassword && (
-                <p className="text-sm text-red-600">⚠ {errors.confirmPassword}</p>
-              )}
-              {password && confirmPassword && !errors.confirmPassword && confirmPassword === password && (
-                <p className="text-sm text-[#00843D] flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4" /> Passwords match
+                <p className="text-sm text-red-600">
+                  ⚠ {errors.confirmPassword}
                 </p>
               )}
+              {password &&
+                confirmPassword &&
+                !errors.confirmPassword &&
+                confirmPassword === password && (
+                  <p className="text-sm text-[#00843D] flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4" /> Passwords match
+                  </p>
+                )}
             </div>
 
             <Button
@@ -371,7 +489,6 @@ export function ResetPassword({ onNavigate }: ResetPasswordProps) {
           </form>
         </div>
 
-        {/* Help Text */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Remember your password?{" "}

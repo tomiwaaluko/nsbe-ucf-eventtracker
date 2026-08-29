@@ -36,7 +36,6 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     lastName: "",
     role: "member",
   });
-  const [resetToken, setResetToken] = useState("");
 
   // Authentication handlers with real Supabase integration
   const handleLogin = async (email: string, password: string) => {
@@ -202,56 +201,10 @@ export function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     }
   };
 
-  const handleForgotPassword = async (email: string) => {
-    setIsLoading(true);
+  // Forgot/reset password: ForgotPassword uses api.forgotPassword (backend).
+  // Email links land on /reset-password, which calls supabase.auth.updateUser.
+  // Do not call Supabase resetPasswordForEmail from the client here.
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${getOAuthRedirectBase()}/reset-password`,
-      });
-
-      if (error) throw error;
-
-      toast.success("Email sent!", {
-        description: "Check your inbox for password reset instructions.",
-      });
-
-      // Store email for reference
-      setUserData({ ...userData, email });
-
-      // In production, user clicks link in email
-      // For now, show success message
-      setTimeout(() => {
-        setCurrentPage("login");
-      }, 3000);
-    } catch (error: any) {
-      toast.error("Failed to send reset email", {
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (password: string, token: string) => {
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-
-      toast.success("Password reset successful!", {
-        description: "You can now sign in with your new password.",
-      });
-
-      setCurrentPage("success-password-reset");
-
-      // Auto-navigate to login after 3 seconds
-      setTimeout(() => {
-        setCurrentPage("login");
-      }, 3000);
-    }, 1500);
-  };
 
   const handleOnboardingComplete = () => {
     toast.success("You're all set!", {

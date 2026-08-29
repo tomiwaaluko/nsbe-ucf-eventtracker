@@ -12,7 +12,9 @@ type MemberMock = {
   upsert: jest.Mock;
 };
 
-const buildService = async (): Promise<{
+const buildService = async (
+  config: Record<string, string> = {},
+): Promise<{
   service: AuthService;
   member: MemberMock;
 }> => {
@@ -28,7 +30,10 @@ const buildService = async (): Promise<{
     providers: [
       AuthService,
       { provide: PrismaService, useValue: { member } },
-      { provide: ConfigService, useValue: { get: jest.fn() } },
+      {
+        provide: ConfigService,
+        useValue: { get: jest.fn((key: string) => config[key]) },
+      },
     ],
   }).compile();
 
@@ -222,5 +227,84 @@ describe('AuthService.checkDuplicateUser', () => {
     expect(
       await service.checkDuplicateUser('New', 'Person', 'new@example.com'),
     ).toEqual({ exists: false, matchType: null });
+  });
+});
+
+describe('AuthService.requestPasswordReset', () => {
+  let service: AuthService;
+  let member: MemberMock;
+  const resetPasswordForEmail = jest.fn();
+
+  const attachSupabaseAdmin = (svc: AuthService) => {
+    (svc as unknown as { supabaseAdmin: unknown }).supabaseAdmin = {
+      auth: { resetPasswordForEmail },
+    };
+  };
+
+  beforeEach(async () => {
+    resetPasswordForEmail.mockReset();
+    resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+    ({ service, member } = await buildService({
+      FRONTEND_URL: 'https://app.example.com',
+    }));
+    attachSupabaseAdmin(service);
+  });
+
+  it('returns a generic success when no member exists (no enumeration)', async () => {
+    member.findUnique.mockResolvedValueOnce(null);
+
+    const result = await service.requestPasswordReset('missing@example.com');
+
+    expect(result.success).toBe(true);
+    expect(resetPasswordForEmail).not.toHaveBeenCalled();
+  });
+
+  it('normalizes email case and redirects to /reset-password', async () => {
+    member.findUnique.mockResolvedValueOnce({ id: 'm-1' });
+
+    await service.requestPasswordReset('MiXeD@Example.COM');
+
+    expect(member.findUnique).toHaveBeenCalledWith({
+      where: { email: 'mixed@example.com' },
+    });
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('mixed@example.com', {
+      redirectTo: 'https://app.example.com/reset-password',
+    });
+  });
+
+  it('strips a trailing slash from FRONTEND_URL in redirectTo', async () => {
+    ({ service, member } = await buildService({
+      FRONTEND_URL: 'https://app.example.com/',
+    }));
+    attachSupabaseAdmin(service);
+    member.findUnique.mockResolvedValueOnce({ id: 'm-1' });
+
+    await service.requestPasswordReset('user@example.com');
+
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('user@example.com', {
+      redirectTo: 'https://app.example.com/reset-password',
+    });
+  });
+
+  it('throws when Supabase Admin is not configured', async () => {
+    ({ service, member } = await buildService());
+    // Do not attach supabaseAdmin
+    member.findUnique.mockResolvedValueOnce({ id: 'm-1' });
+
+    await expect(
+      service.requestPasswordReset('user@example.com'),
+    ).rejects.toThrow('Supabase Admin not configured');
+  });
+
+  it('throws when Supabase returns an error', async () => {
+    member.findUnique.mockResolvedValueOnce({ id: 'm-1' });
+    resetPasswordForEmail.mockResolvedValueOnce({
+      data: {},
+      error: { message: 'rate limited' },
+    });
+
+    await expect(
+      service.requestPasswordReset('user@example.com'),
+    ).rejects.toThrow('Failed to send password reset email: rate limited');
   });
 });
