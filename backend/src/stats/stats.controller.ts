@@ -11,6 +11,7 @@ import { StatsService } from './stats.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { MembersService } from '../members/members.service';
 import { isAdmin } from '../common/roles.util';
+import { getCurrentSemester } from '../common/semester.util';
 
 @Controller('stats')
 @UseGuards(JwtAuthGuard)
@@ -23,7 +24,7 @@ export class StatsController {
   @Get('me')
   async getMyProgress(@Req() req, @Query('semester') semester: string) {
     if (!semester) {
-      semester = 'Fall 2024'; // default
+      semester = getCurrentSemester();
     }
     return this.statsService.getMemberProgress(req.user.id, semester);
   }
@@ -31,7 +32,7 @@ export class StatsController {
   @Get('leaderboard/111')
   async get111Leaderboard(@Query('semester') semester: string) {
     if (!semester) {
-      semester = 'Fall 2024'; // default
+      semester = getCurrentSemester();
     }
     return this.statsService.get111Leaderboard(semester);
   }
@@ -39,7 +40,7 @@ export class StatsController {
   @Get('leaderboard/333')
   async get333Leaderboard(@Query('semester') semester: string) {
     if (!semester) {
-      semester = 'Fall 2024'; // default
+      semester = getCurrentSemester();
     }
     return this.statsService.get333Leaderboard(semester);
   }
@@ -107,7 +108,7 @@ export class StatsController {
       throw new ForbiddenException('Admin access required');
     }
     if (!semester) {
-      semester = 'Fall 2024'; // default
+      semester = getCurrentSemester();
     }
     return this.statsService.getAdminStats(semester);
   }
