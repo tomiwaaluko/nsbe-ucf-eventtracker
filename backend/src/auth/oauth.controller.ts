@@ -163,6 +163,12 @@ export class OAuthController {
         );
       }
 
+      if (!member) {
+        return res.redirect(
+          this.oauthService.getRedirectUrl(undefined, 'Authentication failed'),
+        );
+      }
+
       // Generate JWT
       const token = this.oauthService.generateJWT(member);
 
@@ -304,6 +310,12 @@ export class OAuthController {
             profile.email || undefined,
             'discord',
           ),
+        );
+      }
+
+      if (!member) {
+        return res.redirect(
+          this.oauthService.getRedirectUrl(undefined, 'Authentication failed'),
         );
       }
 
