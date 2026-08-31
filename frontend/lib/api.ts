@@ -246,10 +246,19 @@ export const api = {
   },
 
   // OAuth
-  getOAuthUrl: (provider: "google" | "discord", redirectUri?: string) => {
+  getOAuthUrl: (
+    provider: "google" | "discord",
+    redirectUri?: string,
+    mode?: "login" | "signup",
+  ) => {
     const params = new URLSearchParams();
     if (redirectUri) {
       params.set("redirect_uri", redirectUri);
+    }
+    // Backend uses APP_BASE_URL for the post-callback redirect; mode controls
+    // whether a brand-new Member may be created (login = refuse).
+    if (mode) {
+      params.set("mode", mode);
     }
     return `${API_URL}/auth/oauth/${provider}?${params.toString()}`;
   },

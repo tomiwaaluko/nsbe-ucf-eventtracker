@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { OAuth2Client } from 'google-auth-library';
@@ -48,8 +52,12 @@ export class OAuthService {
     private configService: ConfigService,
   ) {
     const googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-    const googleClientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET');
-    const googleRedirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI');
+    const googleClientSecret = this.configService.get<string>(
+      'GOOGLE_CLIENT_SECRET',
+    );
+    const googleRedirectUri = this.configService.get<string>(
+      'GOOGLE_REDIRECT_URI',
+    );
 
     if (!googleClientId || !googleClientSecret || !googleRedirectUri) {
       console.warn('Google OAuth credentials not configured');
@@ -61,9 +69,16 @@ export class OAuthService {
       );
     }
 
-    this.jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET') || '';
-    this.appBaseUrl = this.configService.get<string>('APP_BASE_URL') || 'http://localhost:3000';
-    this.oauthBaseUrl = this.configService.get<string>('OAUTH_BASE_URL') || 'http://localhost:4000';
+    this.jwtSecret =
+      this.configService.get<string>('SUPABASE_JWT_SECRET') || '';
+    // Trailing slash would produce `//auth/callback` in getRedirectUrl.
+    this.appBaseUrl = (
+      this.configService.get<string>('APP_BASE_URL') || 'http://localhost:3000'
+    ).replace(/\/$/, '');
+    this.oauthBaseUrl = (
+      this.configService.get<string>('OAUTH_BASE_URL') ||
+      'http://localhost:4000'
+    ).replace(/\/$/, '');
 
     if (!this.jwtSecret) {
       throw new Error('SUPABASE_JWT_SECRET is required');
@@ -71,8 +86,10 @@ export class OAuthService {
 
     // Initialize Supabase Admin client for creating Auth users
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseServiceKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
-    
+    const supabaseServiceKey = this.configService.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
+
     if (supabaseUrl && supabaseServiceKey) {
       this.supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
@@ -81,7 +98,9 @@ export class OAuthService {
         },
       });
     } else {
-      console.warn('Supabase Admin credentials not configured - OAuth users will not appear in Supabase Auth');
+      console.warn(
+        'Supabase Admin credentials not configured - OAuth users will not appear in Supabase Auth',
+      );
     }
   }
 
@@ -150,14 +169,17 @@ export class OAuthService {
   /**
    * Exchange Google authorization code for tokens and fetch profile
    */
-  async handleGoogleCallback(code: string, codeVerifier?: string): Promise<OAuthProfile> {
+  async handleGoogleCallback(
+    code: string,
+    codeVerifier?: string,
+  ): Promise<OAuthProfile> {
     try {
       // When using PKCE, we must pass the code verifier
       const tokenOptions: any = { code };
       if (codeVerifier) {
         tokenOptions.codeVerifier = codeVerifier;
       }
-      
+
       const { tokens } = await this.googleClient.getToken(tokenOptions);
       if (!tokens.id_token) {
         throw new BadRequestException('Failed to get ID token from Google');
@@ -204,14 +226,14 @@ export class OAuthService {
         response: error.response?.data,
         codeVerifierProvided: !!codeVerifier,
       });
-      
+
       // Provide more specific error messages
       if (error.message?.includes('invalid_grant')) {
         throw new BadRequestException(
-          'Google OAuth error: Invalid authorization code. This may happen if the code was already used or expired. Please try again.'
+          'Google OAuth error: Invalid authorization code. This may happen if the code was already used or expired. Please try again.',
         );
       }
-      
+
       throw new BadRequestException(`Google OAuth error: ${error.message}`);
     }
   }
@@ -222,8 +244,12 @@ export class OAuthService {
   async handleDiscordCallback(code: string): Promise<OAuthProfile> {
     try {
       const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
-      const clientSecret = this.configService.get<string>('DISCORD_CLIENT_SECRET');
-      const redirectUri = this.configService.get<string>('DISCORD_REDIRECT_URI');
+      const clientSecret = this.configService.get<string>(
+        'DISCORD_CLIENT_SECRET',
+      );
+      const redirectUri = this.configService.get<string>(
+        'DISCORD_REDIRECT_URI',
+      );
 
       if (!clientId || !clientSecret || !redirectUri) {
         throw new BadRequestException('Discord OAuth not configured');
@@ -249,11 +275,14 @@ export class OAuthService {
       const { access_token } = tokenResponse.data;
 
       // Fetch user profile
-      const profileResponse = await axios.get('https://discord.com/api/users/@me', {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
+      const profileResponse = await axios.get(
+        'https://discord.com/api/users/@me',
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
         },
-      });
+      );
 
       const profile: DiscordProfile = profileResponse.data;
 
@@ -272,11 +301,25 @@ export class OAuthService {
 
   /**
    * Core account linking logic
+   *
+   * @param options.allowCreate When false (OAuth started from Login), refuse to
+   *   mint a new Member row. The previous Login UI rejected `is_new` tokens
+   *   client-side only — the backend had already created the account, so a
+   *   second Login attempt would succeed against an orphan row.
    */
   async linkOrCreateAccount(
     provider: OAuthProvider,
     profile: OAuthProfile,
-  ): Promise<{ member: any; isNewAccount: boolean; requiresLinking: boolean; isAccountLinked: boolean }> {
+    options: { allowCreate?: boolean } = {},
+  ): Promise<{
+    member: any;
+    isNewAccount: boolean;
+    requiresLinking: boolean;
+    isAccountLinked: boolean;
+    accountNotFound?: boolean;
+  }> {
+    const allowCreate = options.allowCreate !== false;
+
     // Step 1: Check if OAuth account already exists
     const existingOAuthAccount = await this.prisma.oAuthAccount.findUnique({
       where: {
@@ -337,7 +380,11 @@ export class OAuthService {
         }
 
         return {
-          member: { ...existingMember, emailVerified: existingMember.emailVerified || profile.emailVerified },
+          member: {
+            ...existingMember,
+            emailVerified:
+              existingMember.emailVerified || profile.emailVerified,
+          },
           isNewAccount: false,
           requiresLinking: false,
           isAccountLinked: true,
@@ -372,31 +419,43 @@ export class OAuthService {
       };
     }
 
-    // Step 3: Create new account
+    // Step 3: Create new account (signup / connect only)
+    if (!allowCreate) {
+      return {
+        member: null,
+        isNewAccount: false,
+        requiresLinking: false,
+        isAccountLinked: false,
+        accountNotFound: true,
+      };
+    }
+
     // First create Supabase Auth user, then use its ID for Member
     let supabaseUserId: string;
-    
+
     if (this.supabaseAdmin && profile.email) {
       try {
         // Create Supabase Auth user
-        const { data: authUser, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
-          email: profile.email,
-          email_confirm: profile.emailVerified, // Auto-confirm if email is verified
-          user_metadata: {
-            first_name: profile.firstName,
-            last_name: profile.lastName,
-            provider: provider,
-          },
-          app_metadata: {
-            provider: provider,
-            providers: [provider],
-          },
-        });
+        const { data: authUser, error: authError } =
+          await this.supabaseAdmin.auth.admin.createUser({
+            email: profile.email,
+            email_confirm: profile.emailVerified, // Auto-confirm if email is verified
+            user_metadata: {
+              first_name: profile.firstName,
+              last_name: profile.lastName,
+              provider: provider,
+            },
+            app_metadata: {
+              provider: provider,
+              providers: [provider],
+            },
+          });
 
         if (authError) {
           // If user already exists in Supabase Auth, try to get it
           if (authError.message?.includes('already registered')) {
-            const { data: existingUser } = await this.supabaseAdmin.auth.admin.getUserByEmail(profile.email);
+            const { data: existingUser } =
+              await this.supabaseAdmin.auth.admin.getUserByEmail(profile.email);
             if (existingUser?.user) {
               supabaseUserId = existingUser.user.id;
             } else {
@@ -428,7 +487,9 @@ export class OAuthService {
     const newMember = await this.prisma.member.create({
       data: {
         id: supabaseUserId, // Use Supabase Auth user ID
-        email: profile.email || `oauth_${provider}_${profile.providerUserId}@temp.local`,
+        email:
+          profile.email ||
+          `oauth_${provider}_${profile.providerUserId}@temp.local`,
         firstName: profile.firstName,
         lastName: profile.lastName,
         emailVerified: profile.emailVerified && !!profile.email,
@@ -499,4 +560,3 @@ export class OAuthService {
     return `${this.appBaseUrl}/auth/callback?${params.toString()}`;
   }
 }
-

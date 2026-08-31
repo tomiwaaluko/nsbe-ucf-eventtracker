@@ -25,8 +25,13 @@ describe('OAuthService.linkOrCreateAccount', () => {
 
   const config: Record<string, string> = {
     SUPABASE_JWT_SECRET: 'test-secret-value-not-used-for-signing-here',
-    APP_BASE_URL: 'http://localhost:3000',
-    OAUTH_BASE_URL: 'http://localhost:4000',
+    APP_BASE_URL: 'http://localhost:3000/',
+    OAUTH_BASE_URL: 'http://localhost:4000/',
+    GOOGLE_CLIENT_ID: 'google-client-id',
+    GOOGLE_REDIRECT_URI: 'http://localhost:4000/api/auth/oauth/google/callback',
+    DISCORD_CLIENT_ID: 'discord-client-id',
+    DISCORD_REDIRECT_URI:
+      'http://localhost:4000/api/auth/oauth/discord/callback',
   };
 
   beforeEach(async () => {
@@ -61,10 +66,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     // The victim's member row exists with that address.
     prisma.member.findUnique.mockResolvedValue({ id: 'admin-member-id' });
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     // The caller mints a JWT from `member`, so it must be null here.
     expect(result.member).toBeNull();
@@ -85,10 +87,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     prisma.oAuthAccount.findUnique.mockResolvedValue(null);
     prisma.member.findUnique.mockResolvedValue(null); // nobody owns it yet
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     expect(result.member).toBeNull();
     expect(result.requiresLinking).toBe(true);
@@ -106,10 +105,7 @@ describe('OAuthService.linkOrCreateAccount', () => {
     });
     prisma.oAuthAccount.create.mockResolvedValue({});
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(true) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(true));
 
     expect(result.isAccountLinked).toBe(true);
     expect(result.requiresLinking).toBe(false);
@@ -121,14 +117,140 @@ describe('OAuthService.linkOrCreateAccount', () => {
     const user = { id: 'known-member', role: 'member' };
     prisma.oAuthAccount.findUnique.mockResolvedValue({ user });
 
-    const result = await service.linkOrCreateAccount(
-      'discord',
-      profile(false) as any,
-    );
+    const result = await service.linkOrCreateAccount('discord', profile(false));
 
     // An already-linked identity was proven at link time, so verification
     // status on this login is irrelevant.
     expect(result.member).toBe(user);
     expect(result.requiresLinking).toBe(false);
+  });
+
+  it('refuses to create a Member when allowCreate is false (login mode)', async () => {
+    prisma.oAuthAccount.findUnique.mockResolvedValue(null);
+    prisma.member.findUnique.mockResolvedValue(null);
+
+    const result = await service.linkOrCreateAccount('google', profile(true), {
+      allowCreate: false,
+    });
+
+    expect(result.accountNotFound).toBe(true);
+    expect(result.member).toBeNull();
+    expect(result.isNewAccount).toBe(false);
+    expect(prisma.member.create).not.toHaveBeenCalled();
+    expect(prisma.oAuthAccount.create).not.toHaveBeenCalled();
+  });
+
+  it('still auto-links on login mode when a verified email already has a Member', async () => {
+    prisma.oAuthAccount.findUnique.mockResolvedValue(null);
+    prisma.member.findUnique.mockResolvedValue({
+      id: 'existing',
+      email: 'admin@nsbeucf.org',
+      emailVerified: true,
+    });
+    prisma.oAuthAccount.create.mockResolvedValue({});
+
+    const result = await service.linkOrCreateAccount('google', profile(true), {
+      allowCreate: false,
+    });
+
+    expect(result.accountNotFound).toBeUndefined();
+    expect(result.isAccountLinked).toBe(true);
+    expect(result.member).toMatchObject({ id: 'existing' });
+  });
+});
+
+describe('OAuthService URL helpers', () => {
+  let service: OAuthService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OAuthService,
+        {
+          provide: PrismaService,
+          useValue: {
+            oAuthAccount: { findUnique: jest.fn(), create: jest.fn() },
+            member: {
+              findUnique: jest.fn(),
+              update: jest.fn(),
+              create: jest.fn(),
+            },
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              ({
+                SUPABASE_JWT_SECRET:
+                  'test-secret-value-not-used-for-signing-here',
+                APP_BASE_URL: 'https://app.example.com/',
+                OAUTH_BASE_URL: 'https://api.example.com/',
+                GOOGLE_CLIENT_ID: 'google-client-id',
+                GOOGLE_REDIRECT_URI:
+                  'https://api.example.com/api/auth/oauth/google/callback',
+                DISCORD_CLIENT_ID: 'discord-client-id',
+                DISCORD_REDIRECT_URI:
+                  'https://api.example.com/api/auth/oauth/discord/callback',
+              })[key],
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<OAuthService>(OAuthService);
+  });
+
+  it('strips trailing slash from APP_BASE_URL in getRedirectUrl', () => {
+    const url = service.getRedirectUrl(undefined, 'boom');
+    expect(url).toBe('https://app.example.com/auth/callback?error=boom');
+  });
+
+  it('includes token flags for new / linked accounts', () => {
+    const url = service.getRedirectUrl(
+      'jwt-token',
+      undefined,
+      false,
+      undefined,
+      'google',
+      true,
+      true,
+    );
+    expect(url).toContain('token=jwt-token');
+    expect(url).toContain('provider=google');
+    expect(url).toContain('account_linked=true');
+    expect(url).toContain('is_new=true');
+  });
+
+  it('builds Google auth URL with state and PKCE', () => {
+    const url = service.getGoogleAuthUrl('state-abc', 'challenge-xyz');
+    expect(url).toContain('accounts.google.com');
+    expect(url).toContain('state=state-abc');
+    expect(url).toContain('code_challenge=challenge-xyz');
+    expect(url).toContain('code_challenge_method=S256');
+    expect(url).toContain(
+      encodeURIComponent(
+        'https://api.example.com/api/auth/oauth/google/callback',
+      ),
+    );
+  });
+
+  it('builds Discord auth URL with state', () => {
+    const url = service.getDiscordAuthUrl('state-xyz');
+    expect(url).toContain('discord.com/api/oauth2/authorize');
+    expect(url).toContain('state=state-xyz');
+    expect(url).toContain('client_id=discord-client-id');
+  });
+
+  it('generates opaque state and PKCE verifier/challenge pairs', () => {
+    const a = service.generateStateToken();
+    const b = service.generateStateToken();
+    expect(a).toHaveLength(64);
+    expect(a).not.toBe(b);
+
+    const { codeVerifier, codeChallenge } = service.generatePKCE();
+    expect(codeVerifier.length).toBeGreaterThan(20);
+    expect(codeChallenge.length).toBeGreaterThan(20);
+    expect(codeVerifier).not.toBe(codeChallenge);
   });
 });
